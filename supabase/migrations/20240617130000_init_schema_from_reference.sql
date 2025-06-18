@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS pdp (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   player_id uuid REFERENCES players(id) ON DELETE CASCADE,
   content text,
-  active boolean DEFAULT true,
+  archived boolean DEFAULT false,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   coach_id uuid REFERENCES coaches(id) ON DELETE SET NULL,

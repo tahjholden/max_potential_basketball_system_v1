@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import DashboardMetrics from "@/components/DashboardMetrics";
 import PlayerList from "@/components/PlayerList";
 import PDPModal from "@/components/PDPModal";
+import AddPDPModal from "./AddPDPModal";
+import UpdatePDPModal from "./UpdatePDPModal";
 
 const BG = "#111";
 const YELLOW = "#FFD600";
@@ -57,6 +59,17 @@ export default function DashboardPage() {
   const [addObsError, setAddObsError] = useState<string | null>(null);
   const [addObsLoading, setAddObsLoading] = useState(false);
 
+  // Update PDP modal state
+  const [updatePDPModalOpen, setUpdatePDPModalOpen] = useState(false);
+
+  // Delete modal states
+  const [deletePlayerModalOpen, setDeletePlayerModalOpen] = useState(false);
+  const [deletePDPModalOpen, setDeletePDPModalOpen] = useState(false);
+  const [deleteObservationModalOpen, setDeleteObservationModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -69,9 +82,9 @@ export default function DashboardPage() {
           { data: pdpsData, error: pdpsError },
           { data: coachesData, error: coachesError }
         ] = await Promise.all([
-          supabase.from("players").select("id, name"),
+          supabase.from("players").select("id, name, first_name, last_name"),
           supabase.from("observations").select("id, content, observation_date, created_at, player_id, player:player_id(name)").order("created_at", { ascending: false }),
-          supabase.from("pdp").select("id, player_id, content, active"),
+          supabase.from("pdp").select("id, player_id, content, archived").eq("archived", false),
           supabase.from("coaches").select("id, first_name, last_name, email, is_admin, active")
         ]);
 
@@ -100,50 +113,77 @@ export default function DashboardPage() {
   }, []);
 
   // Add Player handler
-  async function handleAddPlayer() {
+  async function handleAddPlayer(playerData: { first_name: string; last_name: string; position?: string; pdpContent?: string }) {
     setAddPlayerLoading(true);
     setAddPlayerError(null);
-    
     try {
       const supabase = createClient();
-      
       // First, check if user is authenticated
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) {
-        console.error("User auth error:", userError);
         setAddPlayerError(`Authentication error: ${userError.message}`);
         return;
       }
-      
       if (!user) {
-        console.error("No authenticated user found");
         setAddPlayerError("No authenticated user found. Please log in again.");
         return;
       }
-      
-      console.log("Authenticated user:", user);
-      
-      const { data, error } = await supabase.from('players').insert([
+      // 1. Insert the player
+      const { data: playerRows, error: playerError } = await supabase.from('players').insert([
         {
-          first_name: playerForm.first_name,
-          last_name: playerForm.last_name,
-          position: playerForm.position
+          first_name: playerData.first_name,
+          last_name: playerData.last_name,
+          position: playerData.position || '',
         }
       ]).select();
-      
-      if (error) {
-        console.error("Insert error:", error);
-        setAddPlayerError(`Database error: ${error.message} (Code: ${error.code})`);
-      } else {
-        console.log("Player created successfully:", data);
-        setPlayerForm({ first_name: '', last_name: '', position: '' });
-        setAddPlayerOpen(false);
-        // Refresh players
-        const { data: players } = await supabase.from('players').select('*');
-        setPlayers(players || []);
+      if (playerError || !playerRows || !playerRows[0]) {
+        setAddPlayerError(playerError?.message || 'Failed to create player');
+        return;
       }
+      const newPlayer = playerRows[0];
+      // 2. If PDP content provided, archive all existing PDPs and create a new one
+      if (playerData.pdpContent) {
+        // Get coach record for current user
+        const { data: coachData, error: coachError } = await supabase
+          .from('coaches')
+          .select('id')
+          .eq('auth_uid', user.id)
+          .single();
+        
+        if (coachError || !coachData) {
+          setAddPlayerError("Player created, but coach record not found for PDP creation.");
+          return;
+        }
+        
+        // Archive all existing PDPs for this player (should be none, but future-proof)
+        await supabase.from('pdp').update({ archived: true, end_date: new Date().toISOString() }).eq('player_id', newPlayer.id).eq('archived', false);
+        // Insert new PDP
+        const { error: pdpError } = await supabase.from('pdp').insert([
+          {
+            player_id: newPlayer.id,
+            content: playerData.pdpContent,
+            archived: false,
+            start_date: new Date().toISOString(),
+            end_date: null,
+            coach_id: coachData.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]);
+        if (pdpError) {
+          setAddPlayerError(`Player created, but failed to create initial PDP: ${pdpError.message}`);
+        }
+      }
+      setPlayerForm({ first_name: '', last_name: '', position: '' });
+      setAddPlayerOpen(false);
+      // Refresh players and pdps
+      const [{ data: players }, { data: pdps }] = await Promise.all([
+        supabase.from('players').select('id, name, first_name, last_name'),
+        supabase.from('pdp').select('*').eq('archived', false)
+      ]);
+      setPlayers(players || []);
+      setPdps(pdps || []);
     } catch (err) {
-      console.error("Unexpected error:", err);
       setAddPlayerError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setAddPlayerLoading(false);
@@ -174,10 +214,198 @@ export default function DashboardPage() {
     }
   }
 
+  // Add PDP handler
+  async function handleAddPDP(pdpData: { player_id: string; content: string; start_date: string }) {
+    setAddPlayerLoading(true);
+    setAddPlayerError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setAddPlayerError(`Authentication error: ${userError.message}`);
+        return;
+      }
+      if (!user) {
+        setAddPlayerError("No authenticated user found. Please log in again.");
+        return;
+      }
+      
+      // Get coach record for current user
+      const { data: coachData, error: coachError } = await supabase
+        .from('coaches')
+        .select('id')
+        .eq('auth_uid', user.id)
+        .single();
+      
+      if (coachError || !coachData) {
+        setAddPlayerError("Coach record not found. Please contact an administrator.");
+        return;
+      }
+      
+      // 1. Archive all current PDPs for this player
+      await supabase.from('pdp').update({ archived: true, end_date: new Date().toISOString() }).eq('player_id', pdpData.player_id).eq('archived', false);
+      // 2. Insert new PDP
+      const { error: pdpError } = await supabase.from('pdp').insert([
+        {
+          player_id: pdpData.player_id,
+          content: pdpData.content,
+          archived: false,
+          start_date: pdpData.start_date,
+          end_date: null,
+          coach_id: coachData.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ]);
+      if (pdpError) {
+        setAddPlayerError(`Failed to create PDP: ${pdpError.message}`);
+      }
+      setPdpModalOpen(false);
+      // Refresh pdps
+      const { data: pdps } = await supabase.from('pdp').select('*').eq('archived', false);
+      setPdps(pdps || []);
+    } catch (err) {
+      setAddPlayerError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setAddPlayerLoading(false);
+    }
+  }
+
+  // Update PDP handler (same logic as Add PDP)
+  async function handleUpdatePDP(player: any, pdpData: { content: string; start_date: string }) {
+    setAddPlayerLoading(true);
+    setAddPlayerError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setAddPlayerError(`Authentication error: ${userError.message}`);
+        return;
+      }
+      if (!user) {
+        setAddPlayerError("No authenticated user found. Please log in again.");
+        return;
+      }
+      
+      // Get coach record for current user
+      const { data: coachData, error: coachError } = await supabase
+        .from('coaches')
+        .select('id')
+        .eq('auth_uid', user.id)
+        .single();
+      
+      if (coachError || !coachData) {
+        setAddPlayerError("Coach record not found. Please contact an administrator.");
+        return;
+      }
+      
+      // 1. Archive all current PDPs for this player
+      await supabase.from('pdp').update({ archived: true, end_date: new Date().toISOString() }).eq('player_id', player.id).eq('archived', false);
+      // 2. Insert new PDP
+      const { error: pdpError } = await supabase.from('pdp').insert([
+        {
+          player_id: player.id,
+          content: pdpData.content,
+          archived: false,
+          start_date: pdpData.start_date,
+          end_date: null,
+          coach_id: coachData.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ]);
+      if (pdpError) {
+        setAddPlayerError(`Failed to update PDP: ${pdpError.message}`);
+      }
+      setUpdatePDPModalOpen(false);
+      // Refresh pdps
+      const { data: pdps } = await supabase.from('pdp').select('*').eq('archived', false);
+      setPdps(pdps || []);
+    } catch (err) {
+      setAddPlayerError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setAddPlayerLoading(false);
+    }
+  }
+
+  const getPlayerPDP = (playerId: string) => pdps.find((pdp) => pdp.player_id === playerId);
   const getPlayerObservations = (playerId: string) =>
     observations.filter((obs) => obs.player_id === playerId);
 
-  const getPlayerPDP = (playerId: string) => pdps.find((pdp) => pdp.player_id === playerId);
+  // Delete Player handler
+  async function handleDeletePlayer(player: any) {
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('players').delete().eq('id', player.id);
+      if (error) {
+        setDeleteError(`Failed to delete player: ${error.message}`);
+        return;
+      }
+      setDeletePlayerModalOpen(false);
+      setItemToDelete(null);
+      // Refresh players, observations, and pdps
+      const [{ data: players }, { data: observations }, { data: pdps }] = await Promise.all([
+        supabase.from('players').select('id, name, first_name, last_name'),
+        supabase.from('observations').select('*'),
+        supabase.from('pdp').select('*').eq('archived', false)
+      ]);
+      setPlayers(players || []);
+      setObservations(observations || []);
+      setPdps(pdps || []);
+    } catch (err) {
+      setDeleteError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  // Delete PDP handler
+  async function handleDeletePDP(pdp: any) {
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('pdp').delete().eq('id', pdp.id);
+      if (error) {
+        setDeleteError(`Failed to delete PDP: ${error.message}`);
+        return;
+      }
+      setDeletePDPModalOpen(false);
+      setItemToDelete(null);
+      // Refresh pdps
+      const { data: pdps } = await supabase.from('pdp').select('*').eq('archived', false);
+      setPdps(pdps || []);
+    } catch (err) {
+      setDeleteError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  // Delete Observation handler
+  async function handleDeleteObservation(observation: any) {
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('observations').delete().eq('id', observation.id);
+      if (error) {
+        setDeleteError(`Failed to delete observation: ${error.message}`);
+        return;
+      }
+      setDeleteObservationModalOpen(false);
+      setItemToDelete(null);
+      // Refresh observations
+      const { data: observations } = await supabase.from('observations').select('*');
+      setObservations(observations || []);
+    } catch (err) {
+      setDeleteError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
   if (error) {
     return (
@@ -234,7 +462,7 @@ export default function DashboardPage() {
                     {playerPDP ? (
                       <div className="ml-2 inline-block text-white">
                         <span>{playerPDP.content}</span>
-                        {playerPDP.active ? <span className="ml-2 text-green-400">(Active)</span> : null}
+                        {!playerPDP.archived ? <span className="ml-2 text-green-400">(Current)</span> : null}
                       </div>
                     ) : <span className="ml-2 text-zinc-400">No PDP</span>}
                   </div>
@@ -296,6 +524,11 @@ export default function DashboardPage() {
         <div className="flex gap-4 mb-4">
           <button className="bg-[#FFD600] text-black rounded px-4 py-2 font-bold" onClick={() => setAddPlayerOpen(true)}>Add Player</button>
           <button className="bg-[#FFD600] text-black rounded px-4 py-2 font-bold" onClick={() => setAddObsOpen(true)}>Add Observation</button>
+          <button className="bg-[#FFD600] text-black rounded px-4 py-2 font-bold" onClick={() => setPdpModalOpen(true)}>Add PDP</button>
+          <button className="bg-[#FFD600] text-black rounded px-4 py-2 font-bold" onClick={() => setUpdatePDPModalOpen(true)}>Update PDP</button>
+          <button className="bg-red-600 text-white rounded px-4 py-2 font-bold" onClick={() => setDeletePlayerModalOpen(true)}>Delete Player</button>
+          <button className="bg-red-600 text-white rounded px-4 py-2 font-bold" onClick={() => setDeletePDPModalOpen(true)}>Delete PDP</button>
+          <button className="bg-red-600 text-white rounded px-4 py-2 font-bold" onClick={() => setDeleteObservationModalOpen(true)}>Delete Observation</button>
         </div>
         {/* Add Player Modal */}
         {addPlayerOpen && (
@@ -326,7 +559,7 @@ export default function DashboardPage() {
               {addPlayerError && <div className="text-red-500 mb-2">{addPlayerError}</div>}
               <button
                 className="bg-[#FFD600] text-black rounded px-4 py-2 font-bold w-full disabled:opacity-60"
-                onClick={handleAddPlayer}
+                onClick={() => handleAddPlayer(playerForm)}
                 disabled={addPlayerLoading || !playerForm.first_name || !playerForm.last_name}
               >
                 {addPlayerLoading ? "Saving..." : "Save"}
@@ -377,6 +610,189 @@ export default function DashboardPage() {
                 disabled={addObsLoading || !obsForm.player_id || !obsForm.content}
               >
                 {addObsLoading ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Add PDP Modal */}
+        <AddPDPModal
+          open={pdpModalOpen}
+          onClose={() => setPdpModalOpen(false)}
+          onSubmit={handleAddPDP}
+          players={players}
+          selectedPlayer={selectedPlayer}
+          currentUser={null}
+        />
+        {/* Update PDP Modal */}
+        <UpdatePDPModal
+          open={updatePDPModalOpen}
+          onClose={() => setUpdatePDPModalOpen(false)}
+          onSubmit={handleUpdatePDP}
+          player={selectedPlayer}
+          players={players}
+          currentUser={null}
+        />
+
+        {/* Delete Player Modal */}
+        {deletePlayerModalOpen && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-zinc-800 p-8 rounded shadow-xl text-white max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <div className="font-bold text-lg">Delete Player</div>
+                <button className="ml-4 px-3 py-1 rounded bg-[#FFD600] text-black font-semibold" onClick={() => { setDeletePlayerModalOpen(false); setDeleteError(null); setItemToDelete(null); }}>Close</button>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Select Player to Delete</label>
+                <select
+                  className="p-2 rounded w-full text-black"
+                  value={itemToDelete?.id || ""}
+                  onChange={e => {
+                    const player = players.find(p => p.id === e.target.value);
+                    setItemToDelete(player || null);
+                  }}
+                >
+                  <option value="">Select a player</option>
+                  {players.map((player: any) => (
+                    <option key={player.id} value={player.id}>
+                      {player.first_name && player.last_name 
+                        ? `${player.first_name} ${player.last_name}` 
+                        : player.name || `Player ${player.id}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {itemToDelete && (
+                <div className="mb-4 p-3 bg-red-900/20 border border-red-500 rounded">
+                  <p className="text-red-300 text-sm">
+                    <strong>Warning:</strong> This will permanently delete the player "{itemToDelete.first_name && itemToDelete.last_name 
+                      ? `${itemToDelete.first_name} ${itemToDelete.last_name}` 
+                      : itemToDelete.name || `Player ${itemToDelete.id}`}" and all associated observations and PDPs.
+                  </p>
+                </div>
+              )}
+              {deleteError && <div className="text-red-500 mb-2">{deleteError}</div>}
+              <button
+                className="bg-red-600 text-white rounded px-4 py-2 font-bold w-full disabled:opacity-60"
+                onClick={() => itemToDelete && handleDeletePlayer(itemToDelete)}
+                disabled={deleteLoading || !itemToDelete}
+              >
+                {deleteLoading ? "Deleting..." : "Delete Player"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete PDP Modal */}
+        {deletePDPModalOpen && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-zinc-800 p-8 rounded shadow-xl text-white max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <div className="font-bold text-lg">Delete PDP</div>
+                <button className="ml-4 px-3 py-1 rounded bg-[#FFD600] text-black font-semibold" onClick={() => { setDeletePDPModalOpen(false); setDeleteError(null); setItemToDelete(null); }}>Close</button>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Select PDP to Delete</label>
+                <select
+                  className="p-2 rounded w-full text-black"
+                  value={itemToDelete?.id || ""}
+                  onChange={e => {
+                    const pdp = pdps.find(p => p.id === e.target.value);
+                    setItemToDelete(pdp || null);
+                  }}
+                >
+                  <option value="">Select a PDP</option>
+                  {pdps.map((pdp: any) => {
+                    const player = players.find(p => p.id === pdp.player_id);
+                    const playerName = player ? (player.first_name && player.last_name 
+                      ? `${player.first_name} ${player.last_name}` 
+                      : player.name || `Player ${player.id}`) : 'Unknown Player';
+                    return (
+                      <option key={pdp.id} value={pdp.id}>
+                        {playerName} - {pdp.content.substring(0, 50)}{pdp.content.length > 50 ? '...' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              {itemToDelete && (
+                <div className="mb-4 p-3 bg-red-900/20 border border-red-500 rounded">
+                  <p className="text-red-300 text-sm">
+                    <strong>Warning:</strong> This will permanently delete the selected PDP.
+                  </p>
+                  <p className="text-white text-sm mt-2">
+                    <strong>Content:</strong> {itemToDelete.content}
+                  </p>
+                </div>
+              )}
+              {deleteError && <div className="text-red-500 mb-2">{deleteError}</div>}
+              <button
+                className="bg-red-600 text-white rounded px-4 py-2 font-bold w-full disabled:opacity-60"
+                onClick={() => itemToDelete && handleDeletePDP(itemToDelete)}
+                disabled={deleteLoading || !itemToDelete}
+              >
+                {deleteLoading ? "Deleting..." : "Delete PDP"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Observation Modal */}
+        {deleteObservationModalOpen && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-zinc-800 p-8 rounded shadow-xl text-white max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <div className="font-bold text-lg">Delete Observation</div>
+                <button className="ml-4 px-3 py-1 rounded bg-[#FFD600] text-black font-semibold" onClick={() => { setDeleteObservationModalOpen(false); setDeleteError(null); setItemToDelete(null); }}>Close</button>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Select Observation to Delete</label>
+                <select
+                  className="p-2 rounded w-full text-black"
+                  value={itemToDelete?.id || ""}
+                  onChange={e => {
+                    const observation = observations.find(o => o.id === e.target.value);
+                    setItemToDelete(observation || null);
+                  }}
+                >
+                  <option value="">Select an observation</option>
+                  {observations.map((observation: any) => {
+                    const player = players.find(p => p.id === observation.player_id);
+                    const playerName = player ? (player.first_name && player.last_name 
+                      ? `${player.first_name} ${player.last_name}` 
+                      : player.name || `Player ${player.id}`) : 'Unknown Player';
+                    const date = observation.observation_date ? new Date(observation.observation_date).toLocaleDateString() : 'No date';
+                    return (
+                      <option key={observation.id} value={observation.id}>
+                        {playerName} - {date} - {observation.content.substring(0, 40)}{observation.content.length > 40 ? '...' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              {itemToDelete && (
+                <div className="mb-4 p-3 bg-red-900/20 border border-red-500 rounded">
+                  <p className="text-red-300 text-sm">
+                    <strong>Warning:</strong> This will permanently delete the selected observation.
+                  </p>
+                  <div className="text-white text-sm mt-2 space-y-1">
+                    <p><strong>Player:</strong> {(() => {
+                      const player = players.find(p => p.id === itemToDelete.player_id);
+                      return player ? (player.first_name && player.last_name 
+                        ? `${player.first_name} ${player.last_name}` 
+                        : player.name || `Player ${player.id}`) : 'Unknown Player';
+                    })()}</p>
+                    <p><strong>Date:</strong> {itemToDelete.observation_date ? new Date(itemToDelete.observation_date).toLocaleDateString() : 'No date'}</p>
+                    <p><strong>Content:</strong> {itemToDelete.content}</p>
+                  </div>
+                </div>
+              )}
+              {deleteError && <div className="text-red-500 mb-2">{deleteError}</div>}
+              <button
+                className="bg-red-600 text-white rounded px-4 py-2 font-bold w-full disabled:opacity-60"
+                onClick={() => itemToDelete && handleDeleteObservation(itemToDelete)}
+                disabled={deleteLoading || !itemToDelete}
+              >
+                {deleteLoading ? "Deleting..." : "Delete Observation"}
               </button>
             </div>
           </div>

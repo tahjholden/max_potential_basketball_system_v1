@@ -49,7 +49,7 @@ export default async function PlayersPage() {
       supabase.from("players").select("*").order("last_name"),
       supabase.from("coaches").select("*").order("last_name"),
       supabase.from("observations").select("*").order("created_at", { ascending: false }),
-      supabase.from("pdp").select("*").order("created_at", { ascending: false })
+      supabase.from("pdp").select("*").eq("archived", false).order("created_at", { ascending: false })
     ]);
 
     if (playersError || coachesError || observationsError || pdpsError) {

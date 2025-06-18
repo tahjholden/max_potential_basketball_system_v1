@@ -10,7 +10,7 @@ export async function getDashboardData() {
   const [{ data: players, error: playerErr }, { data: observations, error: obsErr }, { data: pdps, error: pdpErr }] = await Promise.all([
     supabase.from("players").select("id, name"),
     supabase.from("observations").select("id, player_id, content, observation_date"),
-    supabase.from("pdp").select("id, player_id, content, start_date, end_date, active")
+    supabase.from("pdp").select("id, player_id, content, start_date, end_date, archived").eq("archived", false)
   ])
 
   if (playerErr || obsErr || pdpErr) {
