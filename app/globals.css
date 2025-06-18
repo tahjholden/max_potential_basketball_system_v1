@@ -29,6 +29,22 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --color-old-gold: #CFB53B;
+    --color-old-gold-light: #DFC76B;
+    --color-old-gold-dark: #BFA52B;
+    --color-black: #000000;
+    --color-dark-gray: #121212;
+    --color-white: #FFFFFF;
+    --color-gray-100: rgba(255, 255, 255, 0.1);
+    --color-gray-200: rgba(255, 255, 255, 0.2);
+    --color-gray-300: rgba(255, 255, 255, 0.3);
+    --color-gray-500: rgba(255, 255, 255, 0.5);
+    --color-gray-700: rgba(255, 255, 255, 0.7);
+    --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-full: 9999px;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -64,5 +80,37 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-family);
+    background-color: var(--color-black);
+    color: var(--color-white);
   }
+}
+
+.text-oldgold {
+  color: var(--color-old-gold);
+}
+.bg-oldgold {
+  background-color: var(--color-old-gold);
+}
+.border-oldgold {
+  border-color: var(--color-old-gold);
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-dark-gray);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-old-gold);
+  border-radius: var(--border-radius-full);
+}
+::-webkit-scrollbar-track {
+  background-color: var(--color-dark-gray);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-old-gold);
+  outline-offset: 2px;
 }
