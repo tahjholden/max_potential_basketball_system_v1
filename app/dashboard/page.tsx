@@ -12,7 +12,7 @@ import PDPModal from "@/components/PDPModal";
 import { getDashboardData } from "@/lib/supabase";
 
 const BG = "#111";
-const YELLOW = "#FFD600";
+const GOLD = "var(--color-gold)";
 const CARD = "#222";
 
 export default function DashboardPage() {
@@ -75,11 +75,11 @@ export default function DashboardPage() {
                 setPdpModalOpen(true);
               }}>Edit PDP</Button>
             </div>
-            <div className="text-sm text-yellow-400 font-medium mb-2">PDP</div>
+            <div className="text-sm text-gold font-medium mb-2">PDP</div>
             <div className="text-sm text-white mb-4">
               {getPlayerPDP(player.id)?.content || "No PDP assigned."}
             </div>
-            <div className="text-sm text-yellow-400 font-medium mb-2">Recent Observations</div>
+            <div className="text-sm text-gold font-medium mb-2">Recent Observations</div>
             <ul className="space-y-2 text-sm">
               {getPlayerObservations(player.id).map((obs) => (
                 <li key={obs.id} className="text-white">{obs.content}</li>
@@ -95,14 +95,14 @@ export default function DashboardPage() {
 
       {/* Add Player Modal */}
       <Dialog open={showAddPlayer} onOpenChange={setShowAddPlayer}>
-        <DialogContent className="bg-[#181818] border border-[#FFD600] rounded-xl p-8 w-full max-w-md">
+        <DialogContent className="bg-[#181818] border border-gold rounded-xl p-8 w-full max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#FFD600]">Add Player</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-gold">Add Player</DialogTitle>
           </DialogHeader>
           <Input className="mb-4 bg-[#222] border border-[#333] text-white" placeholder="Player Name" value={newPlayer} onChange={e => setNewPlayer(e.target.value)} />
           <DialogFooter>
             <button
-              className="bg-[#FFD600] text-black font-semibold px-6 py-2 rounded hover:bg-[#ffe066] transition w-full"
+              className="bg-gold text-black font-semibold px-6 py-2 rounded hover:bg-gold/80 transition w-full"
               onClick={handleAddPlayer}
               disabled={!newPlayer.trim() || addingPlayer}
             >

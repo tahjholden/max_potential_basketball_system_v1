@@ -17,57 +17,67 @@ export default function AddPDPModal({ open, onClose, onSubmit, players, selected
   if (!open) return null;
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-800 p-8 rounded shadow-xl text-white max-w-md w-full">
-        <div className="flex justify-between items-center mb-4">
-          <div className="font-bold text-lg">Add PDP</div>
-          <button className="ml-4 px-3 py-1 rounded bg-oldgold text-black font-semibold" onClick={onClose}>Close</button>
-        </div>
-        <div className="mb-4 space-y-2">
-          <label className="block text-sm font-medium">Player</label>
-          <select
-            className="p-2 rounded w-full text-black"
-            value={playerId}
-            onChange={e => setPlayerId(e.target.value)}
+      <div className="bg-[#1e293b] p-8 rounded-lg shadow-xl text-white max-w-md w-full border border-slate-700">
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-lg text-[#facc15] font-semibold">Add PDP</div>
+          <button 
+            className="px-3 py-1 rounded bg-[#facc15] text-black font-semibold hover:bg-yellow-400 transition-colors" 
+            onClick={onClose}
           >
-            <option value="">Select a player</option>
-            {players.map((player: any) => (
-              <option key={player.id} value={player.id}>
-                {player.first_name && player.last_name 
-                  ? `${player.first_name} ${player.last_name}` 
-                  : player.name || `Player ${player.id}`}
-              </option>
-            ))}
-          </select>
-          <label className="block text-sm font-medium">Start Date</label>
-          <input
-            className="p-2 rounded w-full text-black"
-            type="date"
-            value={startDate}
-            onChange={e => setStartDate(e.target.value)}
-          />
-          <label className="block text-sm font-medium">PDP Content</label>
-          <textarea
-            className="p-2 rounded w-full text-black"
-            placeholder="PDP content"
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            rows={4}
-          />
+            Close
+          </button>
         </div>
-        <button
-          className="px-4 py-2 rounded bg-oldgold text-black font-semibold w-full"
-          onClick={() => {
-            onSubmit({
-              player_id: playerId,
-              content: content.trim(),
-              start_date: startDate
-            });
-            setContent("");
-          }}
-          disabled={!content.trim() || !playerId}
-        >
-          Submit
-        </button>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Player</label>
+            <select
+              className="w-full p-3 rounded bg-slate-700 text-white border border-slate-600 focus:border-[#facc15] focus:outline-none transition-colors"
+              value={playerId}
+              onChange={e => setPlayerId(e.target.value)}
+            >
+              <option value="">Select a player</option>
+              {players.map((player: any) => (
+                <option key={player.id} value={player.id}>
+                  {player.first_name && player.last_name 
+                    ? `${player.first_name} ${player.last_name}` 
+                    : player.name || `Player ${player.id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+            <input
+              className="w-full p-3 rounded bg-slate-700 text-white border border-slate-600 focus:border-[#facc15] focus:outline-none transition-colors"
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">PDP Content</label>
+            <textarea
+              className="w-full p-3 rounded bg-slate-700 text-white border border-slate-600 focus:border-[#facc15] focus:outline-none transition-colors min-h-[100px] resize-none"
+              placeholder="Enter PDP content"
+              value={content}
+              onChange={e => setContent(e.target.value)}
+            />
+          </div>
+          <button
+            className="w-full bg-[#facc15] text-black rounded px-4 py-3 font-bold hover:bg-yellow-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={() => {
+              onSubmit({
+                player_id: playerId,
+                content: content.trim(),
+                start_date: startDate
+              });
+              setContent("");
+            }}
+            disabled={!content.trim() || !playerId}
+          >
+            Create PDP
+          </button>
+        </div>
       </div>
     </div>
   );

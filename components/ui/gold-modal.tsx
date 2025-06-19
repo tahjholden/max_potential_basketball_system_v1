@@ -10,9 +10,9 @@ export function GoldModal({ open, onOpenChange, title, children, footer }: {
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#232733] border border-[#CFB53B] rounded-xl">
+      <DialogContent className="bg-[#232733] border border-gold rounded-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#CFB53B]">{title}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-gold">{title}</DialogTitle>
         </DialogHeader>
         <div className="mb-4">{children}</div>
         {footer && <DialogFooter>{footer}</DialogFooter>}

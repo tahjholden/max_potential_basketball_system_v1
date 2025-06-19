@@ -32,9 +32,9 @@
     --color-old-gold: #CFB53B;
     --color-old-gold-light: #DFC76B;
     --color-old-gold-dark: #BFA52B;
-    --color-black: #000000;
+    --color-black: #000001;
     --color-dark-gray: #121212;
-    --color-white: #FFFFFF;
+    --color-white: #ffffff;
     --color-gray-100: rgba(255, 255, 255, 0.1);
     --color-gray-200: rgba(255, 255, 255, 0.2);
     --color-gray-300: rgba(255, 255, 255, 0.3);
@@ -45,6 +45,8 @@
     --border-radius-md: 8px;
     --border-radius-lg: 12px;
     --border-radius-full: 9999px;
+    --color-gold: #797451;
+    --color-red: #cb0033;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -76,11 +78,10 @@
 
 @layer base {
   * {
-    @apply border-border;
+    /* @apply border-border; */
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-family);
+    @apply bg-black text-white;
     background-color: var(--color-black);
     color: var(--color-white);
   }
@@ -96,6 +97,14 @@
   border-color: var(--color-old-gold);
 }
 
+.text-gold { color: var(--color-gold); }
+.bg-gold { background-color: var(--color-gold); }
+.border-gold { border-color: var(--color-gold); }
+
+.text-accent { color: var(--color-red); }
+.bg-accent { background-color: var(--color-red); }
+.border-accent { border-color: var(--color-red); }
+
 /* Custom scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
@@ -103,7 +112,7 @@
   background-color: var(--color-dark-gray);
 }
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-old-gold);
+  background-color: var(--color-gold);
   border-radius: var(--border-radius-full);
 }
 ::-webkit-scrollbar-track {
@@ -111,6 +120,6 @@
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-old-gold);
+  outline: 2px solid var(--color-gold);
   outline-offset: 2px;
 }
