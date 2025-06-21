@@ -1,159 +1,123 @@
 "use client";
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import Link from "next/link";
 
-type Observation = {
+import { useState, useEffect } from "react";
+import ThreePaneLayout from "@/components/ThreePaneLayout";
+import DeleteObservationButton from "@/components/DeleteObservationButton";
+import { createClient } from "@/lib/supabase/client";
+import { format } from "date-fns";
+
+interface Observation {
   id: string;
   content: string;
   observation_date: string;
   created_at: string;
   player_id: string;
-  pdp_id?: string;
-  player: {
-    name: string;
-  };
-  coaches: {
-    first_name: string;
-    last_name: string;
-  };
-};
+}
 
-type Player = {
+interface Player {
   id: string;
   name: string;
-};
+  first_name?: string;
+  last_name?: string;
+  observations: number;
+}
 
 export default function ObservationsPage() {
-  const [observations, setObservations] = useState<Observation[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [observations, setObservations] = useState<Observation[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Filter states
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPlayer, setSelectedPlayer] = useState("");
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
-  const [visibleCount, setVisibleCount] = useState(10);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchObservationsData() {
       try {
         setLoading(true);
         const supabase = createClient();
-        
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          setError("Authentication required");
-          return;
-        }
 
-        // Fetch all observations with player and coach info
-        const { data: observationsData, error: obsError } = await supabase
-          .from("observations")
-          .select(`
-            id,
-            content,
-            observation_date,
-            created_at,
-            player_id,
-            pdp_id,
-            player:players!player_id(name),
-            coaches:coaches(first_name, last_name)
-          `)
-          .order("created_at", { ascending: false });
+        // Fetch players and observations
+        const [
+          { data: playersData, error: playersError },
+          { data: observationsData, error: observationsError },
+        ] = await Promise.all([
+          supabase.from("players").select("id, name, first_name, last_name").order("last_name"),
+          supabase.from("observations").select(`
+            id, 
+            content, 
+            observation_date, 
+            created_at, 
+            player_id
+          `).order("created_at", { ascending: false }),
+        ]);
 
-        if (obsError) {
-          setError(`Error loading observations: ${obsError.message}`);
-          return;
-        }
+        if (playersError) throw new Error(`Error fetching players: ${playersError.message}`);
+        if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
 
-        // Transform the data to match our expected structure
-        const transformedObservations = (observationsData || []).map((obs: any) => ({
-          id: obs.id,
-          content: obs.content,
-          observation_date: obs.observation_date,
-          created_at: obs.created_at,
-          player_id: obs.player_id,
-          pdp_id: obs.pdp_id,
-          player: {
-            name: obs.player?.name || "Unknown Player"
-          },
-          coaches: {
-            first_name: obs.coaches?.first_name || "",
-            last_name: obs.coaches?.last_name || ""
-          }
-        }));
+        // Count observations per player
+        const observationCounts = new Map<string, number>();
+        observationsData?.forEach(obs => {
+          observationCounts.set(obs.player_id, (observationCounts.get(obs.player_id) || 0) + 1);
+        });
 
-        // Fetch all players for filter dropdown
-        const { data: playersData, error: playersError } = await supabase
-          .from("players")
-          .select("id, name")
-          .order("name");
+        // Transform players data
+        const transformedPlayers: Player[] = (playersData || []).map(player => {
+          const fullName = (player.first_name && player.last_name) 
+            ? `${player.first_name} ${player.last_name}` 
+            : player.name;
+          
+          return {
+            id: player.id,
+            name: fullName,
+            first_name: player.first_name,
+            last_name: player.last_name,
+            observations: observationCounts.get(player.id) || 0,
+          };
+        });
 
-        if (playersError) {
-          setError(`Error loading players: ${playersError.message}`);
-          return;
-        }
-
-        setObservations(transformedObservations);
-        setPlayers(playersData || []);
+        setPlayers(transformedPlayers);
+        setObservations(observationsData || []);
         setError(null);
       } catch (err) {
-        setError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        console.error('Error fetching observations data:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
       } finally {
         setLoading(false);
       }
     }
 
-    fetchData();
+    fetchObservationsData();
   }, []);
 
-  // Filter observations based on search and filters
-  const filteredObservations = observations.filter(obs => {
-    const matchesSearch = !searchTerm || 
-      obs.player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      obs.content.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesPlayer = !selectedPlayer || obs.player_id === selectedPlayer;
-    
-    const matchesDateRange = !dateRange.start || !dateRange.end || 
-      (obs.observation_date >= dateRange.start && obs.observation_date <= dateRange.end);
-    
-    return matchesSearch && matchesPlayer && matchesDateRange;
+  const selectedPlayer = players.find((p) => p.id === selected);
+  const selectedPlayerObservations = observations.filter(obs => obs.player_id === selected);
+
+  // Sort observations by date
+  const sorted = selectedPlayerObservations.slice().sort((a, b) => {
+    const dateA = a.observation_date || a.created_at;
+    const dateB = b.observation_date || b.created_at;
+    return dateA.localeCompare(dateB);
   });
 
-  const visibleObservations = filteredObservations.slice(0, visibleCount);
+  // Calculate date range
+  const dateRange = sorted.length > 0
+    ? `Observations from ${format(new Date(sorted[0].observation_date || sorted[0].created_at), "MMM d, yyyy")} to ${format(
+        new Date(sorted[sorted.length - 1].observation_date || sorted[sorted.length - 1].created_at),
+        "MMM d, yyyy"
+      )}`
+    : null;
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A";
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch (e) {
-      return "N/A";
-    }
-  };
-
-  const getCoachName = (coach: any) => {
-    if (!coach) return "Unknown Coach";
-    return `${coach.first_name || ""} ${coach.last_name || ""}`.trim() || "Unknown Coach";
-  };
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setSelectedPlayer("");
-    setDateRange({ start: "", end: "" });
-    setVisibleCount(10);
-  };
+  // Filter players based on search term
+  const filteredPlayers = players.filter(player =>
+    player.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
-      <div className="p-6 bg-[#0f172a] min-h-screen font-sans text-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="text-gold">Loading observations...</div>
-          </div>
+      <div className="h-[calc(100vh-5rem)] p-4">
+        <h1 className="text-2xl font-bold mb-4 text-white">MP Player Development</h1>
+        <div className="flex items-center justify-center h-full text-zinc-500">
+          Loading observations...
         </div>
       </div>
     );
@@ -161,187 +125,102 @@ export default function ObservationsPage() {
 
   if (error) {
     return (
-      <div className="p-6 bg-[#0f172a] min-h-screen font-sans text-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-600">
-            <h1 className="text-2xl text-gold font-bold mb-4">Error</h1>
-            <p className="text-red-400">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 bg-gold text-black px-4 py-2 rounded hover:bg-gold/80"
-            >
-              Retry
-            </button>
-          </div>
+      <div className="h-[calc(100vh-5rem)] p-4">
+        <h1 className="text-2xl font-bold mb-4 text-white">MP Player Development</h1>
+        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+          Error loading observations: {error}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-[#0f172a] min-h-screen font-sans text-white">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gold mb-2">Observations Archive</h1>
-            <p className="text-gray-400">Review and manage all coaching observations</p>
-          </div>
-          <div className="flex gap-3">
-            <Link 
-              href="/protected/dashboard"
-              className="bg-slate-700 text-white px-4 py-2 font-bold rounded-lg hover:bg-slate-600 transition-colors border border-slate-600"
-            >
-              Back to Dashboard
-            </Link>
-            <Link 
-              href="/protected/players"
-              className="bg-gold text-black px-4 py-2 font-bold rounded-lg hover:bg-gold/80 transition-colors"
-            >
-              + Add Observation
-            </Link>
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-600 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Search</label>
-              <input
-                type="text"
-                placeholder="Search by player or content..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:border-gold focus:outline-none"
-              />
-            </div>
-
-            {/* Player Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Player</label>
-              <select
-                value={selectedPlayer}
-                onChange={(e) => setSelectedPlayer(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:border-gold focus:outline-none"
-              >
-                <option value="">All Players</option>
-                {players.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date Range Start */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">From Date</label>
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:border-gold focus:outline-none"
-              />
-            </div>
-
-            {/* Date Range End */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">To Date</label>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:border-gold focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Filter Actions */}
-          <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-600">
-            <div className="text-sm text-gray-400">
-              Showing {visibleObservations.length} of {filteredObservations.length} observations
-            </div>
-            <button
-              onClick={clearFilters}
-              className="text-gold hover:text-gold text-sm"
-            >
-              Clear Filters
-            </button>
-          </div>
-        </div>
-
-        {/* Observations Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleObservations.map((obs) => (
-            <div key={obs.id} className="bg-slate-800 rounded-lg p-6 border border-slate-600 shadow-md hover:border-slate-500 transition-colors">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-gold font-semibold text-lg">{obs.player.name}</h3>
-                  <p className="text-gray-400 text-sm">
-                    {formatDate(obs.observation_date || obs.created_at)}
-                  </p>
-                </div>
-                <Link
-                  href={`/protected/players/${obs.player_id}`}
-                  className="text-gold hover:text-gold text-sm"
+    <div className="h-[calc(100vh-5rem)] p-4">
+      <h1 className="text-2xl font-bold mb-4 text-white">MP Player Development</h1>
+      <ThreePaneLayout
+        leftPane={
+          <>
+            <h2 className="text-lg font-semibold mb-2">Players</h2>
+            <input
+              placeholder="Search players..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 mb-3 rounded bg-zinc-800 text-white border border-zinc-700"
+            />
+            <div className="flex flex-col space-y-1">
+              {filteredPlayers.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelected(p.id)}
+                  className={`text-left px-3 py-2 rounded ${
+                    selected === p.id ? "bg-yellow-800 text-black" : "bg-zinc-800 text-white"
+                  }`}
                 >
-                  View Player
-                </Link>
-              </div>
-              
-              <div className="mb-4">
-                <p className="text-gray-200 text-sm line-clamp-4">
-                  {obs.content.length > 200 
-                    ? `${obs.content.substring(0, 200)}...` 
-                    : obs.content
-                  }
-                </p>
-              </div>
-              
-              <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>Coach: {getCoachName(obs.coaches)}</span>
-                {obs.pdp_id && (
-                  <span className="bg-green-500 text-white px-2 py-1 rounded">
-                    Linked to PDP
-                  </span>
-                )}
-              </div>
+                  {p.name}
+                  <div className="text-xs opacity-70">{p.observations} observations</div>
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        }
+        mainPane={
+          selectedPlayer ? (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold">{selectedPlayer.name}</h2>
+                  <p className="text-sm text-zinc-400">
+                    Observations ({selectedPlayerObservations.length})
+                  </p>
+                  {dateRange && (
+                    <p className="text-xs text-zinc-500 mt-1">{dateRange}</p>
+                  )}
+                </div>
+                <button className="text-sm px-3 py-2 rounded bg-yellow-500 text-black hover:bg-yellow-400">
+                  + Add Observation
+                </button>
+              </div>
 
-        {/* Load More Button */}
-        {visibleObservations.length < filteredObservations.length && (
-          <div className="text-center mt-8">
-            <button
-              onClick={() => setVisibleCount(prev => prev + 10)}
-              className="bg-gold text-black px-6 py-3 rounded-lg hover:bg-gold/80 transition-colors font-bold"
-            >
-              Load More ({filteredObservations.length - visibleObservations.length} remaining)
-            </button>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {filteredObservations.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-4">
-              {searchTerm || selectedPlayer || dateRange.start || dateRange.end 
-                ? 'No observations found matching your filters' 
-                : 'No observations found'
-              }
+              {selectedPlayerObservations.length > 0 ? (
+                <div className="space-y-4">
+                  {sorted.map((obs) => (
+                    <div
+                      key={obs.id}
+                      className="relative bg-zinc-800 rounded p-4 text-sm text-zinc-200"
+                    >
+                      <div className="absolute top-2 right-2">
+                        <DeleteObservationButton observationId={obs.id} />
+                      </div>
+                      <p className="text-xs text-zinc-400 mb-1">
+                        {format(new Date(obs.observation_date || obs.created_at), "MMM d, yyyy")}
+                      </p>
+                      <p>{obs.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-zinc-500 mt-10">No observations found for this player.</p>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-zinc-500">
+              Select a player to view observations.
             </div>
-            <p className="text-gray-500">
-              {searchTerm || selectedPlayer || dateRange.start || dateRange.end 
-                ? 'Try adjusting your search criteria' 
-                : 'Observations will appear here once added'
-              }
-            </p>
-          </div>
-        )}
-      </div>
+          )
+        }
+        rightPane={
+          <>
+            <h3 className="text-md font-semibold mb-2">Coming Soon</h3>
+            <div className="bg-zinc-800 p-4 rounded text-sm border border-yellow-700 text-yellow-300">
+              <ul className="list-disc list-inside space-y-1">
+                <li>AI-powered constraint suggestions</li>
+                <li>Tag trend visualizations</li>
+                <li>Drill recommendations</li>
+              </ul>
+            </div>
+          </>
+        }
+      />
     </div>
   );
 } 

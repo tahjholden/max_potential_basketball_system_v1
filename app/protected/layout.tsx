@@ -2,15 +2,11 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Menu, Users, ClipboardList, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import Image from "next/image";
-
-const navItems = [
-  { text: "Dashboard", path: "/protected/dashboard", icon: <Menu className="w-5 h-5" /> },
-  { text: "Players", path: "/protected/players", icon: <Users className="w-5 h-5" /> },
-  { text: "Observations", path: "/protected/observations", icon: <ClipboardList className="w-5 h-5" /> },
-];
+import { Toaster } from "sonner";
+import { Navigation } from "@/components/Navigation";
 
 export default async function ProtectedLayout({ children }: { children: ReactNode }) {
   // Auth check (server-side)
@@ -39,32 +35,14 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
     <div className="flex min-h-screen bg-black text-white">
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-56 bg-zinc-900 border-r border-zinc-800 p-4">
-        <nav className="flex-1">
-          <ul className="space-y-2">
-            {navItems.map((item) => (
-              <li key={item.text}>
-                <Link
-                  href={item.path}
-                  className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gold/10 transition-colors [&.active]:bg-gold/10 [&.active]:border-r-4 [&.active]:border-gold"
-                >
-                  <span className="text-gold">{item.icon}</span>
-                  <span className="font-medium">{item.text}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <Navigation />
       </aside>
       {/* Main content area */}
       <div className="flex-1 flex flex-col">
         {/* Top bar */}
         <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950">
-          <div className="relative flex items-center" style={{ height: 128 }}>
-            <Image src="/maxsM.png" alt="Logo" width={128} height={128} className="object-contain" />
-            <span
-              className="absolute left-32 top-1/2 -translate-y-1/2 text-3xl font-bold text-gold"
-              style={{ whiteSpace: 'nowrap' }}
-            >
+          <div className="flex items-center">
+            <span className="text-3xl font-bold text-gold">
               MP Player Development
             </span>
           </div>
@@ -82,6 +60,7 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
           {children}
         </main>
       </div>
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
