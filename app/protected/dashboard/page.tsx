@@ -186,7 +186,7 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
       <div className="flex h-[calc(100vh-80px)] gap-4 px-8 py-6">
         {/* Left Pane */}
         <div className="w-[22%] max-w-xs bg-zinc-900 p-4 rounded-lg flex flex-col">
-          <h2 className="text-lg font-semibold mb-2">Players ({players.length})</h2>
+          <h2 className="text-lg font-semibold mb-2">Players</h2>
           <input 
             placeholder="Search players..."
             className="mb-3 px-2 py-1 bg-zinc-800 rounded text-white border border-zinc-700" 

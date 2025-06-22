@@ -6,12 +6,15 @@ import ObservationFeedPane from "@/components/ObservationFeedPane";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
 import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
-import PageSubheader from "@/components/PageSubheader";
+import PageTitle from "@/components/PageTitle";
 import AddObservationModal from "@/app/protected/test-players/AddObservationModal";
 import { createClient } from "@/lib/supabase/client";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
 import { format } from "date-fns";
+import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
+import PDPArchivePane from "@/components/PDPArchivePane";
+import PaneTitle from "@/components/PaneTitle";
 
 interface Observation {
   id: string;
@@ -40,16 +43,18 @@ interface Pdp {
 export default function TestObservationsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [observations, setObservations] = useState<Observation[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
+  const { playerId } = useSelectedPlayer();
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [archivedPdps, setArchivedPdps] = useState<Pdp[]>([]);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const fetchPdp = useCallback(async () => {
-    if (!selected) {
+    if (!playerId) {
       setCurrentPdp(null);
       return;
     }
@@ -57,7 +62,7 @@ export default function TestObservationsPage() {
     const { data, error } = await supabase
       .from("pdp")
       .select("id, content, start_date")
-      .eq("player_id", selected)
+      .eq("player_id", playerId)
       .is("archived_at", null)
       .maybeSingle();
 
@@ -67,7 +72,7 @@ export default function TestObservationsPage() {
     } else {
       setCurrentPdp(data);
     }
-  }, [selected]);
+  }, [playerId]);
 
   const fetchObservationsData = useCallback(async () => {
     try {
@@ -109,9 +114,6 @@ export default function TestObservationsPage() {
 
       setPlayers(transformedPlayers);
       setObservations(observationsData || []);
-      if (transformedPlayers.length > 0 && !selected) {
-        setSelected(transformedPlayers[0].id);
-      }
       setError(null);
     } catch (err) {
       console.error('Error fetching observations data:', err);
@@ -119,7 +121,7 @@ export default function TestObservationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selected]);
+  }, []);
 
   useEffect(() => {
     fetchObservationsData();
@@ -143,14 +145,14 @@ export default function TestObservationsPage() {
   };
 
   const handleAddObservation = async (content: string) => {
-    if (!selected) {
+    if (!playerId) {
       console.error("No player selected.");
       return;
     }
 
     const supabase = createClient();
     const { error } = await supabase.from("observations").insert({
-      player_id: selected,
+      player_id: playerId,
       content: content,
       observation_date: new Date().toISOString(),
     });
@@ -169,15 +171,17 @@ export default function TestObservationsPage() {
     fetchPdp();
   }, [fetchPdp]);
 
-  const selectedPlayer = players.find((p) => p.id === selected);
-  const selectedPlayerObservations = observations.filter(obs => obs.player_id === selected);
+  const selectedPlayer = players.find((p) => p.id === playerId);
+  const selectedPlayerObservations = observations.filter(obs => obs.player_id === playerId);
 
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950">
-        <h1 className="text-xl font-bold mb-4 text-white">Test Observations</h1>
-        <div className="flex items-center justify-center h-64 text-zinc-500">
-          Loading observations...
+        <div className="mt-2 px-6">
+          <PageTitle>Observations</PageTitle>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-zinc-400">Loading players...</div>
+          </div>
         </div>
       </div>
     );
@@ -186,9 +190,11 @@ export default function TestObservationsPage() {
   if (error) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950">
-        <h1 className="text-xl font-bold mb-4 text-white">Test Observations</h1>
-        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
-          Error loading observations: {error}
+        <div className="mt-2 px-6">
+          <PageTitle>Observations</PageTitle>
+          <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+            Error loading players: {error}
+          </div>
         </div>
       </div>
     );
@@ -197,38 +203,34 @@ export default function TestObservationsPage() {
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
-        <PageSubheader
-          title="Observations"
-        />
+        <PageTitle>Observations</PageTitle>
 
         <ThreePaneLayout
           leftPane={
             <PlayerListPane
               players={players}
-              selectedId={selected || ""}
-              onSelect={(id: string) => setSelected(id)}
+              onSelect={() => {
+                // Player selection is now handled by the global store
+              }}
             />
           }
           centerPane={
-            <div className="flex flex-col gap-4">
-              {selectedPlayer && (
+            selectedPlayer ? (
+              <div className="flex flex-col gap-4 w-full">
+                {/* Player Info Header */}
                 <PlayerMetadataCard 
-                  player={{ name: selectedPlayer.name, joined: selectedPlayer.joined || new Date().toISOString() }} 
+                  player={{ name: selectedPlayer.name, joined: selectedPlayer.joined || "" }} 
                   observations={selectedPlayerObservations}
                   playerId={selectedPlayer.id}
                   showDeleteButton={false}
                 />
-              )}
-              <ObservationFeedPane
-                onAddObservation={() => setAddModalOpen(true)}
-                observations={selectedPlayerObservations}
-                onDeleteMany={handleDeleteMany}
-                successMessage={successMessage || undefined}
-              />
-              {selectedPlayer && (
+
+                <hr className="my-4 border-zinc-700" />
+
+                {/* Read-only PDP Display */}
                 <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-zinc-100 text-sm font-semibold">Development Plan</h2>
+                    <PaneTitle>Development Plan</PaneTitle>
                   </div>
                   <div className="mt-4">
                     {currentPdp ? (
@@ -245,13 +247,25 @@ export default function TestObservationsPage() {
                     )}
                   </div>
                 </div>
-              )}
-            </div>
+                
+                <ObservationFeedPane
+                  onAddObservation={() => setAddModalOpen(true)}
+                  observations={selectedPlayerObservations}
+                  onDeleteMany={handleDeleteMany}
+                  successMessage={successMessage || ""}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-zinc-500">
+                Select a player to view their observations.
+              </div>
+            )
           }
           rightPane={
-            <ObservationInsightsPane
-              totalObservations={observations.length}
-              selectedPlayerObservations={selectedPlayerObservations.length}
+            <PDPArchivePane
+              pdps={archivedPdps}
+              sortOrder={sortOrder}
+              onSortOrderChange={(order: string) => setSortOrder(order as "asc" | "desc")}
             />
           }
         />
@@ -264,6 +278,12 @@ export default function TestObservationsPage() {
           selectedPlayer={selectedPlayer}
           onSubmit={handleAddObservation}
         />
+      )}
+
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg">
+          {successMessage}
+        </div>
       )}
     </div>
   );

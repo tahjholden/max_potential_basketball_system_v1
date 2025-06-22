@@ -6,7 +6,7 @@ import PlayerListPane from "@/components/PlayerListPane";
 import PlayerObservationPane from "@/components/PlayerObservationPane";
 import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import AddObservationModal from "./AddObservationModal";
-import PageSubheader from "@/components/PageSubheader";
+import PageTitle from "@/components/PageTitle";
 import PDPArchivePane from "@/components/PDPArchivePane";
 import { format } from "date-fns";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
@@ -15,6 +15,8 @@ import ManagePDPModal from "@/components/ManagePDPModal";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
+import PaneTitle from "@/components/PaneTitle";
+import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 
 interface Player {
   id: string;
@@ -47,7 +49,7 @@ interface ArchivedPdp {
 
 export default function TestPlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const { playerId } = useSelectedPlayer();
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
   const [archivedPdps, setArchivedPdps] = useState<ArchivedPdp[]>([]);
@@ -58,7 +60,7 @@ export default function TestPlayersPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchPdp = async () => {
-    if (!selectedPlayerId) {
+    if (!playerId) {
       setCurrentPdp(null);
       return;
     }
@@ -66,7 +68,7 @@ export default function TestPlayersPage() {
     const { data, error } = await supabase
       .from("pdp")
       .select("id, content, start_date")
-      .eq("player_id", selectedPlayerId)
+      .eq("player_id", playerId)
       .is("archived_at", null)
       .maybeSingle();
 
@@ -80,7 +82,7 @@ export default function TestPlayersPage() {
 
   // Fetch observations when selected player changes
   const fetchObservations = async () => {
-    if (!selectedPlayerId) {
+    if (!playerId) {
       setObservations([]);
       return;
     }
@@ -90,7 +92,7 @@ export default function TestPlayersPage() {
       const { data, error } = await supabase
         .from("observations")
         .select("id, content, observation_date, created_at")
-        .eq("player_id", selectedPlayerId)
+        .eq("player_id", playerId)
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -103,7 +105,7 @@ export default function TestPlayersPage() {
   };
 
   const fetchArchivedPdps = async () => {
-    if (!selectedPlayerId) {
+    if (!playerId) {
       setArchivedPdps([]);
       return;
     }
@@ -113,7 +115,7 @@ export default function TestPlayersPage() {
       const { data, error } = await supabase
         .from("pdp")
         .select("id, content, start_date, archived_at")
-        .eq("player_id", selectedPlayerId)
+        .eq("player_id", playerId)
         .not("archived_at", "is", null)
         .order("archived_at", { ascending: sortOrder === "asc" });
 
@@ -187,9 +189,6 @@ export default function TestPlayersPage() {
         });
 
         setPlayers(transformedPlayers);
-        if (transformedPlayers.length > 0) {
-          setSelectedPlayerId(transformedPlayers[0].id);
-        }
         setError(null);
       } catch (err) {
         console.error('Error fetching players:', err);
@@ -205,17 +204,17 @@ export default function TestPlayersPage() {
   // Fetch active PDP for the selected player
   useEffect(() => {
     fetchPdp();
-  }, [selectedPlayerId]);
+  }, [playerId]);
 
   // Fetch observations when selected player changes
   useEffect(() => {
     fetchObservations();
-  }, [selectedPlayerId]);
+  }, [playerId]);
 
   // Fetch archived PDPs when player or sort order changes
   useEffect(() => {
     fetchArchivedPdps();
-  }, [selectedPlayerId, sortOrder]);
+  }, [playerId, sortOrder]);
 
   const handleDeleteMany = async (ids: string[]) => {
     const supabase = createClient();
@@ -253,14 +252,16 @@ export default function TestPlayersPage() {
     }
   };
 
-  const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
+  const selectedPlayer = players.find((p) => p.id === playerId);
 
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950">
-        <h1 className="text-xl font-bold mb-4 text-white">Test Players</h1>
-        <div className="flex items-center justify-center h-64 text-zinc-500">
-          Loading players...
+        <div className="mt-2 px-6">
+          <PageTitle>Player Profile</PageTitle>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-zinc-400">Loading players...</div>
+          </div>
         </div>
       </div>
     );
@@ -269,9 +270,11 @@ export default function TestPlayersPage() {
   if (error) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950">
-        <h1 className="text-xl font-bold mb-4 text-white">Test Players</h1>
-        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
-          Error loading players: {error}
+        <div className="mt-2 px-6">
+          <PageTitle>Player Profile</PageTitle>
+          <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+            Error loading players: {error}
+          </div>
         </div>
       </div>
     );
@@ -280,16 +283,15 @@ export default function TestPlayersPage() {
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
-        <PageSubheader
-          title="Player Profile"
-        />
+        <PageTitle>Player Profile</PageTitle>
 
         <ThreePaneLayout
           leftPane={
             <PlayerListPane
               players={players}
-              selectedId={selectedPlayerId}
-              onSelect={setSelectedPlayerId}
+              onSelect={() => {
+                // Player selection is now handled by the global store
+              }}
             />
           }
           centerPane={
@@ -308,7 +310,7 @@ export default function TestPlayersPage() {
                 {/* Refactored PDP Display Box */}
                 <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-zinc-100 text-sm font-semibold">Development Plan</h2>
+                    <PaneTitle>Development Plan</PaneTitle>
                     {selectedPlayer && currentPdp && (
                       <div className="flex gap-2">
                         <EditPDPButton player={selectedPlayer} pdp={currentPdp} onUpdate={fetchPdp} />
@@ -359,6 +361,12 @@ export default function TestPlayersPage() {
           selectedPlayer={selectedPlayer}
           onSubmit={handleAddObservation}
         />
+      )}
+
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg">
+          {successMessage}
+        </div>
       )}
     </div>
   );

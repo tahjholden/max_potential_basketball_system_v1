@@ -22,7 +22,7 @@ export default function PlayersPage() {
       <ThreePaneLayout
         leftPane={
           <>
-            <h2 className="text-lg font-semibold mb-2">Players ({mockPlayers.length})</h2>
+            <h2 className="text-lg font-semibold mb-2">Players</h2>
             <input
               placeholder="Search players..."
               className="w-full px-3 py-2 mb-3 rounded bg-zinc-800 text-white border border-zinc-700"

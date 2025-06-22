@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PaneTitle from "@/components/PaneTitle";
 
 interface ObservationInsightsPaneProps {
   totalObservations?: number;
@@ -14,7 +15,7 @@ export default function ObservationInsightsPane({
 }: ObservationInsightsPaneProps) {
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
-      <h2 className="text-zinc-100 text-sm font-semibold mb-3">Insights & Analytics</h2>
+      <PaneTitle>Insights & Analytics</PaneTitle>
       <div className="grid gap-4 mt-4">
         <Card className="bg-zinc-800 border-zinc-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

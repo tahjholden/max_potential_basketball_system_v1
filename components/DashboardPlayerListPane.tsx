@@ -32,7 +32,7 @@ export default function DashboardPlayerListPane({
 
   return (
     <div className="w-[22%] max-w-xs bg-zinc-900 p-4 rounded-lg flex flex-col">
-      <h2 className="text-lg font-semibold mb-2">Players ({players.length})</h2>
+      <h2 className="text-lg font-semibold mb-2">Players</h2>
       <input 
         placeholder="Search players..."
         value={searchTerm}

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import PaneTitle from "@/components/PaneTitle";
 
 interface Player {
   id: string;
@@ -26,9 +27,7 @@ export default function PlayerMetadataPane({
 
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
-      <h2 className="text-zinc-100 text-sm font-semibold mb-3">
-        Player Profile
-      </h2>
+      <PaneTitle>Player Profile</PaneTitle>
       
       <div className="space-y-2">
         <div>

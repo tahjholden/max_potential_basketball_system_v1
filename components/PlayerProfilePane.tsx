@@ -3,6 +3,7 @@
 import React from "react";
 import ManagePDPModal from "@/components/ManagePDPModal";
 import EditPDPButton from "@/components/EditPDPButton";
+import PaneTitle from "@/components/PaneTitle";
 
 export default function PlayerProfilePane({
   player,
@@ -25,9 +26,7 @@ export default function PlayerProfilePane({
 
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
-      <h2 className="text-zinc-100 text-sm font-semibold mb-3">
-        Current Plan
-      </h2>
+      <PaneTitle>Current Plan</PaneTitle>
       <p className="text-xs text-zinc-500 border-b border-zinc-700 pb-2 mb-4">
         Joined: {player?.joined || "Unknown"}
       </p>

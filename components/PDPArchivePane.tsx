@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import PaneTitle from "@/components/PaneTitle";
 
 interface Observation {
   id: string;
@@ -9,45 +10,53 @@ interface Observation {
   created_at: string;
 }
 
+interface ArchivedPdp {
+  id: string;
+  dateRange: string;
+  summary: string;
+}
+
+interface PDPArchivePaneProps {
+  pdps: ArchivedPdp[];
+  sortOrder: string;
+  onSortOrderChange: (order: string) => void;
+}
+
 export default function PDPArchivePane({
   pdps,
   sortOrder,
   onSortOrderChange,
-}: {
-  pdps: any[];
-  sortOrder: string;
-  onSortOrderChange: (order: string) => void;
-}) {
+}: PDPArchivePaneProps) {
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
-      <h2 className="text-zinc-100 text-sm font-semibold mb-3">Archived PDPs</h2>
-
-      <div className="mb-3">
-        <label className="text-xs text-zinc-500">Sort Order:</label>
+      <PaneTitle>Archived PDPs</PaneTitle>
+      
+      <div className="mb-4">
         <select
-          className="w-full mt-1 px-2 py-1 bg-zinc-800 text-white border border-zinc-600 rounded"
           value={sortOrder}
           onChange={(e) => onSortOrderChange(e.target.value)}
+          className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-zinc-600"
         >
           <option value="desc">Newest First</option>
           <option value="asc">Oldest First</option>
         </select>
       </div>
-
-      <ul className="space-y-3">
-        {pdps.length > 0 ? (
-          pdps.map((pdp) => (
-            <li key={pdp.id} className="bg-zinc-800 p-3 rounded text-sm text-zinc-200">
-              <p className="text-xs text-zinc-500 mb-1">{pdp.dateRange}</p>
-              <p>{pdp.summary}</p>
-            </li>
-          ))
+      
+      <div className="space-y-3">
+        {pdps.length === 0 ? (
+          <div className="text-zinc-500 text-sm text-center py-4">
+            No archived plans found.
+          </div>
         ) : (
-          <li className="bg-zinc-800 p-3 rounded text-sm text-zinc-500 text-center">
-            No archived PDPs found
-          </li>
+          pdps.map((pdp) => (
+            <div key={pdp.id} className="bg-zinc-800 p-3 rounded text-sm">
+              <p className="text-yellow-400 font-semibold mb-1">{pdp.dateRange}</p>
+              <p className="text-zinc-400 text-xs mb-2">{pdp.dateRange}</p>
+              <p className="text-zinc-300">{pdp.summary}</p>
+            </div>
+          ))
         )}
-      </ul>
+      </div>
     </div>
   );
 } 

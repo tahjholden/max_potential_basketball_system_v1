@@ -41,7 +41,7 @@ export default function PlayerList({ players, selected, onSelect }: PlayerListPr
   return (
     <div className="bg-[#232323] rounded-lg p-4 border border-[#323232] h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold text-[#d8cc97]">Players ({players.length})</h2>
+        <h2 className="text-lg font-bold text-[#d8cc97]">Players</h2>
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-1 bg-[#d8cc97] text-[#161616] px-2 py-1 rounded text-sm font-semibold hover:bg-[#d8cc97]/80 transition-colors"

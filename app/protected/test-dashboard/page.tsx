@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
-import PageSubheader from "@/components/PageSubheader";
+import PageTitle from "@/components/PageTitle";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerListPane from "@/components/PlayerListPane";
 import PlayerProfilePane from "@/components/PlayerProfilePane";
@@ -11,6 +11,8 @@ import PlayerMetadataCard from "@/components/PlayerMetadataCard";
 import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
+import ObservationInsightsPane from "@/components/ObservationInsightsPane";
+import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 
 interface Player {
   id: string;
@@ -36,14 +38,14 @@ interface Pdp {
 
 export default function TestDashboardPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
+  const { playerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPdp = async () => {
-    if (!selected) {
+    if (!playerId) {
       setCurrentPdp(null);
       return;
     }
@@ -51,7 +53,7 @@ export default function TestDashboardPage() {
     const { data, error } = await supabase
       .from("pdp")
       .select("id, content, start_date")
-      .eq("player_id", selected)
+      .eq("player_id", playerId)
       .is("archived_at", null)
       .maybeSingle();
 
@@ -107,7 +109,6 @@ export default function TestDashboardPage() {
         });
 
         setPlayers(transformedPlayers);
-        setSelected(transformedPlayers[0]?.id || null);
         setError(null);
       } catch (err) {
         console.error('Error fetching players:', err);
@@ -123,7 +124,7 @@ export default function TestDashboardPage() {
   // Fetch observations when selected player changes
   useEffect(() => {
     async function fetchObservations() {
-      if (!selected) {
+      if (!playerId) {
         setObservations([]);
         return;
       }
@@ -133,7 +134,7 @@ export default function TestDashboardPage() {
         const { data, error } = await supabase
           .from("observations")
           .select("id, content, observation_date, created_at")
-          .eq("player_id", selected)
+          .eq("player_id", playerId)
           .order("created_at", { ascending: false })
           .limit(5);
 
@@ -146,21 +147,23 @@ export default function TestDashboardPage() {
     }
 
     fetchObservations();
-  }, [selected]);
+  }, [playerId]);
 
   // Fetch active PDP for the selected player
   useEffect(() => {
     fetchPdp();
-  }, [selected]);
+  }, [playerId]);
 
-  const selectedPlayer = players.find((p) => p.id === selected);
+  const selectedPlayer = players.find((p) => p.id === playerId);
 
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950">
-        <h1 className="text-xl font-bold mb-4 text-white">Test Player Dashboard</h1>
-        <div className="flex items-center justify-center h-64 text-zinc-500">
-          Loading players...
+        <div className="mt-2 px-6">
+          <PageTitle>Dashboard</PageTitle>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-zinc-400">Loading players...</div>
+          </div>
         </div>
       </div>
     );
@@ -169,9 +172,11 @@ export default function TestDashboardPage() {
   if (error) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950">
-        <h1 className="text-xl font-bold mb-4 text-white">Test Player Dashboard</h1>
-        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
-          Error loading players: {error}
+        <div className="mt-2 px-6">
+          <PageTitle>Dashboard</PageTitle>
+          <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+            Error loading players: {error}
+          </div>
         </div>
       </div>
     );
@@ -180,14 +185,15 @@ export default function TestDashboardPage() {
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
-        <PageSubheader title="Team Dashboard" />
+        <PageTitle>Dashboard</PageTitle>
 
         <ThreePaneLayout
           leftPane={
             <PlayerListPane
               players={players}
-              selectedId={selected || ""}
-              onSelect={(id: string) => setSelected(id)}
+              onSelect={() => {
+                // Player selection is now handled by the global store
+              }}
             />
           }
           centerPane={
@@ -211,8 +217,9 @@ export default function TestDashboardPage() {
             )
           }
           rightPane={
-            <ObservationFeedPane
-              observations={observations}
+            <ObservationInsightsPane
+              totalObservations={observations.length}
+              selectedPlayerObservations={observations.length}
             />
           }
         />
