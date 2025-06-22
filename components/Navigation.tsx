@@ -48,6 +48,9 @@ export function Navigation() {
   return (
     <nav className="flex-1">
       <ul className="space-y-2">
+        <li className="mb-4">
+          <h2 className="text-gold text-lg font-bold px-3 whitespace-nowrap">MP Player Development</h2>
+        </li>
         {renderNavItems(navItems)}
         
         {/* Test Pages Section */}

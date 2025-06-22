@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PlayerListPane from "@/components/PlayerListPane";
-import PlayerProfilePane from "@/components/PlayerProfilePane";
 import PlayerObservationPane from "@/components/PlayerObservationPane";
+import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import AddObservationModal from "./AddObservationModal";
 import PageSubheader from "@/components/PageSubheader";
 import PDPArchivePane from "@/components/PDPArchivePane";
 import { format } from "date-fns";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
+import EditPDPButton from "@/components/EditPDPButton";
+import ManagePDPModal from "@/components/ManagePDPModal";
+import DeletePlayerButton from "@/components/DeletePlayerButton";
+import ObservationFeedPane from "@/components/ObservationFeedPane";
+import PlayerMetadataCard from "@/components/PlayerMetadataCard";
 
 interface Player {
   id: string;
@@ -47,7 +52,7 @@ export default function TestPlayersPage() {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [archivedPdps, setArchivedPdps] = useState<ArchivedPdp[]>([]);
   const [isAddObservationModalOpen, setAddObservationModalOpen] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,7 +182,7 @@ export default function TestPlayersPage() {
             first_name: player.first_name,
             last_name: player.last_name,
             observations: observationCounts.get(player.id) || 0,
-            joined: new Date(player.created_at).toLocaleDateString(),
+            joined: player.created_at,
           };
         });
 
@@ -212,6 +217,19 @@ export default function TestPlayersPage() {
     fetchArchivedPdps();
   }, [selectedPlayerId, sortOrder]);
 
+  const handleDeleteMany = async (ids: string[]) => {
+    const supabase = createClient();
+    const { error } = await supabase.from("observations").delete().in("id", ids);
+
+    if (error) {
+      console.error("Failed to delete observations");
+    } else {
+      setSuccessMessage(`${ids.length} observation(s) deleted.`);
+      setTimeout(() => setSuccessMessage(null), 3100);
+      fetchObservations();
+    }
+  };
+
   const handleAddObservation = async (content: string) => {
     if (!selectedPlayer) {
       console.error("No player selected.");
@@ -228,8 +246,8 @@ export default function TestPlayersPage() {
     if (error) {
       console.error("Failed to add observation.");
     } else {
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3100);
+      setSuccessMessage("Observation added successfully.");
+      setTimeout(() => setSuccessMessage(null), 3100);
       await fetchObservations();
       setAddObservationModalOpen(false);
     }
@@ -261,10 +279,9 @@ export default function TestPlayersPage() {
 
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
-      <div className="mt-6 px-6">
+      <div className="mt-2 px-6">
         <PageSubheader
           title="Player Profile"
-          subtitle={selectedPlayer?.name || "Select a player"}
         />
 
         <ThreePaneLayout
@@ -276,18 +293,54 @@ export default function TestPlayersPage() {
             />
           }
           centerPane={
-            <>
-              <PlayerProfilePane
-                player={selectedPlayer}
-                pdp={currentPdp}
-              />
-              <PlayerObservationPane
-                playerName={selectedPlayer?.name || ""}
-                observations={observations}
-                onAdd={() => setAddObservationModalOpen(true)}
-                showSuccess={showSuccess}
-              />
-            </>
+            selectedPlayer ? (
+              <div className="flex flex-col gap-4 w-full">
+                {/* Player Info Header */}
+                <PlayerMetadataCard 
+                  player={{ name: selectedPlayer.name, joined: selectedPlayer.joined }} 
+                  observations={observations}
+                  playerId={selectedPlayer.id}
+                  showDeleteButton={true}
+                />
+
+                <hr className="my-4 border-zinc-700" />
+
+                {/* Refactored PDP Display Box */}
+                <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-zinc-100 text-sm font-semibold">Development Plan</h2>
+                    {selectedPlayer && currentPdp && (
+                      <div className="flex gap-2">
+                        <EditPDPButton player={selectedPlayer} pdp={currentPdp} onUpdate={fetchPdp} />
+                        <ManagePDPModal playerId={selectedPlayer.id} playerName={selectedPlayer.name} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    {currentPdp ? (
+                      <div className="bg-zinc-800 p-3 rounded text-sm text-zinc-200">
+                        <p className="text-xs text-zinc-500 mb-1">
+                          Started {format(new Date(currentPdp.start_date), 'PPP')}
+                        </p>
+                        <p className="whitespace-pre-line">{currentPdp.content}</p>
+                      </div>
+                    ) : (
+                      <div className="bg-zinc-800 p-3 rounded text-sm text-zinc-500 text-center">
+                        No active plan.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <ObservationFeedPane
+                  observations={observations}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-zinc-500">
+                Select a player to view their profile.
+              </div>
+            )
           }
           rightPane={
             <PDPArchivePane

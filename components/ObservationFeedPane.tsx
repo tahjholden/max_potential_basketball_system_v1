@@ -6,13 +6,11 @@ import DeleteButton from "./DeleteButton";
 import SuccessMessage from "./SuccessMessage";
 
 export default function ObservationFeedPane({
-  playerName,
   observations,
   onDeleteMany,
   onAddObservation,
   successMessage,
 }: {
-  playerName: string;
   observations: any[];
   onDeleteMany?: (ids: string[]) => void;
   onAddObservation?: () => void;
@@ -40,7 +38,7 @@ export default function ObservationFeedPane({
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-zinc-100 text-sm font-semibold">Observations: {playerName}</h2>
+        <h2 className="text-zinc-100 text-sm font-semibold">Observations</h2>
         {onAddObservation && (
           <button
             onClick={onAddObservation}

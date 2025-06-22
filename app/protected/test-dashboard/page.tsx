@@ -7,7 +7,10 @@ import PageSubheader from "@/components/PageSubheader";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerListPane from "@/components/PlayerListPane";
 import PlayerProfilePane from "@/components/PlayerProfilePane";
+import PlayerMetadataCard from "@/components/PlayerMetadataCard";
+import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
+import DeletePlayerButton from "@/components/DeletePlayerButton";
 
 interface Player {
   id: string;
@@ -176,7 +179,7 @@ export default function TestDashboardPage() {
 
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
-      <div className="mt-6 px-6">
+      <div className="mt-2 px-6">
         <PageSubheader title="Team Dashboard" />
 
         <ThreePaneLayout
@@ -184,20 +187,31 @@ export default function TestDashboardPage() {
             <PlayerListPane
               players={players}
               selectedId={selected || ""}
-              onSelect={setSelected}
-              showDeleteButton={false}
+              onSelect={(id: string) => setSelected(id)}
             />
           }
           centerPane={
-            <PlayerProfilePane
-              player={selectedPlayer}
-              pdp={currentPdp}
-              showControls={false}
-            />
+            selectedPlayer ? (
+              <div className="flex flex-col gap-4">
+                <PlayerMetadataCard 
+                  player={{ name: selectedPlayer.name, joined: selectedPlayer.joined }} 
+                  observations={observations}
+                  playerId={selectedPlayer.id}
+                  showDeleteButton={false}
+                />
+                <DevelopmentPlanCard 
+                  startDate={currentPdp?.start_date || null}
+                  content={currentPdp?.content || 'No active plan.'}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-zinc-500">
+                Select a player to view their profile.
+              </div>
+            )
           }
           rightPane={
             <ObservationFeedPane
-              playerName={selectedPlayer?.name || "Select Player"}
               observations={observations}
             />
           }

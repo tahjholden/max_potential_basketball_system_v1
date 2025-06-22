@@ -14,11 +14,13 @@ export default function CreatePDPModal({
   open,
   onClose,
   player,
+  coachId,
   onCreated,
 }: {
   open: boolean;
   onClose: () => void;
   player: { id: string; name: string } | null;
+  coachId: string;
   onCreated: () => void;
 }) {
   const [content, setContent] = useState("");
@@ -41,10 +43,10 @@ export default function CreatePDPModal({
     try {
       const supabase = createClient();
       
-      // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError("User not authenticated.");
+        setLoading(false);
         return;
       }
 

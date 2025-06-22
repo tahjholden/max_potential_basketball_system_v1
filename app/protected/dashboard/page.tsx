@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import ManagePDPModal from "@/components/ManagePDPModal";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
+import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { GoldButton } from "@/components/ui/gold-button";
@@ -214,53 +215,47 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
         <div className="w-[50%] flex-1 bg-zinc-900 p-4 rounded-lg overflow-y-auto">
           {selectedPlayer ? (
             <>
-              <h2 className="text-xl font-semibold mb-2">{selectedPlayer.name}</h2>
-              <p className="text-sm text-zinc-400 mb-2">Joined: {selectedPlayer.joined}</p>
-
-              <div className="bg-zinc-800 p-4 rounded-lg mb-4 flex flex-col min-h-[180px]">
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold mb-1">Current Plan</h3>
-                  {currentPdp ? (
-                    <>
-                      <p className="mb-1 min-h-[24px]">{currentPdp.content || "No goal set."}</p>
-                      <p className="text-xs text-zinc-500">
-                        Started: {format(new Date(currentPdp.start_date), "MMM d, yyyy")}
-                      </p>
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <p className="text-zinc-500 text-sm mb-3">No active development plan.</p>
-                        <GoldButton onClick={() => setCreateModalOpen(true)}>
-                          Create Plan
-                        </GoldButton>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {currentPdp && (
-                  <div className="mt-auto flex justify-end gap-2">
-                    <Button
-                      onClick={() => setEditModalOpen(true)}
-                      className="bg-zinc-700 text-white hover:bg-zinc-600"
-                    >
-                      Edit Plan
-                    </Button>
-                    <ManagePDPModal playerId={selectedPlayer.id} playerName={selectedPlayer.name} />
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-zinc-100">{selectedPlayer.name}</h2>
+                    <p className="text-sm text-zinc-400">Joined: {selectedPlayer.joined}</p>
                   </div>
-                )}
+                  <div className="flex gap-2">
+                    {currentPdp ? (
+                      <>
+                        <Button
+                          onClick={() => setEditModalOpen(true)}
+                          className="bg-zinc-700 text-white hover:bg-zinc-600"
+                        >
+                          Edit Plan
+                        </Button>
+                        <ManagePDPModal playerId={selectedPlayer.id} playerName={selectedPlayer.name} />
+                      </>
+                    ) : (
+                      <GoldButton onClick={() => setCreateModalOpen(true)}>
+                        Create Plan
+                      </GoldButton>
+                    )}
+                  </div>
+                </div>
+                <DevelopmentPlanCard 
+                  startDate={currentPdp?.start_date || null}
+                  content={currentPdp?.content || 'No active plan.'}
+                />
               </div>
+
               <CreatePDPModal
                 open={isCreateModalOpen}
                 onClose={() => setCreateModalOpen(false)}
-                player={selectedPlayer}
+                player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
                 coachId={coachId}
                 onCreated={fetchPdp}
               />
               <EditPDPModal
                 open={isEditModalOpen}
                 onClose={() => setEditModalOpen(false)}
-                player={selectedPlayer}
+                player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
                 currentPdp={currentPdp}
                 onSuccess={fetchPdp}
               />
