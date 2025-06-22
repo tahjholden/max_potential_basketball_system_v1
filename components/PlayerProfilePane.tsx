@@ -26,7 +26,7 @@ export default function PlayerProfilePane({
 
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
-      <PaneTitle>Current Plan</PaneTitle>
+      <PaneTitle>Player Profile</PaneTitle>
       <p className="text-xs text-zinc-500 border-b border-zinc-700 pb-2 mb-4">
         Joined: {player?.joined || "Unknown"}
       </p>

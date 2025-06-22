@@ -1,6 +1,7 @@
 import React from "react";
 import { format } from "date-fns";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
+import PaneTitle from "@/components/PaneTitle";
 
 interface Player {
   name: string;
@@ -23,12 +24,14 @@ const PlayerMetadataCard: React.FC<PlayerMetadataCardProps> = ({
   return (
     <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-300 space-y-1">
       <div className="space-y-1">
-        <h3 className="text-zinc-100 text-sm font-semibold mb-2">Player Profile</h3>
-        <div>
-          <span className="text-zinc-500">Name:</span> {player.name}
-        </div>
-        <div>
-          <span className="text-zinc-500">Joined:</span> {format(new Date(player.joined), "MMMM do, yyyy")}
+        <PaneTitle>Player Profile</PaneTitle>
+        <div className="pt-2">
+          <div>
+            <span className="text-zinc-500">Name:</span> <span className="text-gold font-bold">{player.name}</span>
+          </div>
+          <div>
+            <span className="text-zinc-500">Joined:</span> {format(new Date(player.joined), "MMMM do, yyyy")}
+          </div>
         </div>
       </div>
       {showDeleteButton && playerId && (

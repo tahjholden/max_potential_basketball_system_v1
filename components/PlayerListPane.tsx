@@ -56,16 +56,13 @@ export default function PlayerListPane({ players, onSelect }: PlayerListPaneProp
             <button
               key={player.id}
               onClick={() => handlePlayerSelect(player.id)}
-              className={`w-full text-left p-3 rounded text-sm transition-colors ${
+              className={`w-full text-left p-3 rounded transition-colors ${
                 playerId === player.id
-                  ? "bg-zinc-700 text-white"
-                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                  ? "bg-gold text-black font-bold text-base"
+                  : "bg-zinc-800 text-white text-sm hover:bg-zinc-700"
               }`}
             >
-              <div className="font-medium">{player.name}</div>
-              <div className="text-xs text-zinc-500">
-                {player.observations} observation{player.observations !== 1 ? 's' : ''}
-              </div>
+              {player.name}
             </button>
           ))
         )}

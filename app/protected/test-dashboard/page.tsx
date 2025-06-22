@@ -217,9 +217,8 @@ export default function TestDashboardPage() {
             )
           }
           rightPane={
-            <ObservationInsightsPane
-              totalObservations={observations.length}
-              selectedPlayerObservations={observations.length}
+            <ObservationFeedPane
+              observations={observations}
             />
           }
         />
