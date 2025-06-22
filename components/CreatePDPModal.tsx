@@ -8,18 +8,17 @@ import {
 } from "@/components/ui/dialog";
 import { GoldButton } from "./ui/gold-button";
 import { Button } from "./ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CreatePDPModal({
   open,
   onClose,
   player,
-  coachId,
   onCreated,
 }: {
   open: boolean;
   onClose: () => void;
   player: { id: string; name: string } | null;
-  coachId: string;
   onCreated: () => void;
 }) {
   const [content, setContent] = useState("");
@@ -40,14 +39,20 @@ export default function CreatePDPModal({
     setError(null);
 
     try {
-      const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
+      
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError("User not authenticated.");
+        return;
+      }
 
       const { error: insertError } = await supabase.from("pdp").insert({
         player_id: player.id,
         content,
         start_date: new Date().toISOString().slice(0, 10),
-        coach_id: coachId,
+        coach_id: user.id,
         archived_at: null,
       });
 

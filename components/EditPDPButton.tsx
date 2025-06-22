@@ -1,31 +1,51 @@
 "use client";
 import { useState } from "react";
-import EditPDPModal from "./EditPDPModal";
-import { useRouter } from "next/navigation";
+import EditPDPModal from "@/components/EditPDPModal";
 
-export default function EditPDPButton({ pdp, player }: { pdp: any, player: any }) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const router = useRouter();
+interface Player {
+  id: string;
+  name: string;
+}
 
-  const handlePDPSuccess = () => {
-    setModalOpen(false);
-    router.refresh();
+interface Pdp {
+  id: string;
+  content: string | null;
+  start_date: string;
+}
+
+export default function EditPDPButton({ 
+  player, 
+  pdp, 
+  onUpdate 
+}: {
+  player: Player;
+  pdp: Pdp | null;
+  onUpdate?: () => void;
+}) {
+  const [isModalOpen, setModalOpen] = useState(false);
+
+  // Don't render the button if there's no PDP to edit
+  if (!pdp) {
+    return null;
   }
 
   return (
     <>
-      <button 
+      <button
         onClick={() => setModalOpen(true)}
-        className="text-sm px-3 py-1.5 border border-gray-600 text-gray-200 hover:bg-gray-700 rounded transition w-full"
+        className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
       >
-        Edit PDP
+        Edit Plan
       </button>
       <EditPDPModal
-        open={modalOpen}
+        open={isModalOpen}
         onClose={() => setModalOpen(false)}
-        currentPdp={pdp}
-        onSuccess={handlePDPSuccess}
         player={player}
+        currentPdp={pdp}
+        onSuccess={() => {
+          setModalOpen(false);
+          if (onUpdate) onUpdate();
+        }}
       />
     </>
   );

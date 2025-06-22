@@ -19,8 +19,8 @@ export default function PDPArchivePane({
   onSortOrderChange: (order: string) => void;
 }) {
   return (
-    <section className="w-full lg:max-w-[340px] flex-shrink-0 bg-zinc-900 p-5 rounded-xl shadow-inner overflow-y-auto">
-      <p className="text-sm text-zinc-400 font-semibold mb-3">Archived PDPs</p>
+    <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
+      <h2 className="text-zinc-100 text-sm font-semibold mb-3">Archived PDPs</h2>
 
       <div className="mb-3">
         <label className="text-xs text-zinc-500">Sort Order:</label>
@@ -48,6 +48,6 @@ export default function PDPArchivePane({
           </li>
         )}
       </ul>
-    </section>
+    </div>
   );
 } 

@@ -19,6 +19,7 @@ export default function DeletePlayerButton({
     } else {
       toast.success(`${playerName} deleted`);
       // Optional: trigger reload or refetch
+      window.location.reload();
     }
   }
 
@@ -27,7 +28,9 @@ export default function DeletePlayerButton({
       onConfirm={handleDelete}
       entity="Player"
       description={`This will permanently delete ${playerName} and remove all linked data.`}
-      iconOnly
+      iconOnly={false}
+      label="Delete Player"
+      confirmText={playerName}
     />
   );
 } 

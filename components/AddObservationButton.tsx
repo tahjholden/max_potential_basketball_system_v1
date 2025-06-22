@@ -1,18 +1,28 @@
 "use client";
 import { useState } from "react";
-import AddPlayerObservationModal from "@/app/protected/players/AddPlayerObservationModal";
+import AddObservationModal from "@/app/protected/test-players/AddObservationModal";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function AddObservationButton({ player, coachId }: { player: any, coachId: string }) {
+export default function AddObservationButton({ player }: { player: any }) {
   const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
 
-  const handleAddObservation = async (observationData: { player_id: string; content: string; observation_date: string }) => {
+  const handleAddObservation = async (content: string) => {
     const supabase = createClient();
+    
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated.");
+      return;
+    }
+
     const { error } = await supabase.from("observations").insert({
-      ...observationData,
-      coach_id: coachId,
+      player_id: player.id,
+      content: content,
+      observation_date: new Date().toISOString(),
+      coach_id: user.id,
     });
     if (!error) {
       setModalOpen(false);
@@ -30,11 +40,11 @@ export default function AddObservationButton({ player, coachId }: { player: any,
       >
         + Add Observation
       </button>
-      <AddPlayerObservationModal
+      <AddObservationModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleAddObservation}
-        player={player}
+        selectedPlayer={player}
       />
     </>
   );

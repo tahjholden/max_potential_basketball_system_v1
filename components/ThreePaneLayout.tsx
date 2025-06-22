@@ -1,35 +1,21 @@
-import React from 'react';
+import { ReactNode } from "react";
 
 interface ThreePaneLayoutProps {
-  leftPane: React.ReactNode;
-  mainPane: React.ReactNode;
-  rightPane?: React.ReactNode;
-  leftPaneClassName?: string;
-  mainPaneClassName?: string;
-  rightPaneClassName?: string;
+  leftPane: ReactNode;
+  centerPane: ReactNode;
+  rightPane: ReactNode;
 }
 
-export default function ThreePaneLayout({ 
-  leftPane, 
-  mainPane, 
+export default function ThreePaneLayout({
+  leftPane,
+  centerPane,
   rightPane,
-  leftPaneClassName = "w-[25%] bg-[#1f1f1f] rounded-lg p-4",
-  mainPaneClassName = "flex-1 bg-[#1f1f1f] rounded-lg p-4",
-  rightPaneClassName = "w-[35%] bg-[#1f1f1f] rounded-lg p-4"
 }: ThreePaneLayoutProps) {
   return (
-    <div className="flex h-full w-full gap-4 text-white">
-      <div className={leftPaneClassName}>
-        {leftPane}
-      </div>
-      <div className={mainPaneClassName}>
-        {mainPane}
-      </div>
-      {rightPane && (
-        <div className={rightPaneClassName}>
-          {rightPane}
-        </div>
-      )}
+    <div className="flex w-full px-6 gap-4 mt-6">
+      <div className="w-[260px] shrink-0">{leftPane}</div>
+      <div className="flex-1">{centerPane}</div>
+      <div className="w-[260px] shrink-0">{rightPane}</div>
     </div>
   );
 } 

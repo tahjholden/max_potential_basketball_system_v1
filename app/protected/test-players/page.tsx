@@ -4,9 +4,12 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PlayerListPane from "@/components/PlayerListPane";
 import PlayerProfilePane from "@/components/PlayerProfilePane";
+import PlayerObservationPane from "@/components/PlayerObservationPane";
+import AddObservationModal from "./AddObservationModal";
+import PageSubheader from "@/components/PageSubheader";
 import PDPArchivePane from "@/components/PDPArchivePane";
-import PageHeader from "@/components/PageHeader";
 import { format } from "date-fns";
+import ThreePaneLayout from "@/components/ThreePaneLayout";
 
 interface Player {
   id: string;
@@ -24,17 +27,27 @@ interface Pdp {
   archived_at?: string;
 }
 
+interface Observation {
+  id: string;
+  content: string;
+  observation_date: string;
+  created_at: string;
+}
+
 interface ArchivedPdp {
   id: string;
   dateRange: string;
   summary: string;
 }
 
-export default function TestPlayersPage({ coachId }: { coachId: string }) {
+export default function TestPlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
+  const [observations, setObservations] = useState<Observation[]>([]);
   const [archivedPdps, setArchivedPdps] = useState<ArchivedPdp[]>([]);
+  const [isAddObservationModalOpen, setAddObservationModalOpen] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +70,30 @@ export default function TestPlayersPage({ coachId }: { coachId: string }) {
       setCurrentPdp(null);
     } else {
       setCurrentPdp(data);
+    }
+  };
+
+  // Fetch observations when selected player changes
+  const fetchObservations = async () => {
+    if (!selectedPlayerId) {
+      setObservations([]);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("observations")
+        .select("id, content, observation_date, created_at")
+        .eq("player_id", selectedPlayerId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (error) throw new Error(`Error fetching observations: ${error.message}`);
+      setObservations(data || []);
+    } catch (err) {
+      console.error('Error fetching observations:', err);
+      setObservations([]);
     }
   };
 
@@ -165,10 +202,38 @@ export default function TestPlayersPage({ coachId }: { coachId: string }) {
     fetchPdp();
   }, [selectedPlayerId]);
 
+  // Fetch observations when selected player changes
+  useEffect(() => {
+    fetchObservations();
+  }, [selectedPlayerId]);
+
   // Fetch archived PDPs when player or sort order changes
   useEffect(() => {
     fetchArchivedPdps();
   }, [selectedPlayerId, sortOrder]);
+
+  const handleAddObservation = async (content: string) => {
+    if (!selectedPlayer) {
+      console.error("No player selected.");
+      return;
+    }
+
+    const supabase = createClient();
+    const { error } = await supabase.from("observations").insert({
+      player_id: selectedPlayer.id,
+      content: content,
+      observation_date: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error("Failed to add observation.");
+    } else {
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3100);
+      await fetchObservations();
+      setAddObservationModalOpen(false);
+    }
+  };
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
 
@@ -196,26 +261,52 @@ export default function TestPlayersPage({ coachId }: { coachId: string }) {
 
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
-      <PageHeader playerName={selectedPlayer?.name || "Select Player"} />
-      
-      <div className="mt-6 flex flex-col lg:flex-row gap-4">
-        <PlayerListPane
-          players={players}
-          selectedId={selectedPlayerId}
-          onSelect={setSelectedPlayerId}
+      <div className="mt-6 px-6">
+        <PageSubheader
+          title="Player Profile"
+          subtitle={selectedPlayer?.name || "Select a player"}
         />
-        
-        <PlayerProfilePane
-          player={selectedPlayer || { name: "", joined: "", observations: 0 }}
-          pdp={currentPdp || { content: null, start_date: "" }}
-        />
-        
-        <PDPArchivePane
-          pdps={archivedPdps}
-          sortOrder={sortOrder}
-          onSortOrderChange={setSortOrder}
+
+        <ThreePaneLayout
+          leftPane={
+            <PlayerListPane
+              players={players}
+              selectedId={selectedPlayerId}
+              onSelect={setSelectedPlayerId}
+            />
+          }
+          centerPane={
+            <>
+              <PlayerProfilePane
+                player={selectedPlayer}
+                pdp={currentPdp}
+              />
+              <PlayerObservationPane
+                playerName={selectedPlayer?.name || ""}
+                observations={observations}
+                onAdd={() => setAddObservationModalOpen(true)}
+                showSuccess={showSuccess}
+              />
+            </>
+          }
+          rightPane={
+            <PDPArchivePane
+              pdps={archivedPdps}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+            />
+          }
         />
       </div>
+
+      {selectedPlayer && (
+        <AddObservationModal
+          open={isAddObservationModalOpen}
+          onClose={() => setAddObservationModalOpen(false)}
+          selectedPlayer={selectedPlayer}
+          onSubmit={handleAddObservation}
+        />
+      )}
     </div>
   );
 } 

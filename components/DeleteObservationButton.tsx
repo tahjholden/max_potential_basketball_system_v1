@@ -6,8 +6,10 @@ import { toast } from "sonner";
 
 export default function DeleteObservationButton({
   observationId,
+  onDeleted,
 }: {
   observationId: string;
+  onDeleted?: () => void;
 }) {
   async function handleDelete() {
     const supabase = createClient();
@@ -19,7 +21,7 @@ export default function DeleteObservationButton({
       toast.error("Failed to delete observation");
     } else {
       toast.success("Observation deleted");
-      // Optional: refetch
+      onDeleted?.();
     }
   }
 

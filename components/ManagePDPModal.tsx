@@ -13,6 +13,7 @@ import { GoldButton } from "@/components/ui/gold-button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { actionButtonClass } from "@/lib/utils";
 
 export default function ManagePDPModal({
   playerId,
@@ -87,7 +88,9 @@ export default function ManagePDPModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <GoldButton>Manage PDP</GoldButton>
+        <button className={actionButtonClass}>
+          Manage PDP
+        </button>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border border-zinc-700 text-white">
         <DialogHeader>
