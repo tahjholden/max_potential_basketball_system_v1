@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { GoldButton } from "@/components/ui/gold-button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -86,7 +87,7 @@ export default function ManagePDPModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="text-yellow-400 underline text-sm">Manage PDP</button>
+        <GoldButton>Manage PDP</GoldButton>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border border-zinc-700 text-white">
         <DialogHeader>
@@ -102,9 +103,9 @@ export default function ManagePDPModal({
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={archiveAndCreateNewPDP} disabled={loading}>
+          <GoldButton onClick={archiveAndCreateNewPDP} disabled={loading}>
             {loading ? "Working..." : "Archive & Create New"}
-          </Button>
+          </GoldButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

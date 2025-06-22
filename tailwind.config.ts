@@ -11,6 +11,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        gold: '#CFB53B',
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

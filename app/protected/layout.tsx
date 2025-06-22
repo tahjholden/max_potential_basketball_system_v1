@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, cloneElement } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LogOut } from "lucide-react";
@@ -18,16 +18,23 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
 
   // Fetch coach's name from coaches table using auth_uid
   let coachName = "";
+  let coach;
   if (user?.id) {
-    const { data: coach } = await supabase
+    const { data: coachData } = await supabase
       .from("coaches")
-      .select("first_name, last_name")
+      .select("id, first_name, last_name")
       .eq("auth_uid", user.id)
       .single();
+    coach = coachData;
     if (coach) {
       coachName = `${coach.first_name || ""} ${coach.last_name || ""}`.trim();
     }
   }
+
+  // Pass coachId to children
+  const childrenWithProps = cloneElement(children as React.ReactElement, {
+    coachId: coach?.id,
+  });
 
   // TODO: Implement mobile sidebar toggle state with useState in a client component if needed
 
@@ -57,7 +64,7 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
         </header>
         {/* Main content */}
         <main className="flex-1 p-4 md:p-8 bg-black">
-          {children}
+          {childrenWithProps}
         </main>
       </div>
       <Toaster position="top-right" richColors />

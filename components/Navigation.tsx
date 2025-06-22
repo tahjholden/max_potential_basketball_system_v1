@@ -7,7 +7,9 @@ import { Users, ClipboardList, BarChart3, Settings } from "lucide-react";
 const navItems = [
   { text: "Dashboard", path: "/protected/dashboard", icon: <Users className="w-5 h-5" /> },
   { text: "Observations", path: "/protected/observations", icon: <ClipboardList className="w-5 h-5" /> },
-  { text: "Legacy Dashboard", path: "/protected/legacy-dashboard", icon: <BarChart3 className="w-5 h-5" /> },
+  { text: "Test Dashboard", path: "/protected/test-dashboard", icon: <BarChart3 className="w-5 h-5" /> },
+  { text: "Test Players", path: "/protected/test-players", icon: <Settings className="w-5 h-5" /> },
+  { text: "Test Observations", path: "/protected/test-observations", icon: <Settings className="w-5 h-5" /> },
 ];
 
 export function Navigation() {
