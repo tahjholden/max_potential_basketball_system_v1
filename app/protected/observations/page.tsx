@@ -11,18 +11,21 @@ import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import EmptyCard from "@/components/EmptyCard";
 import PageTitle from "@/components/PageTitle";
 
-// Type definitions - ensure they are consistent across components
+// Type definitions - matching dashboard exactly
 interface Player {
   id: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
+  observations: number;
   joined: string;
-  observations: number; // For PlayerListPane
 }
 
 interface Observation {
   id: string;
   content: string;
-  observation_date: string; // For BulkDeleteObservationsPane
+  observation_date: string;
+  created_at: string;
   player_id: string;
 }
 
@@ -30,74 +33,147 @@ interface Pdp {
   id: string;
   content: string | null;
   start_date: string;
+  created_at: string;
+  player_id: string;
+  archived_at: string | null;
 }
 
 export default function ObservationsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId } = useSelectedPlayer();
+  const { playerId, clearPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
+  const [allPdps, setAllPdps] = useState<Pdp[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
-  // Consolidated data fetching
+  const fetchPdp = async () => {
+    if (!playerId) return setCurrentPdp(null);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("pdp")
+      .select("id, content, start_date, created_at, player_id, archived_at")
+      .eq("player_id", playerId)
+      .is("archived_at", null)
+      .maybeSingle();
+    setCurrentPdp(data);
+  };
+
+  const fetchAllPdps = async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("pdp")
+      .select("id, content, start_date, created_at, player_id, archived_at");
+    setAllPdps(data || []);
+  };
+
   useEffect(() => {
-    async function fetchAllData() {
-      const supabase = createClient();
-      
-      const { data: playersData } = await supabase.from("players").select("id, name, created_at");
-      const { data: observationsData } = await supabase.from("observations").select("player_id");
-      const counts = new Map();
-      observationsData?.forEach(obs => {
-        counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
-      });
-      setPlayers((playersData || []).map(p => ({ 
-          ...p,
-          joined: p.created_at,
-          observations: counts.get(p.id) || 0 
-        }))
-      );
+    async function fetchPlayers() {
+      setLoading(true);
+      setError(null);
+      try {
+        const supabase = createClient();
+        const { data: playersData } = await supabase
+          .from("players")
+          .select("id, name, first_name, last_name, created_at")
+          .order("last_name", { ascending: true });
+        const { data: observationsData } = await supabase
+          .from("observations")
+          .select("player_id");
+        const counts = new Map<string, number>();
+        observationsData?.forEach(obs => {
+          counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
+        });
+        setPlayers(
+          (playersData || []).map(player => ({
+            ...player,
+            observations: counts.get(player.id) || 0,
+            joined: new Date(player.created_at).toLocaleDateString(),
+          }))
+        );
+      } catch (err) {
+        setError("Error fetching players");
+      } finally {
+        setLoading(false);
+      }
     }
-    fetchAllData();
+    fetchPlayers();
+    fetchAllPdps();
+    clearPlayerId();
   }, []);
 
   useEffect(() => {
-    async function fetchPlayerData() {
-      if (!playerId) {
-        setObservations([]);
-        setCurrentPdp(null);
-        return;
-      }
+    async function fetchObs() {
+      if (!playerId) return setObservations([]);
       const supabase = createClient();
-      const { data: obsData } = await supabase.from("observations").select("id, content, observation_date, player_id").eq("player_id", playerId);
-      setObservations(obsData || []);
-
-      const { data: pdpData } = await supabase.from("pdp").select("id, content, start_date").eq("player_id", playerId).is("archived_at", null).maybeSingle();
-      setCurrentPdp(pdpData);
+      const { data } = await supabase
+        .from("observations")
+        .select("id, content, observation_date, created_at, player_id")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false });
+      setObservations(data || []);
     }
-    fetchPlayerData();
+    fetchObs();
+  }, [playerId]);
+
+  useEffect(() => {
+    fetchPdp();
   }, [playerId]);
 
   const handleBulkDelete = async (ids: string[]) => {
     const supabase = createClient();
     await supabase.from("observations").delete().in("id", ids);
     // Refetch observations after deletion
-    const { data: obsData } = await supabase.from("observations").select("id, content, observation_date, player_id").eq("player_id", playerId);
-    setObservations(obsData || []);
+    if (playerId) {
+      const { data } = await supabase
+        .from("observations")
+        .select("id, content, observation_date, created_at, player_id")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false });
+      setObservations(data || []);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
+        <span className="text-zinc-400">Loading players...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
+        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
         <PageTitle>Observations</PageTitle>
         <ThreePaneLayout
-          leftPane={<PlayerListPane players={players} onSelect={() => {}} />}
+          leftPane={
+            <PlayerListPane
+              players={players}
+              pdps={allPdps}
+              onSelect={() => {
+                // Player selection is now handled by the global store
+              }}
+            />
+          }
           centerPane={
             selectedPlayer ? (
               <MiddlePane
                 player={selectedPlayer}
                 observations={observations}
-                pdp={currentPdp}
+                pdp={currentPdp as any}
                 onDeleteMany={handleBulkDelete}
               />
             ) : (

@@ -53,7 +53,7 @@ interface PlayerListPdp {
   id: string;
   player_id: string;
   content: string | null;
-  archived_at: string | null;
+  archived_at?: string;
 }
 
 export default function TestPlayersPage() {

@@ -30,17 +30,17 @@ export default function Sidebar({ missingPDPCount = 0 }) {
           </h3>
         </li>
         <li>
-          <Link href="/protected/test-dashboard" className="block px-3 py-2 rounded hover:bg-zinc-800 text-white text-sm">
+          <Link href="/protected/dashboard" className="block px-3 py-2 rounded hover:bg-zinc-800 text-white text-sm">
             Test Dashboard
           </Link>
         </li>
         <li>
-          <Link href="/protected/test-players" className="block px-3 py-2 rounded hover:bg-zinc-800 text-white text-sm">
+          <Link href="/protected/players" className="block px-3 py-2 rounded hover:bg-zinc-800 text-white text-sm">
             Test Players
           </Link>
         </li>
         <li>
-          <Link href="/protected/test-observations" className="block px-3 py-2 rounded hover:bg-zinc-800 text-white text-sm">
+          <Link href="/protected/observations" className="block px-3 py-2 rounded hover:bg-zinc-800 text-white text-sm">
             Test Observations
           </Link>
         </li>

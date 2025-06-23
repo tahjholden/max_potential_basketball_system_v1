@@ -44,16 +44,6 @@ export default function PlayerListPane({
       .map(pdp => pdp.player_id)
   ), [pdps]);
   
-  // Debug logging to identify the issue
-  console.log("=== PDP Debug Info ===");
-  console.log("Total PDPs received:", pdps.length);
-  console.log("PDPs data:", pdps);
-  console.log("Player IDs with PDP:", Array.from(playerIdsWithPDP));
-  console.log("Total players:", players.length);
-  console.log("Player IDs:", players.map(p => p.id));
-  console.log("Players without PDP count:", players.filter(p => !playerIdsWithPDP.has(p.id)).length);
-  console.log("=== End Debug Info ===");
-  
   const playersWithoutPDP = useMemo(() => 
     players.filter(p => !playerIdsWithPDP.has(p.id)), 
     [players, playerIdsWithPDP]
@@ -109,27 +99,34 @@ export default function PlayerListPane({
             {searchTerm ? "No players found." : "No players available."}
           </div>
         ) : (
-          filteredPlayers.map((player) => {
-            const missingPDP = !playerIdsWithPDP.has(player.id);
-            
-            return (
-              <button
-                key={player.id}
-                onClick={() => handlePlayerSelect(player.id)}
-                className={`w-full text-left p-3 rounded transition-colors flex items-center justify-between ${
-                  playerId === player.id
-                    ? missingPDP 
-                      ? "bg-zinc-700 text-white font-bold text-base"
-                      : "bg-gold text-black font-bold text-base"
-                    : missingPDP
-                    ? "border-2 border-red-500 bg-zinc-950/60 text-white text-sm hover:bg-zinc-800"
-                    : "bg-zinc-800 text-white text-sm hover:bg-zinc-700"
-                }`}
-              >
-                <span>{player.name}</span>
-              </button>
-            );
-          })
+          filteredPlayers
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((player) => {
+              const hasNoPlan = !playerIdsWithPDP.has(player.id);
+              const isSelected = playerId === player.id;
+
+              let classes = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
+
+              if (hasNoPlan) {
+                classes += isSelected
+                  ? " bg-[#A22828] text-white border-[#A22828]"
+                  : " bg-zinc-900 text-[#A22828] border-[#A22828]";
+              } else {
+                classes += isSelected
+                  ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+                  : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+              }
+
+              return (
+                <button
+                  key={player.id}
+                  onClick={() => handlePlayerSelect(player.id)}
+                  className={classes}
+                >
+                  {player.name}
+                </button>
+              );
+            })
         )}
       </div>
     </div>

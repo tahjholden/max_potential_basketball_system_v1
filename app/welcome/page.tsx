@@ -42,7 +42,7 @@ export default function WelcomeScreen() {
           clearInterval(interval);
           setPhase("done");
           setTimeout(() => setShowLogo(true), 400);
-          setTimeout(() => router.push("/protected/test-dashboard"), 2500);
+          setTimeout(() => router.push("/protected/dashboard"), 2500);
         }
       }, 45);
       return () => clearInterval(interval);

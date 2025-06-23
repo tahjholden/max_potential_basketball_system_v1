@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 
 const mainNavLinks = [
-  { href: "/protected/test-dashboard", label: "Dashboard", icon: BarChart2 },
+  { href: "/protected/dashboard", label: "Dashboard", icon: BarChart2 },
   {
-    href: "/protected/test-observations",
+    href: "/protected/observations",
     label: "Observations",
     icon: Shield,
   },

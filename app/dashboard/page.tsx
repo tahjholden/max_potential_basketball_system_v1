@@ -36,6 +36,8 @@ interface Pdp {
   content: string | null;
   start_date: string;
   created_at: string;
+  player_id: string;
+  archived_at: string | null;
 }
 
 export default function DashboardPage() {
@@ -43,6 +45,7 @@ export default function DashboardPage() {
   const { playerId, clearPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
+  const [allPdps, setAllPdps] = useState<Pdp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,11 +56,19 @@ export default function DashboardPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("pdp")
-      .select("id, content, start_date, created_at")
+      .select("id, content, start_date, created_at, player_id, archived_at")
       .eq("player_id", playerId)
       .is("archived_at", null)
       .maybeSingle();
     setCurrentPdp(data);
+  };
+
+  const fetchAllPdps = async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("pdp")
+      .select("id, content, start_date, created_at, player_id, archived_at");
+    setAllPdps(data || []);
   };
 
   useEffect(() => {
@@ -91,6 +102,7 @@ export default function DashboardPage() {
       }
     }
     fetchPlayers();
+    fetchAllPdps();
     clearPlayerId();
   }, []);
 
@@ -139,6 +151,7 @@ export default function DashboardPage() {
           leftPane={
             <PlayerListPane
               players={players}
+              pdps={allPdps}
               onSelect={() => {
                 // Player selection is now handled by the global store
               }}
@@ -161,6 +174,7 @@ export default function DashboardPage() {
                     if (playerId) {
                       fetchPdp();
                     }
+                    fetchAllPdps();
                   }}
                 />
               </div>
