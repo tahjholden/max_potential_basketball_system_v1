@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { Archive, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import { archiveAndCreateNewPDP } from "@/lib/archiveAndCreateNewPDP";
 import { createClient } from "@/lib/supabase/client";
@@ -64,10 +63,8 @@ export default function ArchiveAndReplaceButton({
       <button
         onClick={handleArchiveAndNew}
         disabled={loading}
-        className={`flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-[#323232] rounded transition-colors disabled:opacity-50 ${className}`}
+        className={`w-full px-3 py-2 text-sm text-left hover:bg-[#323232] rounded transition-colors disabled:opacity-50 ${className}`}
       >
-        <Archive size={14} />
-        <Plus size={14} />
         {loading ? "Processing..." : "Archive & Create New"}
       </button>
     );
@@ -77,10 +74,8 @@ export default function ArchiveAndReplaceButton({
     <button
       onClick={handleArchiveAndNew}
       disabled={loading}
-      className={`flex items-center gap-2 bg-[#4a4a4a] text-white px-4 py-2 rounded font-semibold hover:bg-[#5a5a5a] transition-colors disabled:opacity-50 ${className}`}
+      className={`border border-[#d8cc97] text-xs px-3 py-1.5 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50 ${className}`}
     >
-      <Archive size={16} />
-      <Plus size={16} />
       {loading ? "Processing..." : "Archive & Create New"}
     </button>
   );

@@ -8,8 +8,7 @@ import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import PlayerListPane from "@/components/PlayerListPane";
 import PageTitle from "@/components/PageTitle";
-import PlayerMetadataCard from "@/components/PlayerMetadataCard";
-import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
+import MiddlePane from "@/components/MiddlePane";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import PaneTitle from "@/components/PaneTitle";
 import EmptyCard from "@/components/EmptyCard";
@@ -31,7 +30,7 @@ interface Observation {
 interface Pdp {
   id: string;
   created_at: string;
-  focus_areas: string;
+  content: string;
 }
 
 export default function TestObservationsPage() {
@@ -45,6 +44,12 @@ export default function TestObservationsPage() {
   const [loading, setLoading] = useState(true);
   
   const formatDate = (date: string) => format(new Date(date), "M/dd/yyyy");
+
+  const handleBulkDelete = async (ids: string[]) => {
+    const supabase = createClient();
+    await supabase.from("observations").delete().in("id", ids);
+    fetchDataForPlayer();
+  };
 
   // This callback fetches all data related to the currently selected player
   const fetchDataForPlayer = useCallback(async () => {
@@ -69,8 +74,8 @@ export default function TestObservationsPage() {
     setObservations(obsData || []);
 
     const { data: pdpData } = await supabase
-      .from("pdps")
-      .select("id, created_at, focus_areas")
+      .from("pdp")
+      .select("id, created_at, content")
       .eq("player_id", playerId)
       .is("archived_at", null)
       .order("created_at", { ascending: false })
@@ -134,30 +139,25 @@ export default function TestObservationsPage() {
             />
           }
           centerPane={
-            <div className="flex h-full flex-col space-y-4">
-              {selectedPlayer ? (
-                <>
-                  <PlayerMetadataCard 
-                    player={selectedPlayer}
-                    observations={observations}
-                  />
-                  <DevelopmentPlanCard
-                    startDate={activePdp?.created_at || null}
-                    content={activePdp?.focus_areas || null}
-                  />
-                </>
-              ) : (
-                <>
-                  <EmptyCard title="Player Profile" />
-                  <EmptyCard title="Development Plan" />
-                </>
-              )}
-            </div>
+            selectedPlayer ? (
+              <MiddlePane
+                player={selectedPlayer}
+                observations={observations}
+                pdp={activePdp}
+                onDeleteMany={handleBulkDelete}
+              />
+            ) : (
+              <div className="flex flex-col gap-4">
+                <EmptyCard title="Player Profile" />
+                <EmptyCard title="Recent Observations" />
+                <EmptyCard title="Development Plan" />
+              </div>
+            )
           }
           rightPane={
             <ObservationInsightsPane
-              totalObservations={totalObservations}
-              selectedPlayerObservations={observations.length}
+              total={totalObservations}
+              playerTotal={observations.length}
             />
           }
         />

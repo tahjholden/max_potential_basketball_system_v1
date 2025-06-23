@@ -22,23 +22,21 @@ const PlayerMetadataCard: React.FC<PlayerMetadataCardProps> = ({
   showDeleteButton = false,
 }) => {
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-300 space-y-1">
-      <div className="space-y-1">
+    <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4">
+      <div className="flex justify-between items-start mb-2">
         <PaneTitle>Player Profile</PaneTitle>
-        <div className="pt-2">
-          <div>
-            <span className="text-zinc-500">Name:</span> <span className="text-gold font-bold">{player.name}</span>
-          </div>
-          <div>
-            <span className="text-zinc-500">Joined:</span> {format(new Date(player.joined), "MMMM do, yyyy")}
-          </div>
+        {showDeleteButton && playerId && (
+          <DeletePlayerButton playerId={playerId} playerName={player.name} />
+        )}
+      </div>
+      <div className="bg-zinc-800 rounded px-4 py-3 text-sm space-y-2">
+        <div>
+          <span className="text-zinc-500">Name:</span> <span className="text-gold font-bold">{player.name}</span>
+        </div>
+        <div>
+          <span className="text-zinc-500">Joined:</span> {format(new Date(player.joined), "MMMM do, yyyy")}
         </div>
       </div>
-      {showDeleteButton && playerId && (
-        <div className="flex justify-end mt-3">
-          <DeletePlayerButton playerId={playerId} playerName={player.name} />
-        </div>
-      )}
     </div>
   );
 };

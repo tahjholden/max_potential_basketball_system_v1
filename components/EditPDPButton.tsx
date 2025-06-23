@@ -33,7 +33,7 @@ export default function EditPDPButton({
     <>
       <button
         onClick={() => setModalOpen(true)}
-        className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+        className="border border-zinc-600 text-xs px-3 py-1.5 rounded font-semibold text-white hover:bg-zinc-800 transition"
       >
         Edit Plan
       </button>

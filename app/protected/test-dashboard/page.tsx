@@ -45,143 +45,85 @@ export default function TestDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPdp = async () => {
-    if (!playerId) {
-      setCurrentPdp(null);
-      return;
-    }
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("pdp")
-      .select("id, content, start_date")
-      .eq("player_id", playerId)
-      .is("archived_at", null)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Error fetching PDP:", error.message);
-      setCurrentPdp(null);
-    } else {
-      setCurrentPdp(data);
-    }
-  };
-
-  useEffect(() => {
-    clearPlayerId();
-  }, [clearPlayerId]);
+  const selectedPlayer = players.find((p) => p.id === playerId);
 
   useEffect(() => {
     async function fetchPlayers() {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
         const supabase = createClient();
-
-        // Fetch players and their observation counts
-        const { data: playersData, error: playersError } = await supabase
+        const { data: playersData } = await supabase
           .from("players")
           .select("id, name, first_name, last_name, created_at")
           .order("last_name", { ascending: true });
-
-        if (playersError) throw new Error(`Error fetching players: ${playersError.message}`);
-
-        // Fetch observation counts for each player
-        const { data: observationsData, error: observationsError } = await supabase
+        const { data: observationsData } = await supabase
           .from("observations")
           .select("player_id");
-
-        if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
-
-        // Count observations per player
-        const observationCounts = new Map<string, number>();
+        const counts = new Map<string, number>();
         observationsData?.forEach(obs => {
-          observationCounts.set(obs.player_id, (observationCounts.get(obs.player_id) || 0) + 1);
+          counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
-
-        // Transform players data
-        const transformedPlayers: Player[] = (playersData || []).map(player => {
-          const fullName = player.first_name && player.last_name 
-            ? `${player.first_name} ${player.last_name}`
-            : player.name || `${player.first_name || ''} ${player.last_name || ''}`.trim();
-          
-          return {
-            id: player.id,
-            name: fullName,
-            first_name: player.first_name,
-            last_name: player.last_name,
-            observations: observationCounts.get(player.id) || 0,
+        setPlayers(
+          (playersData || []).map(player => ({
+            ...player,
+            observations: counts.get(player.id) || 0,
             joined: new Date(player.created_at).toLocaleDateString(),
-          };
-        });
-
-        setPlayers(transformedPlayers);
-        setError(null);
+          }))
+        );
       } catch (err) {
-        console.error('Error fetching players:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching players');
+        setError("Error fetching players");
       } finally {
         setLoading(false);
       }
     }
-
     fetchPlayers();
+    clearPlayerId();
   }, []);
 
-  // Fetch observations when selected player changes
   useEffect(() => {
-    async function fetchObservations() {
-      if (!playerId) {
-        setObservations([]);
-        return;
-      }
-
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("observations")
-          .select("id, content, observation_date, created_at")
-          .eq("player_id", playerId)
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        if (error) throw new Error(`Error fetching observations: ${error.message}`);
-        setObservations(data || []);
-      } catch (err) {
-        console.error('Error fetching observations:', err);
-        setObservations([]);
-      }
+    async function fetchObs() {
+      if (!playerId) return setObservations([]);
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("observations")
+        .select("id, content, observation_date, created_at")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      setObservations(data || []);
     }
-
-    fetchObservations();
+    fetchObs();
   }, [playerId]);
 
-  // Fetch active PDP for the selected player
   useEffect(() => {
+    async function fetchPdp() {
+      if (!playerId) return setCurrentPdp(null);
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("pdp")
+        .select("id, content, start_date")
+        .eq("player_id", playerId)
+        .is("archived_at", null)
+        .maybeSingle();
+      setCurrentPdp(data);
+    }
     fetchPdp();
   }, [playerId]);
 
-  const selectedPlayer = players.find((p) => p.id === playerId);
-
   if (loading) {
     return (
-      <div className="min-h-screen p-4 bg-zinc-950">
-        <div className="mt-2 px-6">
-          <PageTitle>Dashboard</PageTitle>
-          <div className="flex items-center justify-center h-64">
-            <div className="text-zinc-400">Loading players...</div>
-          </div>
-        </div>
+      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
+        <span className="text-zinc-400">Loading players...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen p-4 bg-zinc-950">
-        <div className="mt-2 px-6">
-          <PageTitle>Dashboard</PageTitle>
-          <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
-            Error loading players: {error}
-          </div>
+      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
+        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+          {error}
         </div>
       </div>
     );
@@ -191,7 +133,6 @@ export default function TestDashboardPage() {
     <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
         <PageTitle>Dashboard</PageTitle>
-
         <ThreePaneLayout
           leftPane={
             <PlayerListPane
@@ -216,7 +157,7 @@ export default function TestDashboardPage() {
                 />
               </div>
             ) : (
-              <div className="flex h-full flex-col gap-4">
+              <div className="flex flex-col gap-4 h-full">
                 <EmptyCard title="Player Profile" />
                 <EmptyCard title="Development Plan" />
               </div>
@@ -227,11 +168,6 @@ export default function TestDashboardPage() {
               <ObservationFeedPane observations={observations} />
             ) : (
               <div className="flex flex-col items-center justify-center text-center h-full px-4 py-6">
-                <img
-                  src="/maxsM.png"
-                  alt="MP Logo"
-                  className="w-[140px] h-[140px] object-contain opacity-30 mb-5"
-                />
                 <h2 className="text-white font-semibold text-base mb-1">
                   Welcome to MP Player Development
                 </h2>

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { StyledModal } from "@/components/ui/StyledModal";
+import { GoldModal } from "@/components/ui/gold-modal";
 
 export default function ArchivePDPModal({
   open,
@@ -35,10 +35,18 @@ export default function ArchivePDPModal({
   };
 
   return (
-    <StyledModal
+    <GoldModal
       open={open}
       onOpenChange={onClose}
       title={`Manage PDP for ${player.name}`}
+      footer={
+        <button
+          onClick={handleArchive}
+          className="border border-[#d8cc97] text-xs px-3 py-1.5 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition"
+        >
+          Archive & Create New
+        </button>
+      }
     >
       <p className="text-sm text-slate-400 mb-2">
         Current PDP <span className="italic">(Started {new Date(pdp.start_date).toLocaleDateString()})</span>
@@ -46,14 +54,6 @@ export default function ArchivePDPModal({
       <div className="bg-[#1e1e1e] border border-slate-600 p-3 rounded text-sm text-slate-300">
         {pdp.content}
       </div>
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={handleArchive}
-          className="bg-slate-600 text-white px-4 py-2 rounded font-semibold hover:bg-slate-500 transition"
-        >
-          Archive & Create New
-        </button>
-      </div>
-    </StyledModal>
+    </GoldModal>
   );
 } 

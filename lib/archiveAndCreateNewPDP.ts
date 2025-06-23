@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/client'
-import { supabase } from "@/lib/supabase";
 
 // Define types based on your database schema
 type Pdp = {
@@ -22,6 +21,7 @@ type Observation = {
   observation_date: string;
   created_at: string;
   archived_at?: string;
+  archived?: boolean;
 };
 
 export async function archiveAndCreateNewPDP({
@@ -37,156 +37,115 @@ export async function archiveAndCreateNewPDP({
   const now = new Date().toISOString()
 
   try {
-    // 1. Get coach_id from auth
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return { success: false, error: "Not authenticated" }
+    // Step 0: Get current user and ensure coach record exists
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "User not authenticated." };
     }
 
-    const { data: coachData, error: coachError } = await supabase
-      .from("coaches")
-      .select("id")
-      .eq("auth_uid", user.id)
-      .single()
+    // Step 0.5: Look up (or create) the coach record
+    let coachId: string;
+    let { data: coachRow } = await supabase
+      .from('coaches')
+      .select('id')
+      .eq('auth_uid', user.id)
+      .maybeSingle();
 
-    if (coachError || !coachData) {
-      return { success: false, error: "Coach not found" }
+    if (!coachRow) {
+      // Auto-create coach record if missing
+      const { data: newCoach, error: createCoachError } = await supabase
+        .from('coaches')
+        .insert({
+          auth_uid: user.id,
+          first_name: user.user_metadata?.first_name || '',
+          last_name: user.user_metadata?.last_name || '',
+          email: user.email || '',
+          is_admin: false,
+          active: true,
+          created_at: now,
+          updated_at: now
+        })
+        .select()
+        .single();
+      
+      if (createCoachError) {
+        console.error('Error creating coach record:', createCoachError);
+        return { success: false, error: `Failed to create coach record: ${createCoachError.message}` };
+      }
+      coachId = newCoach.id;
+    } else {
+      coachId = coachRow.id;
     }
 
-    const coachId = coachData.id
-
-    // 2. Archive current PDP (if it exists)
+    // Step 1: Archive the current PDP if it exists
     if (currentPdp) {
-      // 1. Archive the PDP
-      await supabase
-        .from("pdp")
+      const { error: pdpError } = await supabase.from('pdp').update({
+        archived_at: now,
+        end_date: now,
+        updated_at: now
+      }).eq('id', currentPdp.id);
+
+      if (pdpError) {
+        console.error('Error archiving PDP:', pdpError);
+        return { success: false, error: `Failed to archive PDP: ${pdpError.message}` };
+      }
+
+      // Step 2: Archive all observations linked to the old PDP
+      // First, ensure all observations have the correct coach_id
+      const { error: updateCoachError } = await supabase
+        .from('observations')
+        .update({
+          coach_id: coachId,
+          updated_at: now
+        })
+        .eq('pdp_id', currentPdp.id)
+        .is('coach_id', null); // Only update observations without coach_id
+
+      if (updateCoachError) {
+        console.error('Error updating observation coach_id:', updateCoachError);
+        return { success: false, error: `Failed to update observation coach_id: ${updateCoachError.message}` };
+      }
+
+      // Now archive all observations linked to the old PDP
+      const { error: obsError } = await supabase
+        .from('observations')
         .update({
           archived_at: now,
-          end_date: now,
-          updated_at: now,
+          archived: true
         })
-        .eq("id", currentPdp.id);
+        .eq('pdp_id', currentPdp.id);
 
-      // 2. Archive related observations
-      await supabase
-        .from("observations")
-        .update({ archived_at: now })
-        .eq("pdp_id", currentPdp.id)
-        .is("archived_at", null);
+      if (obsError) {
+        console.error('Error archiving linked observations:', obsError);
+        return { success: false, error: `Failed to archive observations: ${obsError.message}` };
+      }
+      
+      console.log(`Archived observations for PDP ${currentPdp.id}`);
     }
 
-    // 4. Create new PDP
-    const { data: newPdp, error: insertError } = await supabase
-      .from("pdp")
+    // Step 3: Create the new PDP with coach_id
+    const { data: newPdp, error: createPdpError } = await supabase
+      .from('pdp')
       .insert({
         player_id: playerId,
-        coach_id: coachId,
+        coach_id: coachId, // Always set coach_id
         content: newContent,
         start_date: now,
         created_at: now,
         updated_at: now,
       })
       .select()
-      .single()
+      .single();
 
-    if (insertError) {
-      return { success: false, error: insertError.message }
+    if (createPdpError) {
+      console.error('Error creating new PDP:', createPdpError);
+      return { success: false, error: `Failed to create new PDP: ${createPdpError.message}` };
     }
 
-    return { success: true, data: newPdp }
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unknown error",
-    }
-  }
-}
+    return { success: true, data: newPdp };
 
-// Step 2: Create new PDP (only after archiving is complete)
-export async function createNewPDP(
-  playerId: string, 
-  content: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient()
-  const now = new Date().toISOString()
-
-  try {
-    console.log('Starting create new PDP process for player:', playerId)
-    
-    // Verify no active PDP exists (archiving must be complete)
-    const { data: activePdp, error: checkError } = await supabase
-      .from('pdp')
-      .select('id')
-      .eq('player_id', playerId)
-      .is('archived_at', null)
-      .single()
-
-    console.log('Check for active PDP result:', { activePdp, checkError })
-
-    // If there's no error and we found an active PDP, that's a problem
-    if (!checkError && activePdp) {
-      console.log('❌ Active PDP still exists:', activePdp)
-      return { success: false, error: 'An active PDP still exists. Please archive it first.' }
-    }
-
-    // If there's an error but it's PGRST116 (no rows), that's expected
-    if (checkError && checkError.code === 'PGRST116') {
-      console.log('✅ No active PDP found (expected) - proceeding to create new one')
-    } else if (checkError) {
-      console.log('❌ Unexpected error checking for active PDP:', checkError)
-      return { success: false, error: `Error checking for active PDP: ${checkError.message}` }
-    }
-
-    console.log('✅ No active PDP found, proceeding to create new one')
-
-    // Create new PDP with the provided content
-    const newPdpData = {
-      player_id: playerId,
-      start_date: now,
-      content: content,
-      created_at: now,
-      updated_at: now,
-      // archived_at is null by default, making this the new active PDP
-    }
-
-    console.log('📝 Inserting new PDP with data:', newPdpData)
-
-    const { data: newPdp, error: insertError } = await supabase
-      .from('pdp')
-      .insert(newPdpData)
-      .select()
-
-    if (insertError) {
-      console.log('❌ Error inserting new PDP:', insertError)
-      return { success: false, error: `Error creating new PDP: ${insertError.message}` }
-    }
-
-    console.log('✅ New PDP created successfully:', newPdp)
-
-    // Verify the new PDP was created and is now the active one
-    const { data: verifyPdp, error: verifyError } = await supabase
-      .from('pdp')
-      .select('*')
-      .eq('player_id', playerId)
-      .is('archived_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (verifyError) {
-      console.log('❌ Error verifying new PDP:', verifyError)
-      return { success: false, error: `Error verifying new PDP: ${verifyError.message}` }
-    }
-
-    console.log('✅ New PDP verified as active:', verifyPdp)
-
-    return { success: true }
   } catch (error) {
-    console.log('❌ Unexpected error in createNewPDP:', error)
-    return { success: false, error: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}` }
+    console.error('Unexpected error in archiveAndCreateNewPDP:', error);
+    return { success: false, error: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
 } 

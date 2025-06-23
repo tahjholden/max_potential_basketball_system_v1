@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import PaneTitle from "@/components/PaneTitle";
+import AddPlayerButton from "./AddPlayerButton";
 
 interface Player {
   id: string;
@@ -13,9 +14,10 @@ interface Player {
 interface PlayerListPaneProps {
   players: Player[];
   onSelect?: () => void;
+  onPlayerAdded?: () => void;
 }
 
-export default function PlayerListPane({ players, onSelect }: PlayerListPaneProps) {
+export default function PlayerListPane({ players, onSelect, onPlayerAdded }: PlayerListPaneProps) {
   const { playerId, setPlayerId } = useSelectedPlayer();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
@@ -34,7 +36,10 @@ export default function PlayerListPane({ players, onSelect }: PlayerListPaneProp
 
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
-      <PaneTitle>Players</PaneTitle>
+      <div className="flex justify-between items-center mb-4">
+        <PaneTitle>Players</PaneTitle>
+        {onPlayerAdded && <AddPlayerButton onPlayerAdded={onPlayerAdded} />}
+      </div>
       
       <div className="mb-4">
         <input
@@ -46,7 +51,7 @@ export default function PlayerListPane({ players, onSelect }: PlayerListPaneProp
         />
       </div>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto">
+      <div className="space-y-2 max-h-96 overflow-y-auto pr-3">
         {filteredPlayers.length === 0 ? (
           <div className="text-zinc-500 text-sm text-center py-4">
             {searchTerm ? "No players found." : "No players available."}

@@ -39,18 +39,19 @@ export async function archiveAndCreateNewPDP(playerId: string) {
     return null;
   }
 
-  // 3. Link all unlinked observations to the archived PDP
+  // 3. Archive all observations linked to this PDP using clean boolean approach
   const { error: linkObsError } = await supabase
     .from("observations")
     .update({ 
       pdp_id: currentPDP.id,
-      archived_at: now 
+      archived: true,  // Set boolean flag for UI filtering
+      archived_at: now // Keep timestamp for audit purposes
     })
     .eq("player_id", playerId)
-    .is("pdp_id", null);
+    .eq("archived", false); // Only update unarchived observations
 
   if (linkObsError) {
-    console.error("Failed to link observations:", linkObsError);
+    console.error("Failed to archive observations:", linkObsError);
     // Still proceed
   }
 

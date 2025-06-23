@@ -17,7 +17,7 @@ interface ArchivedPdp {
   dateRange: string;
   summary: string;
   observations: Observation[];
-  start_date: string;
+  created_at: string;
   archived_at: string;
 }
 
@@ -68,7 +68,7 @@ export default function PDPArchivePane({
           pdps.map((pdp) => (
             <div key={pdp.id} className="bg-zinc-800 p-3 rounded text-sm">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-yellow-400 font-semibold">{pdp.dateRange}</p>
+                <p className="text-[#d8cc97] font-semibold">{pdp.dateRange}</p>
                 <button
                   onClick={() => togglePdpExpansion(pdp.id)}
                   className="text-zinc-400 hover:text-zinc-200"
@@ -82,10 +82,6 @@ export default function PDPArchivePane({
               </div>
               
               <p className="text-zinc-300 mb-2">{pdp.summary}</p>
-              
-              <p className="text-zinc-400 text-xs mb-2">
-                {format(new Date(pdp.start_date), "MMM d, yyyy")} - {format(new Date(pdp.archived_at), "MMM d, yyyy")}
-              </p>
 
               {/* Observations Section */}
               {expandedPdps.has(pdp.id) && (

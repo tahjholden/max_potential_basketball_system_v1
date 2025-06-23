@@ -42,20 +42,59 @@ export default function CreatePDPModal({
 
     try {
       const supabase = createClient();
+      const now = new Date().toISOString();
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
         setError("User not authenticated.");
         setLoading(false);
         return;
       }
 
+      // Look up (or create) the coach record
+      let coachId: string;
+      let { data: coachRow } = await supabase
+        .from('coaches')
+        .select('id')
+        .eq('auth_uid', user.id)
+        .maybeSingle();
+
+      if (!coachRow) {
+        // Auto-create coach record if missing
+        const { data: newCoach, error: createCoachError } = await supabase
+          .from('coaches')
+          .insert({
+            auth_uid: user.id,
+            first_name: user.user_metadata?.first_name || '',
+            last_name: user.user_metadata?.last_name || '',
+            email: user.email || '',
+            is_admin: false,
+            active: true,
+            created_at: now,
+            updated_at: now
+          })
+          .select()
+          .single();
+        
+        if (createCoachError) {
+          setError(`Failed to create coach record: ${createCoachError.message}`);
+          setLoading(false);
+          return;
+        }
+        coachId = newCoach.id;
+      } else {
+        coachId = coachRow.id;
+      }
+
+      // Create the new PDP with coach_id
       const { error: insertError } = await supabase.from("pdp").insert({
         player_id: player.id,
-        content,
-        start_date: new Date().toISOString().slice(0, 10),
-        coach_id: user.id,
-        archived_at: null,
+        coach_id: coachId, // Always set coach_id
+        content: content.trim(),
+        start_date: now,
+        created_at: now,
+        updated_at: now,
       });
 
       if (insertError) {
@@ -64,7 +103,7 @@ export default function CreatePDPModal({
             "This player already has an active PDP. Please refresh and try again."
           );
         } else {
-          setError("Failed to create the new PDP.");
+          setError(`Failed to create the new PDP: ${insertError.message}`);
           console.error("PDP creation error:", insertError);
         }
       } else {
@@ -72,7 +111,7 @@ export default function CreatePDPModal({
         onClose();
       }
     } catch (err) {
-      setError("An unexpected error occurred.");
+      setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
       console.error("PDP creation error:", err);
     } finally {
       setLoading(false);

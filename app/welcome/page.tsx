@@ -50,8 +50,8 @@ export default function WelcomeScreen() {
   }, [phase, router, full1, highlight, full2]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-black text-white text-center px-4">
-      <h1 className="text-2xl md:text-3xl font-semibold tracking-wide mb-4 h-10">
+    <div className="relative flex flex-col items-center justify-center h-screen bg-black text-white text-center px-4">
+      <h1 className="relative z-10 text-2xl md:text-3xl font-semibold tracking-wide mb-4 h-10">
         {phase === "typing1" && (
           <>
             <span>{displayedText}</span>
@@ -83,11 +83,9 @@ export default function WelcomeScreen() {
       </h1>
 
       {showLogo && (
-        <img
-          src="/maxsM.png"
-          alt="MP Logo"
-          className="mt-6 w-24 h-24 object-contain opacity-80 transition-opacity duration-700"
-        />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="w-96 h-96 bg-[url('/maxsM.png')] bg-contain bg-center bg-no-repeat opacity-80 translate-y-16" />
+        </div>
       )}
     </div>
   );
