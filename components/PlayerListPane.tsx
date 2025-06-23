@@ -118,18 +118,15 @@ export default function PlayerListPane({
                 onClick={() => handlePlayerSelect(player.id)}
                 className={`w-full text-left p-3 rounded transition-colors flex items-center justify-between ${
                   playerId === player.id
-                    ? "bg-gold text-black font-bold text-base"
+                    ? missingPDP 
+                      ? "bg-zinc-700 text-white font-bold text-base"
+                      : "bg-gold text-black font-bold text-base"
                     : missingPDP
                     ? "border-2 border-red-500 bg-zinc-950/60 text-white text-sm hover:bg-zinc-800"
                     : "bg-zinc-800 text-white text-sm hover:bg-zinc-700"
                 }`}
               >
                 <span>{player.name}</span>
-                {missingPDP && playerId !== player.id && (
-                  <span className="text-xs text-red-500 font-bold ml-2 px-2 py-1 rounded border border-red-500 bg-red-950/30">
-                    No Plan
-                  </span>
-                )}
               </button>
             );
           })
