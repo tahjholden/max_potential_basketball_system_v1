@@ -31,7 +31,8 @@ const PlayerMetadataCard: React.FC<PlayerMetadataCardProps> = ({
       </div>
       <div className="bg-zinc-800 rounded px-4 py-3 text-sm space-y-2">
         <div>
-          <span className="text-zinc-500">Name:</span> <span className="text-gold font-bold">{player.name}</span>
+          <span className="text-zinc-500">Name:</span> 
+          <span className="font-bold" style={{ color: '#d8cc97', fontSize: '1.1rem' }}>{player.name}</span>
         </div>
         <div>
           <span className="text-zinc-500">Joined:</span> {format(new Date(player.joined), "MMMM do, yyyy")}
