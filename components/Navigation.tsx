@@ -2,73 +2,107 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, ClipboardList, BarChart3, Settings, Smartphone, Monitor } from "lucide-react";
+import {
+  Users,
+  ClipboardList,
+  BarChart3,
+  Settings,
+  Smartphone,
+  Monitor,
+  Home,
+  Shield,
+  BarChart2,
+} from "lucide-react";
 
-const navItems = [
-  { text: "Dashboard", path: "/protected/dashboard", icon: <Users className="w-5 h-5" /> },
-  { text: "Observations", path: "/protected/observations", icon: <ClipboardList className="w-5 h-5" /> },
+const mainNavLinks = [
+  { href: "/protected/test-dashboard", label: "Dashboard", icon: BarChart2 },
+  {
+    href: "/protected/test-observations",
+    label: "Observations",
+    icon: Shield,
+  },
+  { href: "/protected/players", label: "Players", icon: Users },
 ];
 
-const testItems = [
-  { text: "Test Dashboard", path: "/protected/test-dashboard", icon: <BarChart3 className="w-5 h-5" /> },
-  { text: "Test Players", path: "/protected/test-players", icon: <Settings className="w-5 h-5" /> },
-  { text: "Test Observations", path: "/protected/test-observations", icon: <Settings className="w-5 h-5" /> },
+const testNavLinks: typeof mainNavLinks = [];
+
+const mobileTestNavLinks = [
+  {
+    href: "/protected/test-dashboard-mobile",
+    label: "Test Dashboard Mobile",
+    icon: Smartphone,
+  },
+  {
+    href: "/protected/test-players-mobile",
+    label: "Test Players Mobile",
+    icon: Smartphone,
+  },
+  {
+    href: "/protected/test-observations-mobile",
+    label: "Test Observations Mobile",
+    icon: Smartphone,
+  },
 ];
 
-const mobileTestItems = [
-  { text: "Test Dashboard Mobile", path: "/protected/test-dashboard-mobile", icon: <Smartphone className="w-5 h-5" /> },
-  { text: "Test Players Mobile", path: "/protected/test-players-mobile", icon: <Smartphone className="w-5 h-5" /> },
-  { text: "Test Observations Mobile", path: "/protected/test-observations-mobile", icon: <Smartphone className="w-5 h-5" /> },
+const legacyNavLinks = [
+  { href: "/dashboard", label: "Legacy Dashboard", icon: Home },
+  {
+    href: "/protected/observations",
+    label: "Legacy Observations",
+    icon: ClipboardList,
+  },
 ];
 
-export function Navigation() {
+export default function Navigation() {
   const pathname = usePathname();
 
-  const renderNavItems = (items: typeof navItems) => {
-    return items.map((item) => {
-      const isActive = pathname === item.path;
-      return (
-        <li key={item.text}>
-          <Link
-            href={item.path}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              isActive 
-                ? "bg-gold/10 border-r-4 border-gold text-gold" 
-                : "hover:bg-gold/10 text-white"
-            }`}
-          >
-            <span className="text-gold">{item.icon}</span>
-            <span className="font-medium">{item.text}</span>
-          </Link>
-        </li>
-      );
-    });
+  const renderLink = (link: any, index: number) => {
+    const isActive = pathname === link.href;
+    return (
+      <Link href={link.href} key={index}>
+        <div
+          className={`flex items-center p-2 rounded-lg text-sm font-medium transition-colors ${
+            isActive
+              ? "bg-gold text-black"
+              : "text-zinc-300 hover:bg-zinc-800"
+          }`}
+        >
+          <link.icon className="w-5 h-5 mr-3" />
+          {link.label}
+        </div>
+      </Link>
+    );
   };
 
   return (
-    <nav className="flex-1">
-      <ul className="space-y-2">
-        <li className="mb-4">
-          <h2 className="text-gold text-lg font-bold px-3 whitespace-nowrap">MP Player Development</h2>
-        </li>
-        {renderNavItems(navItems)}
-        
-        {/* Test Pages Section */}
-        <li className="pt-4 border-t border-zinc-700">
-          <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2">
+    <nav className="flex flex-col h-full">
+      <div className="flex-grow space-y-2">
+        {mainNavLinks.map(renderLink)}
+
+        <div className="pt-4">
+          <h4 className="px-2 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
             Test Pages
-          </h3>
-        </li>
-        {renderNavItems(testItems)}
-        
-        {/* Mobile Test Pages Section */}
-        <li className="pt-4 border-t border-zinc-700">
-          <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2">
+          </h4>
+          <div className="space-y-2">{testNavLinks.map(renderLink)}</div>
+        </div>
+
+        <div className="pt-4">
+          <h4 className="px-2 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
             Mobile Test
-          </h3>
-        </li>
-        {renderNavItems(mobileTestItems)}
-      </ul>
+          </h4>
+          <div className="space-y-2">
+            {mobileTestNavLinks.map(renderLink)}
+          </div>
+        </div>
+      </div>
+
+      {/* New Legacy section at the bottom */}
+      <div className="pt-4">
+        <h4 className="px-2 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
+          Legacy
+        </h4>
+        <div className="space-y-2">{legacyNavLinks.map(renderLink)}</div>
+      </div>
     </nav>
   );
 } 

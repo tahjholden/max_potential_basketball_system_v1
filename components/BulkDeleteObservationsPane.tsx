@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AddObservationButton from "./AddObservationButton";
 
 interface Observation {
     id: string;
@@ -6,16 +7,25 @@ interface Observation {
     observation_date: string;
 }
 
+interface Player {
+    id: string;
+    name: string;
+}
+
 interface BulkDeleteObservationsPaneProps {
     observations: Observation[];
     onDeleteMany?: (ids: string[]) => Promise<void>;
     showCheckboxes?: boolean;
+    player?: Player | null;
+    onObservationAdded?: () => void;
 }
 
 export default function BulkDeleteObservationsPane({ 
     observations, 
     onDeleteMany, 
-    showCheckboxes = true 
+    showCheckboxes = true,
+    player,
+    onObservationAdded
 }: BulkDeleteObservationsPaneProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -37,7 +47,15 @@ export default function BulkDeleteObservationsPane({
 
   return (
     <div className="bg-zinc-900 rounded border border-zinc-800 p-4">
-      <h2 className="text-base font-semibold mb-2">Recent Observations</h2>
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-base font-semibold">Recent Observations</h2>
+        {player && (
+          <AddObservationButton 
+            player={player} 
+            onObservationAdded={onObservationAdded}
+          />
+        )}
+      </div>
       <div className="bg-zinc-800 rounded px-4 py-2 space-y-2">
         {observations.length === 0 && (
           <div className="text-zinc-500 text-center py-2">No observations.</div>

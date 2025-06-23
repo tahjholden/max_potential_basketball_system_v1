@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import AddPlayerModal from "@/app/protected/dashboard/AddPlayerModal";
+import AddPlayerModal from "@/app/protected/players/AddPlayerModal";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
@@ -8,29 +8,49 @@ export default function AddPlayerButton({ onPlayerAdded }: { onPlayerAdded: () =
   const [isModalOpen, setModalOpen] = useState(false);
 
   const handleSubmit = async (playerData: any) => {
-    const supabase = createClient();
-    const { data: newPlayer, error } = await supabase
-      .from("players")
-      .insert({
-        first_name: playerData.first_name,
-        last_name: playerData.last_name,
-        name: `${playerData.first_name} ${playerData.last_name}`,
-      })
-      .select()
-      .single();
+    try {
+      const supabase = createClient();
+      
+      // Insert the player (do NOT insert 'name', it's a generated column)
+      const { data: newPlayer, error: playerError } = await supabase
+        .from("players")
+        .insert({
+          first_name: playerData.first_name,
+          last_name: playerData.last_name,
+        })
+        .select()
+        .single();
 
-    if (error) {
-      toast.error("Failed to add player.");
-    } else if (newPlayer && playerData.pdpContent) {
-      await supabase.from("pdp").insert({
-        player_id: newPlayer.id,
-        content: playerData.pdpContent,
-      });
+      if (playerError) {
+        console.error("Error adding player:", playerError);
+        toast.error(`Failed to add player: ${playerError.message}`);
+        return;
+      }
+
+      // If PDP content is provided, create a PDP
+      if (newPlayer && playerData.pdpContent) {
+        const { error: pdpError } = await supabase.from("pdp").insert({
+          player_id: newPlayer.id,
+          content: playerData.pdpContent,
+        });
+
+        if (pdpError) {
+          console.error("Error adding PDP:", pdpError);
+          toast.error(`Player added but failed to create PDP: ${pdpError.message}`);
+          // Still call onPlayerAdded since the player was created successfully
+          onPlayerAdded();
+          setModalOpen(false);
+          return;
+        }
+      }
+      
+      toast.success("Player added successfully!");
+      onPlayerAdded();
+      setModalOpen(false);
+    } catch (error) {
+      console.error("Unexpected error adding player:", error);
+      toast.error("An unexpected error occurred while adding the player.");
     }
-    
-    toast.success("Player added successfully!");
-    onPlayerAdded();
-    setModalOpen(false);
   };
 
   return (

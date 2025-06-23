@@ -35,11 +35,13 @@ interface Pdp {
   id: string;
   content: string | null;
   start_date: string;
+  created_at: string;
 }
 
 export default function TestDashboardPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId, clearPlayerId } = useSelectedPlayer();
+  const [pdps, setPdps] = useState<any[]>([]);
+  const { playerId, setPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,17 +62,22 @@ export default function TestDashboardPage() {
         const { data: observationsData } = await supabase
           .from("observations")
           .select("player_id");
+        const { data: pdpsData } = await supabase
+          .from("pdp")
+          .select("id, player_id, content, archived_at")
+          .is("archived_at", null);
+        
         const counts = new Map<string, number>();
         observationsData?.forEach(obs => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
-        setPlayers(
-          (playersData || []).map(player => ({
-            ...player,
-            observations: counts.get(player.id) || 0,
-            joined: new Date(player.created_at).toLocaleDateString(),
-          }))
-        );
+        const transformedPlayers = (playersData || []).map(player => ({
+          ...player,
+          observations: counts.get(player.id) || 0,
+          joined: new Date(player.created_at).toLocaleDateString(),
+        }));
+        setPlayers(transformedPlayers);
+        setPdps(pdpsData || []);
       } catch (err) {
         setError("Error fetching players");
       } finally {
@@ -78,7 +85,6 @@ export default function TestDashboardPage() {
       }
     }
     fetchPlayers();
-    clearPlayerId();
   }, []);
 
   useEffect(() => {
@@ -102,7 +108,7 @@ export default function TestDashboardPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from("pdp")
-        .select("id, content, start_date")
+        .select("id, content, start_date, created_at")
         .eq("player_id", playerId)
         .is("archived_at", null)
         .maybeSingle();
@@ -137,6 +143,7 @@ export default function TestDashboardPage() {
           leftPane={
             <PlayerListPane
               players={players}
+              pdps={pdps}
               onSelect={() => {
                 // Player selection is now handled by the global store
               }}
@@ -152,8 +159,21 @@ export default function TestDashboardPage() {
                   showDeleteButton={false}
                 />
                 <DevelopmentPlanCard 
-                  startDate={currentPdp?.start_date || null}
-                  content={currentPdp?.content || 'No active plan.'}
+                  player={selectedPlayer}
+                  pdp={currentPdp}
+                  onPdpUpdate={() => {
+                    // Refresh PDP data
+                    if (playerId) {
+                      const supabase = createClient();
+                      supabase
+                        .from("pdp")
+                        .select("id, content, start_date, created_at")
+                        .eq("player_id", playerId)
+                        .is("archived_at", null)
+                        .maybeSingle()
+                        .then(({ data }) => setCurrentPdp(data));
+                    }
+                  }}
                 />
               </div>
             ) : (

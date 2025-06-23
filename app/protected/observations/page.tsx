@@ -87,11 +87,9 @@ export default function ObservationsPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-900 text-white">
-      <div className="p-4 px-6 border-b border-zinc-800">
+    <div className="min-h-screen p-4 bg-zinc-950">
+      <div className="mt-2 px-6">
         <PageTitle>Observations</PageTitle>
-      </div>
-      <div className="flex-1 overflow-y-hidden">
         <ThreePaneLayout
           leftPane={<PlayerListPane players={players} onSelect={() => {}} />}
           centerPane={
@@ -103,10 +101,10 @@ export default function ObservationsPage() {
                 onDeleteMany={handleBulkDelete}
               />
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 h-full">
                 <EmptyCard title="Player Profile" />
-                <EmptyCard title="Recent Observations" />
                 <EmptyCard title="Development Plan" />
+                <EmptyCard title="Recent Observations" />
               </div>
             )
           }

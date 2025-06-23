@@ -26,6 +26,7 @@ interface MiddlePaneProps {
     pdp: Pdp | null;
     onDeleteMany: (ids: string[]) => Promise<void>;
     onPdpUpdate?: () => void;
+    onObservationAdded?: () => void;
 }
 
 export default function MiddlePane({
@@ -33,7 +34,8 @@ export default function MiddlePane({
   observations,
   pdp,
   onDeleteMany,
-  onPdpUpdate
+  onPdpUpdate,
+  onObservationAdded
 }: MiddlePaneProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -41,6 +43,8 @@ export default function MiddlePane({
       <BulkDeleteObservationsPane
         observations={observations}
         onDeleteMany={onDeleteMany}
+        player={player}
+        onObservationAdded={onObservationAdded}
       />
       <DevelopmentPlanCard
         player={player}

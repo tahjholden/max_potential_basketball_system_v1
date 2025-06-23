@@ -1,11 +1,17 @@
 "use client";
 import { useState } from "react";
-import AddObservationModal from "@/app/protected/test-players/AddObservationModal";
+import AddObservationModal from "@/app/protected/players/AddObservationModal";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "react-hot-toast";
 
-export default function AddObservationButton({ player }: { player: any }) {
+export default function AddObservationButton({ 
+  player, 
+  onObservationAdded 
+}: { 
+  player: any; 
+  onObservationAdded?: () => void;
+}) {
   const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
 
@@ -90,6 +96,9 @@ export default function AddObservationButton({ player }: { player: any }) {
     if (!error) {
       setModalOpen(false);
       router.refresh();
+      if (onObservationAdded) {
+        onObservationAdded();
+      }
     } else {
       console.error("Error adding observation:", error);
       toast.error(`Failed to add observation: ${error.message}`);
@@ -100,7 +109,7 @@ export default function AddObservationButton({ player }: { player: any }) {
     <>
       <button 
         onClick={() => setModalOpen(true)}
-        className="bg-[#d8cc97] text-[#0f172a] text-sm font-semibold px-3 py-1.5 rounded hover:bg-[#e0d8a3] transition"
+        className="border border-[#d8cc97] text-xs px-3 py-1.5 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition"
       >
         + Add Observation
       </button>

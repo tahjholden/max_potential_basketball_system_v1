@@ -35,7 +35,7 @@ interface Pdp {
 
 export default function TestObservationsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId } = useSelectedPlayer();
+  const { playerId, setPlayerId } = useSelectedPlayer();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -48,6 +48,10 @@ export default function TestObservationsPage() {
   const handleBulkDelete = async (ids: string[]) => {
     const supabase = createClient();
     await supabase.from("observations").delete().in("id", ids);
+    fetchDataForPlayer();
+  };
+
+  const handleObservationAdded = () => {
     fetchDataForPlayer();
   };
 
@@ -85,26 +89,25 @@ export default function TestObservationsPage() {
     setActivePdp(pdpData);
   }, [playerId, players]);
 
-  // This effect runs once on initial load to fetch the player list
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true);
+  const fetchInitialData = useCallback(async () => {
+    setLoading(true);
+    try {
       const supabase = createClient();
       
+      // Fetch players
       const { data: playersData } = await supabase
         .from("players")
-        .select("id, name, first_name, last_name, created_at")
-        .order("last_name", { ascending: true });
-        
-      const { count: totalObsCount } = await supabase
+        .select("id, first_name, last_name, name, created_at")
+        .order("created_at", { ascending: false });
+
+      // Fetch observation counts for each player
+      const { data: observationsData } = await supabase
         .from("observations")
-        .select('*', { count: 'exact', head: true });
+        .select("player_id")
+        .is("archived", false);
 
-      setTotalObservations(totalObsCount || 0);
-
-      const { data: playerObsData } = await supabase.from("observations").select("player_id");
       const observationCounts = new Map<string, number>();
-      playerObsData?.forEach(obs => {
+      observationsData?.forEach(obs => {
         observationCounts.set(obs.player_id, (observationCounts.get(obs.player_id) || 0) + 1);
       });
 
@@ -117,9 +120,15 @@ export default function TestObservationsPage() {
       
       setPlayers(transformedPlayers);
       setLoading(false);
-    };
-    fetchInitialData();
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchInitialData();
+  }, [fetchInitialData]);
 
   // This effect re-runs whenever the selected player changes
   useEffect(() => {
@@ -145,6 +154,7 @@ export default function TestObservationsPage() {
                 observations={observations}
                 pdp={activePdp}
                 onDeleteMany={handleBulkDelete}
+                onObservationAdded={handleObservationAdded}
               />
             ) : (
               <div className="flex flex-col gap-4">

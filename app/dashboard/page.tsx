@@ -1,116 +1,195 @@
 "use client";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { StatCard } from "@/components/ui/stat-card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import DashboardMetrics from "@/components/DashboardMetrics";
-import PlayerList from "@/components/PlayerList";
-import PDPModal from "@/components/PDPModal";
-import { getDashboardData } from "@/lib/supabase";
 
-const BG = "#111";
-const GOLD = "var(--color-gold)";
-const CARD = "#222";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { format } from "date-fns";
+import PageTitle from "@/components/PageTitle";
+import ObservationFeedPane from "@/components/ObservationFeedPane";
+import PlayerListPane from "@/components/PlayerListPane";
+import PlayerProfilePane from "@/components/PlayerProfilePane";
+import PlayerMetadataCard from "@/components/PlayerMetadataCard";
+import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
+import ThreePaneLayout from "@/components/ThreePaneLayout";
+import DeletePlayerButton from "@/components/DeletePlayerButton";
+import ObservationInsightsPane from "@/components/ObservationInsightsPane";
+import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
+import EmptyCard from "@/components/EmptyCard";
+
+interface Player {
+  id: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  observations: number;
+  joined: string;
+}
+
+interface Observation {
+  id: string;
+  content: string;
+  observation_date: string;
+  created_at: string;
+}
+
+interface Pdp {
+  id: string;
+  content: string | null;
+  start_date: string;
+  created_at: string;
+}
 
 export default function DashboardPage() {
-  const [players, setPlayers] = useState<any[]>([]);
-  const [observations, setObservations] = useState<any[]>([]);
-  const [pdps, setPdps] = useState<any[]>([]);
-  const [showAddPlayer, setShowAddPlayer] = useState(false);
-  const [showAddObservation, setShowAddObservation] = useState(false);
-  const [newPlayer, setNewPlayer] = useState("");
-  const [addingPlayer, setAddingPlayer] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
-  const [pdpModalOpen, setPdpModalOpen] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const { playerId, clearPlayerId } = useSelectedPlayer();
+  const [observations, setObservations] = useState<Observation[]>([]);
+  const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const selectedPlayer = players.find((p) => p.id === playerId);
+
+  const fetchPdp = async () => {
+    if (!playerId) return setCurrentPdp(null);
     const supabase = createClient();
-    supabase.from("players").select("id,name").then(({ data }) => setPlayers(data || []));
-    supabase
-      .from("observations")
-      .select("id,content,observation_date,created_at,player:player_id(name)")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setObservations(data || []));
-    supabase
+    const { data } = await supabase
       .from("pdp")
-      .select("id,player_id,content,active")
-      .then(({ data }) => setPdps(data || []));
-  }, []);
-
-  const handleAddPlayer = async () => {
-    if (!newPlayer.trim()) return;
-    setAddingPlayer(true);
-    const supabase = createClient();
-    const { data, error } = await supabase.from("players").insert([{ name: newPlayer }]).select();
-    if (!error && data && data[0]) {
-      setPlayers((prev) => [...prev, data[0]]);
-      setShowAddPlayer(false);
-      setNewPlayer("");
-    }
-    setAddingPlayer(false);
+      .select("id, content, start_date, created_at")
+      .eq("player_id", playerId)
+      .is("archived_at", null)
+      .maybeSingle();
+    setCurrentPdp(data);
   };
 
-  const getPlayerObservations = (playerId: string) =>
-    observations
-      .filter((obs) => obs.player_id === playerId)
-      .sort((a, b) => new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime())
-      .slice(0, 3);
+  useEffect(() => {
+    async function fetchPlayers() {
+      setLoading(true);
+      setError(null);
+      try {
+        const supabase = createClient();
+        const { data: playersData } = await supabase
+          .from("players")
+          .select("id, name, first_name, last_name, created_at")
+          .order("last_name", { ascending: true });
+        const { data: observationsData } = await supabase
+          .from("observations")
+          .select("player_id");
+        const counts = new Map<string, number>();
+        observationsData?.forEach(obs => {
+          counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
+        });
+        setPlayers(
+          (playersData || []).map(player => ({
+            ...player,
+            observations: counts.get(player.id) || 0,
+            joined: new Date(player.created_at).toLocaleDateString(),
+          }))
+        );
+      } catch (err) {
+        setError("Error fetching players");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPlayers();
+    clearPlayerId();
+  }, []);
 
-  const getPlayerPDP = (playerId: string) => pdps.find((pdp) => pdp.player_id === playerId);
+  useEffect(() => {
+    async function fetchObs() {
+      if (!playerId) return setObservations([]);
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("observations")
+        .select("id, content, observation_date, created_at")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      setObservations(data || []);
+    }
+    fetchObs();
+  }, [playerId]);
+
+  useEffect(() => {
+    fetchPdp();
+  }, [playerId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
+        <span className="text-zinc-400">Loading players...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
+        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 grid grid-rows-[auto_1fr] gap-6">
-      <DashboardMetrics players={players} observations={observations} pdps={pdps} />
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {players.map((player) => (
-          <div key={player.id} className="bg-zinc-900 rounded-2xl shadow p-4">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-semibold">{player.name}</h3>
-              <Button size="sm" onClick={() => {
-                setSelectedPlayer(player);
-                setPdpModalOpen(true);
-              }}>Edit PDP</Button>
-            </div>
-            <div className="text-sm text-gold font-medium mb-2">PDP</div>
-            <div className="text-sm text-white mb-4">
-              {getPlayerPDP(player.id)?.content || "No PDP assigned."}
-            </div>
-            <div className="text-sm text-gold font-medium mb-2">Recent Observations</div>
-            <ul className="space-y-2 text-sm">
-              {getPlayerObservations(player.id).map((obs) => (
-                <li key={obs.id} className="text-white">{obs.content}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
+    <div className="min-h-screen p-4 bg-zinc-950">
+      <div className="mt-2 px-6">
+        <PageTitle>Dashboard</PageTitle>
+        <ThreePaneLayout
+          leftPane={
+            <PlayerListPane
+              players={players}
+              onSelect={() => {
+                // Player selection is now handled by the global store
+              }}
+            />
+          }
+          centerPane={
+            selectedPlayer ? (
+              <div className="flex flex-col gap-4">
+                <PlayerMetadataCard 
+                  player={{ name: selectedPlayer.name, joined: selectedPlayer.joined }} 
+                  observations={observations}
+                  playerId={selectedPlayer.id}
+                  showDeleteButton={false}
+                />
+                <DevelopmentPlanCard 
+                  player={selectedPlayer}
+                  pdp={currentPdp}
+                  onPdpUpdate={() => {
+                    // Refresh PDP data by re-fetching
+                    if (playerId) {
+                      fetchPdp();
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 h-full">
+                <EmptyCard title="Player Profile" />
+                <EmptyCard title="Development Plan" />
+              </div>
+            )
+          }
+          rightPane={
+            selectedPlayer ? (
+              <ObservationFeedPane observations={observations} />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center h-full px-4 py-6">
+                <h2 className="text-white font-semibold text-base mb-1">
+                  Welcome to MP Player Development
+                </h2>
+                <p className="text-sm text-zinc-400">
+                  To get started,&nbsp;
+                  <span className="text-white font-medium">select a player</span> from the list
+                  <br />
+                  or <span className="text-white font-medium">add a new one</span>.
+                </p>
+              </div>
+            )
+          }
+        />
       </div>
-
-      {pdpModalOpen && selectedPlayer && (
-        <PDPModal player={selectedPlayer} onClose={() => setPdpModalOpen(false)} />
-      )}
-
-      {/* Add Player Modal */}
-      <Dialog open={showAddPlayer} onOpenChange={setShowAddPlayer}>
-        <DialogContent className="bg-[#181818] border border-gold rounded-xl p-8 w-full max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gold">Add Player</DialogTitle>
-          </DialogHeader>
-          <Input className="mb-4 bg-[#222] border border-[#333] text-white" placeholder="Player Name" value={newPlayer} onChange={e => setNewPlayer(e.target.value)} />
-          <DialogFooter>
-            <button
-              className="bg-gold text-black font-semibold px-6 py-2 rounded hover:bg-gold/80 transition w-full"
-              onClick={handleAddPlayer}
-              disabled={!newPlayer.trim() || addingPlayer}
-            >
-              {addingPlayer ? "Saving..." : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 } 

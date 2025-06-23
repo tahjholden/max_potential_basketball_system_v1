@@ -6,7 +6,6 @@ import { LogOut } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import Image from "next/image";
 import { Toaster, toast } from "sonner";
-import { Navigation } from "@/components/Navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import React from "react";
 

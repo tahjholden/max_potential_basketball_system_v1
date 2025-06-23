@@ -1,71 +1,114 @@
-import React, { useState } from "react";
+"use client";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { GoldButton } from "@/components/ui/gold-button";
 
 interface AddPlayerModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (playerData: any) => void;
+  onSubmit: (playerData: { first_name: string; last_name: string; pdpContent?: string }) => void;
 }
 
 export default function AddPlayerModal({ open, onClose, onSubmit }: AddPlayerModalProps) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [position, setPosition] = useState("");
-  const [pdpContent, setPdpContent] = useState("");
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    pdpContent: ""
+  });
+  const [loading, setLoading] = useState(false);
 
-  if (!open) return null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSubmit(formData);
+      setFormData({ first_name: "", last_name: "", pdpContent: "" });
+    } catch (error) {
+      console.error("Error adding player:", error);
+    } finally {
+      setLoading(false);
+      onClose();
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({ first_name: "", last_name: "", pdpContent: "" });
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-800 p-8 rounded shadow-xl text-white max-w-md w-full">
-        <div className="flex justify-between items-center mb-4">
-          <div className="font-bold text-lg">Add Player</div>
-          <button className="ml-4 px-3 py-1 rounded bg-oldgold text-black font-semibold" onClick={onClose}>Close</button>
-        </div>
-        <div className="mb-4 space-y-2">
-          <input
-            className="p-2 rounded w-full text-black"
-            placeholder="First Name"
-            value={firstName}
-            onChange={e => setFirstName(e.target.value)}
-          />
-          <input
-            className="p-2 rounded w-full text-black"
-            placeholder="Last Name"
-            value={lastName}
-            onChange={e => setLastName(e.target.value)}
-          />
-          <input
-            className="p-2 rounded w-full text-black"
-            placeholder="Position (optional)"
-            value={position}
-            onChange={e => setPosition(e.target.value)}
-          />
-          <textarea
-            className="p-2 rounded w-full text-black"
-            placeholder="Initial PDP content (optional)"
-            value={pdpContent}
-            onChange={e => setPdpContent(e.target.value)}
-            rows={3}
-          />
-        </div>
-        <button
-          className="px-4 py-2 rounded bg-oldgold text-black font-semibold w-full mt-2"
-          onClick={() => {
-            onSubmit({
-              first_name: firstName,
-              last_name: lastName,
-              position,
-              pdpContent: pdpContent.trim()
-            });
-            setFirstName("");
-            setLastName("");
-            setPosition("");
-            setPdpContent("");
-          }}
-          disabled={!firstName.trim() || !lastName.trim()}
-        >
-          Submit
-        </button>
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-[#facc15] text-xl font-bold">
+            Add New Player
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              First Name *
+            </label>
+            <Input
+              type="text"
+              value={formData.first_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
+              className="bg-zinc-800 border-zinc-700 text-white focus:border-[#facc15]"
+              placeholder="Enter first name"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Last Name *
+            </label>
+            <Input
+              type="text"
+              value={formData.last_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
+              className="bg-zinc-800 border-zinc-700 text-white focus:border-[#facc15]"
+              placeholder="Enter last name"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              PDP (optional)
+            </label>
+            <textarea
+              value={formData.pdpContent}
+              onChange={(e) => setFormData(prev => ({ ...prev, pdpContent: e.target.value }))}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:border-[#facc15] focus:outline-none min-h-[80px]"
+              placeholder="Enter initial PDP for this player (optional)"
+            />
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+            >
+              Cancel
+            </Button>
+            <GoldButton
+              type="submit"
+              disabled={loading || !formData.first_name.trim() || !formData.last_name.trim()}
+            >
+              {loading ? "Adding..." : "Add Player"}
+            </GoldButton>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 } 

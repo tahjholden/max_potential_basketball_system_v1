@@ -335,4 +335,4 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
       </div>
     </div>
   );
-} 
+}

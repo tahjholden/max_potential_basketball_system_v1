@@ -29,6 +29,7 @@ interface Pdp {
   created_at: string;
   start_date: string;
   archived_at?: string;
+  player_id?: string;
 }
 
 interface Observation {
@@ -48,10 +49,17 @@ interface ArchivedPdp {
   archived_at: string;
 }
 
+interface PlayerListPdp {
+  id: string;
+  player_id: string;
+  content: string | null;
+  archived_at?: string;
+}
 
 export default function TestPlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId } = useSelectedPlayer();
+  const [allPdps, setAllPdps] = useState<PlayerListPdp[]>([]);
+  const { playerId, setPlayerId } = useSelectedPlayer();
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
   const [archivedPdps, setArchivedPdps] = useState<ArchivedPdp[]>([]);
@@ -137,6 +145,18 @@ export default function TestPlayersPage() {
       return;
     }
     
+    // Fetch all active PDPs
+    const { data: pdpsData, error: pdpsError } = await supabase
+      .from("pdp")
+      .select("id, player_id, content, archived_at")
+      .is("archived_at", null);
+    
+    if (pdpsError) {
+      console.error("Error fetching PDPs:", pdpsError);
+    } else {
+      console.log("Fetched PDPs:", pdpsData);
+    }
+    
     const { data: observationsData } = await supabase.from("observations").select("player_id");
     const counts = new Map();
     observationsData?.forEach(obs => {
@@ -150,6 +170,7 @@ export default function TestPlayersPage() {
       joined: new Date(player.created_at).toLocaleDateString(),
     }));
     setPlayers(transformedPlayers);
+    setAllPdps(pdpsData || []);
   }, []);
 
   useEffect(() => {
@@ -169,6 +190,7 @@ export default function TestPlayersPage() {
           leftPane={
             <PlayerListPane
               players={players}
+              pdps={allPdps}
               onSelect={() => {}}
               onPlayerAdded={fetchAllData}
             />
