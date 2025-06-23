@@ -17,6 +17,7 @@ import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
 import PaneTitle from "@/components/PaneTitle";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
+import EmptyCard from "@/components/EmptyCard";
 
 interface Player {
   id: string;
@@ -329,79 +330,51 @@ export default function TestPlayersPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 bg-zinc-950">
-      <div className="mt-2 px-6">
-        <PageTitle>Player Profile</PageTitle>
-
-        <ThreePaneLayout
-          leftPane={
-            <PlayerListPane
-              players={players}
-              onSelect={() => {
-                // Player selection is now handled by the global store
-              }}
-            />
-          }
-          centerPane={
-            selectedPlayer ? (
-              <div className="flex flex-col gap-4 w-full">
-                {/* Player Info Header */}
-                <PlayerMetadataCard 
-                  player={{ name: selectedPlayer.name, joined: selectedPlayer.joined }} 
-                  observations={observations}
-                  playerId={selectedPlayer.id}
-                  showDeleteButton={true}
-                />
-
-                <hr className="my-4 border-zinc-700" />
-
-                {/* Refactored PDP Display Box */}
-                <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <PaneTitle>Development Plan</PaneTitle>
-                    {selectedPlayer && currentPdp && (
-                      <div className="flex gap-2">
-                        <EditPDPButton player={selectedPlayer} pdp={currentPdp} onUpdate={fetchPdp} />
-                        <ManagePDPModal playerId={selectedPlayer.id} playerName={selectedPlayer.name} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-4">
-                    {currentPdp ? (
-                      <div className="bg-zinc-800 p-3 rounded text-sm text-zinc-200">
-                        <p className="text-xs text-zinc-500 mb-1">
-                          Started {format(new Date(currentPdp.start_date), 'PPP')}
-                        </p>
-                        <p className="whitespace-pre-line">{currentPdp.content || 'No content available'}</p>
-                      </div>
-                    ) : (
-                      <div className="bg-zinc-800 p-3 rounded text-sm text-zinc-500 text-center">
-                        No active plan.
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <ObservationFeedPane
-                  observations={observations}
-                />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-zinc-500">
-                Select a player to view their profile.
-              </div>
-            )
-          }
-          rightPane={
-            <PDPArchivePane
-              pdps={archivedPdps}
-              sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
-            />
-          }
-        />
+    <div className="h-full bg-zinc-950 p-4">
+      <div className="mb-4">
+        <PageTitle>Players</PageTitle>
       </div>
-
+      <ThreePaneLayout
+        leftPane={
+          <PlayerListPane
+            players={players}
+            onSelect={() => {
+              // Handled by global store
+            }}
+          />
+        }
+        centerPane={
+          selectedPlayer ? (
+            <div className="flex flex-col gap-4">
+              <DevelopmentPlanCard
+                startDate={currentPdp?.start_date || null}
+                content={currentPdp?.content || "No active plan."}
+              />
+              <PDPArchivePane
+                pdps={archivedPdps}
+                onSortOrderChange={setSortOrder}
+                sortOrder={sortOrder}
+              />
+            </div>
+          ) : (
+            <div className="flex h-full flex-col gap-4">
+              <EmptyCard title="Current Development Plan" />
+              <EmptyCard title="Archived Plans" />
+            </div>
+          )
+        }
+        rightPane={
+          selectedPlayer ? (
+            <PlayerObservationPane
+              playerName={selectedPlayer.name}
+              observations={observations}
+              onAdd={() => setAddObservationModalOpen(true)}
+            />
+          ) : (
+            <EmptyCard title="Observation Feed" />
+          )
+        }
+      />
       {selectedPlayer && (
         <AddObservationModal
           open={isAddObservationModalOpen}
@@ -410,7 +383,6 @@ export default function TestPlayersPage() {
           onSubmit={handleAddObservation}
         />
       )}
-
       {successMessage && (
         <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg">
           {successMessage}

@@ -12,6 +12,7 @@ import PlayerMetadataCard from "@/components/PlayerMetadataCard";
 import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import PaneTitle from "@/components/PaneTitle";
+import EmptyCard from "@/components/EmptyCard";
 
 // Define interfaces for our data structures
 interface Player {
@@ -120,17 +121,8 @@ export default function TestObservationsPage() {
     fetchDataForPlayer();
   }, [fetchDataForPlayer]);
 
-  const EmptyCard = ({ title }: { title: string }) => (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4 text-sm">
-      <PaneTitle>{title}</PaneTitle>
-      <div className="flex items-center justify-center py-8">
-        <img src="/maxsM.png" alt="Select a player" className="w-24 h-24 mx-auto opacity-20" />
-      </div>
-    </div>
-  );
-
   return (
-    <div className="p-4 md:p-6 h-full flex flex-col">
+    <div className="flex h-full flex-col p-4 md:p-6">
       <PageTitle>Observations</PageTitle>
       {loading ? (
         <div className="text-zinc-500 flex-1 flex items-center justify-center">Loading...</div>
@@ -142,7 +134,7 @@ export default function TestObservationsPage() {
             />
           }
           centerPane={
-            <div className="space-y-4 h-full">
+            <div className="flex h-full flex-col space-y-4">
               {selectedPlayer ? (
                 <>
                   <PlayerMetadataCard 

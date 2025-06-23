@@ -13,6 +13,7 @@ import ThreePaneLayout from "@/components/ThreePaneLayout";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
+import EmptyCard from "@/components/EmptyCard";
 
 interface Player {
   id: string;
@@ -38,7 +39,7 @@ interface Pdp {
 
 export default function TestDashboardPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId } = useSelectedPlayer();
+  const { playerId, clearPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,10 @@ export default function TestDashboardPage() {
       setCurrentPdp(data);
     }
   };
+
+  useEffect(() => {
+    clearPlayerId();
+  }, [clearPlayerId]);
 
   useEffect(() => {
     async function fetchPlayers() {
@@ -211,15 +216,33 @@ export default function TestDashboardPage() {
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-zinc-500">
-                Select a player to view their profile.
+              <div className="flex h-full flex-col gap-4">
+                <EmptyCard title="Player Profile" />
+                <EmptyCard title="Development Plan" />
               </div>
             )
           }
           rightPane={
-            <ObservationFeedPane
-              observations={observations}
-            />
+            selectedPlayer ? (
+              <ObservationFeedPane observations={observations} />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center h-full px-4 py-6">
+                <img
+                  src="/maxsM.png"
+                  alt="MP Logo"
+                  className="w-[140px] h-[140px] object-contain opacity-30 mb-5"
+                />
+                <h2 className="text-white font-semibold text-base mb-1">
+                  Welcome to MP Player Development
+                </h2>
+                <p className="text-sm text-zinc-400">
+                  To get started,&nbsp;
+                  <span className="text-white font-medium">select a player</span> from the list
+                  <br />
+                  or <span className="text-white font-medium">add a new one</span>.
+                </p>
+              </div>
+            )
           }
         />
       </div>
