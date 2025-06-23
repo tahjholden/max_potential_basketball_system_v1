@@ -103,7 +103,6 @@ export default function DashboardPage() {
     }
     fetchPlayers();
     fetchAllPdps();
-    clearPlayerId();
   }, []);
 
   useEffect(() => {
@@ -169,6 +168,7 @@ export default function DashboardPage() {
                 <DevelopmentPlanCard 
                   player={selectedPlayer}
                   pdp={currentPdp}
+                  showActions={false}
                   onPdpUpdate={() => {
                     // Refresh PDP data by re-fetching
                     if (playerId) {

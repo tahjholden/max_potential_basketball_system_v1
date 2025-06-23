@@ -42,6 +42,7 @@ export default function ObservationsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const { playerId, clearPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
+  const [allObservations, setAllObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [allPdps, setAllPdps] = useState<Pdp[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +71,7 @@ export default function ObservationsPage() {
   };
 
   useEffect(() => {
-    async function fetchPlayers() {
+    async function fetchPlayersAndAllObservations() {
       setLoading(true);
       setError(null);
       try {
@@ -81,7 +82,7 @@ export default function ObservationsPage() {
           .order("last_name", { ascending: true });
         const { data: observationsData } = await supabase
           .from("observations")
-          .select("player_id");
+          .select("id, content, observation_date, created_at, player_id");
         const counts = new Map<string, number>();
         observationsData?.forEach(obs => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
@@ -93,15 +94,15 @@ export default function ObservationsPage() {
             joined: new Date(player.created_at).toLocaleDateString(),
           }))
         );
+        setAllObservations(observationsData || []);
       } catch (err) {
         setError("Error fetching players");
       } finally {
         setLoading(false);
       }
     }
-    fetchPlayers();
+    fetchPlayersAndAllObservations();
     fetchAllPdps();
-    clearPlayerId();
   }, []);
 
   useEffect(() => {
@@ -186,7 +187,7 @@ export default function ObservationsPage() {
           }
           rightPane={
             <ObservationInsightsPane
-              total={observations.length}
+              total={allObservations.length}
               playerTotal={selectedPlayer ? observations.filter(o => o.player_id === selectedPlayer.id).length : 0}
             />
           }

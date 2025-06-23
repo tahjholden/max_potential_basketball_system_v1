@@ -18,12 +18,14 @@ interface DevelopmentPlanCardProps {
   player: Player | null;
   pdp: Pdp | null;
   onPdpUpdate?: () => void;
+  showActions?: boolean;
 }
 
 export default function DevelopmentPlanCard({
   player,
   pdp,
   onPdpUpdate,
+  showActions = true,
 }: DevelopmentPlanCardProps) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
@@ -34,7 +36,7 @@ export default function DevelopmentPlanCard({
             Started: {pdp?.created_at ? format(new Date(pdp.created_at), "MMM dd, yyyy") : "—"}
           </div>
         </div>
-        {pdp && player && (
+        {pdp && player && showActions && (
           <div className="flex gap-2">
             {onPdpUpdate && (
               <>

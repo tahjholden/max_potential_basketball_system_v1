@@ -28,8 +28,8 @@ interface Pdp {
   content: string | null;
   created_at: string;
   start_date: string;
-  archived_at?: string;
-  player_id?: string;
+  player_id: string;
+  archived_at: string | null;
 }
 
 interface Observation {
@@ -80,24 +80,21 @@ export default function TestPlayersPage() {
     // Fetch current PDP
     const { data: pdpData } = await supabase
       .from("pdp")
-      .select("id, content, created_at, start_date")
+      .select("id, content, created_at, start_date, player_id, archived_at")
       .eq("player_id", playerId)
       .is("archived_at", null)
       .maybeSingle();
     setCurrentPdp(pdpData);
 
-    // Fetch ALL observations for the player
-    const { data: allObsData } = await supabase
+    // Fetch recent observations for the player (matching dashboard behavior)
+    const { data: recentObsData } = await supabase
       .from("observations")
-      .select("id, content, observation_date, created_at, pdp_id, archived_at")
+      .select("id, content, observation_date, created_at")
       .eq("player_id", playerId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-    const allObservations = allObsData || [];
-
-    // Filter for active (un-archived) observations
-    const activeObservations = allObservations.filter(obs => !obs.archived_at);
-    setObservations(activeObservations);
+    setObservations(recentObsData || []);
 
     // Fetch archived PDPs
     const { data: archivedData } = await supabase
@@ -112,14 +109,11 @@ export default function TestPlayersPage() {
           const startDate = format(new Date(pdp.start_date), "MMM d, yyyy");
           const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMM d, yyyy") : "Present";
           
-          // Find observations belonging to this archived PDP
-          const pdpObservations = allObservations.filter(obs => obs.pdp_id === pdp.id);
-
           return {
               id: pdp.id,
               dateRange: `${startDate} - ${endDate}`,
               summary: pdp.content || "No content available",
-              observations: pdpObservations, // Pass the correct observations
+              observations: [], // We'll fetch observations separately if needed
               created_at: pdp.created_at,
               start_date: pdp.start_date,
               archived_at: pdp.archived_at,

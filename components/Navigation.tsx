@@ -16,12 +16,12 @@ import {
 
 const mainNavLinks = [
   { href: "/protected/dashboard", label: "Dashboard", icon: BarChart2 },
+  { href: "/protected/players", label: "Players", icon: Users },
   {
     href: "/protected/observations",
     label: "Observations",
     icon: Shield,
   },
-  { href: "/protected/players", label: "Players", icon: Users },
 ];
 
 const testNavLinks: typeof mainNavLinks = [];
