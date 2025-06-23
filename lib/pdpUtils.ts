@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
+import { archiveAndCreateNewPDP as newArchiveAndCreateNewPDP } from "./archiveAndCreateNewPDP";
 
+// DEPRECATED: Use the new archiveAndCreateNewPDP function from archiveAndCreateNewPDP.ts instead
+// This function is kept for backward compatibility but will be removed in future versions
 export async function archiveAndCreateNewPDP(playerId: string) {
+  console.warn('DEPRECATED: Use the new archiveAndCreateNewPDP function from archiveAndCreateNewPDP.ts instead');
+  
   const supabase = createClient();
   const now = new Date().toISOString();
 
@@ -34,17 +39,18 @@ export async function archiveAndCreateNewPDP(playerId: string) {
     return null;
   }
 
-  // 3. Link observations in window
-  const { error: updateObsError } = await supabase
+  // 3. Link all unlinked observations to the archived PDP
+  const { error: linkObsError } = await supabase
     .from("observations")
-    .update({ pdp_id: currentPDP.id })
+    .update({ 
+      pdp_id: currentPDP.id,
+      archived_at: now 
+    })
     .eq("player_id", playerId)
-    .gte("observation_date", currentPDP.start_date)
-    .lte("observation_date", now)
-    .is("archived_at", null);
+    .is("pdp_id", null);
 
-  if (updateObsError) {
-    console.error("Failed to update observations:", updateObsError);
+  if (linkObsError) {
+    console.error("Failed to link observations:", linkObsError);
     // Still proceed
   }
 

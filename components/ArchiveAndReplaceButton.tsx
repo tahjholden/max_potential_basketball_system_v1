@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { Archive, Plus } from "lucide-react";
 import toast from "react-hot-toast";
-import { archiveAndCreateNewPDP } from "@/lib/pdpUtils";
+import { archiveAndCreateNewPDP } from "@/lib/archiveAndCreateNewPDP";
+import { createClient } from "@/lib/supabase/client";
 
 interface ArchiveAndReplaceButtonProps {
   playerId: string;
@@ -22,13 +23,33 @@ export default function ArchiveAndReplaceButton({
   const handleArchiveAndNew = async () => {
     setLoading(true);
     try {
-      const newPDP = await archiveAndCreateNewPDP(playerId);
+      // Get the current PDP first
+      const supabase = createClient();
+      const { data: currentPdp, error: fetchError } = await supabase
+        .from('pdp')
+        .select('*')
+        .eq('player_id', playerId)
+        .is('archived_at', null)
+        .single()
+
+      if (fetchError || !currentPdp) {
+        toast.error("No active PDP found to archive.");
+        setLoading(false);
+        return;
+      }
+
+      // Use the new consolidated function with default content
+      const result = await archiveAndCreateNewPDP({
+        currentPdp,
+        playerId,
+        newContent: "New development plan created automatically."
+      })
       
-      if (newPDP) {
+      if (result.success) {
         toast.success("Archived old PDP and created a new one.");
         onSuccess?.();
       } else {
-        toast.error("Failed to update PDP. No active PDP found.");
+        toast.error(result.error || "Failed to update PDP.");
       }
     } catch (error) {
       console.error("Archive and create error:", error);

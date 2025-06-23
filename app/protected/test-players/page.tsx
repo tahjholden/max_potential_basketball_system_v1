@@ -45,6 +45,9 @@ interface ArchivedPdp {
   id: string;
   dateRange: string;
   summary: string;
+  observations: Observation[];
+  start_date: string;
+  archived_at: string;
 }
 
 export default function TestPlayersPage() {
@@ -89,12 +92,23 @@ export default function TestPlayersPage() {
 
     try {
       const supabase = createClient();
-      const { data, error } = await supabase
+      let query = supabase
         .from("observations")
         .select("id, content, observation_date, created_at")
         .eq("player_id", playerId)
-        .order("created_at", { ascending: false })
-        .limit(5);
+        .is("archived_at", null)
+        .order("created_at", { ascending: false });
+
+      // Dynamically filter observations:
+      // - If there's an active PDP, show observations for it.
+      // - If not, show observations that are not linked to any PDP.
+      if (currentPdp) {
+        query = query.eq('pdp_id', currentPdp.id);
+      } else {
+        query = query.is('pdp_id', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw new Error(`Error fetching observations: ${error.message}`);
       setObservations(data || []);
@@ -125,20 +139,31 @@ export default function TestPlayersPage() {
         return;
       }
 
-      // Transform archived PDPs to match the interface
-      const transformedPdps: ArchivedPdp[] = (data || []).map((pdp) => {
-        const startDate = format(new Date(pdp.start_date), "MMM yyyy");
-        const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMM yyyy") : "Present";
-        const dateRange = startDate === endDate ? startDate : `${startDate} - ${endDate}`;
-        
-        return {
-          id: pdp.id,
-          dateRange,
-          summary: pdp.content || "No content available",
-        };
-      });
+      // For each archived PDP, fetch its observations
+      const archivedPdpsWithObservations = await Promise.all(
+        (data || []).map(async (pdp) => {
+          const { data: pdpObservations } = await supabase
+            .from("observations")
+            .select("id, content, observation_date, created_at")
+            .eq("pdp_id", pdp.id)
+            .order("created_at", { ascending: false });
 
-      setArchivedPdps(transformedPdps);
+          const startDate = format(new Date(pdp.start_date), "MMM yyyy");
+          const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMM yyyy") : "Present";
+          const dateRange = startDate === endDate ? startDate : `${startDate} - ${endDate}`;
+          
+          return {
+            id: pdp.id,
+            dateRange,
+            summary: pdp.content || "No content available",
+            observations: pdpObservations || [],
+            start_date: pdp.start_date,
+            archived_at: pdp.archived_at,
+          };
+        })
+      );
+
+      setArchivedPdps(archivedPdpsWithObservations);
     } catch (err) {
       console.error("Error fetching archived PDPs:", err);
       setArchivedPdps([]);
@@ -203,13 +228,18 @@ export default function TestPlayersPage() {
 
   // Fetch active PDP for the selected player
   useEffect(() => {
-    fetchPdp();
+    if (playerId) {
+      fetchPdp();
+    } else {
+      setCurrentPdp(null);
+      setObservations([]);
+    }
   }, [playerId]);
 
-  // Fetch observations when selected player changes
+  // Fetch observations only after the active PDP has been determined
   useEffect(() => {
     fetchObservations();
-  }, [playerId]);
+  }, [playerId, currentPdp]);
 
   // Fetch archived PDPs when player or sort order changes
   useEffect(() => {
@@ -230,25 +260,43 @@ export default function TestPlayersPage() {
   };
 
   const handleAddObservation = async (content: string) => {
-    if (!selectedPlayer) {
+    if (!playerId) {
       console.error("No player selected.");
       return;
     }
 
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      console.error("User not authenticated.");
+      return;
+    }
+
+    // Get the active PDP for the player to link the observation
+    const { data: activePdp } = await supabase
+      .from("pdp")
+      .select("id")
+      .eq("player_id", playerId)
+      .is("archived_at", null)
+      .single();
+
     const { error } = await supabase.from("observations").insert({
-      player_id: selectedPlayer.id,
-      content: content,
+      player_id: playerId,
+      content,
       observation_date: new Date().toISOString(),
+      coach_id: user.id,
+      pdp_id: activePdp?.id,
     });
 
     if (error) {
-      console.error("Failed to add observation.");
+      console.error("Failed to add observation:", error.message);
     } else {
+      setAddObservationModalOpen(false);
       setSuccessMessage("Observation added successfully.");
       setTimeout(() => setSuccessMessage(null), 3100);
-      await fetchObservations();
-      setAddObservationModalOpen(false);
+      fetchObservations(); // Refresh observations list
+      fetchArchivedPdps(); // Also refresh archives in case of state changes
     }
   };
 
@@ -324,7 +372,7 @@ export default function TestPlayersPage() {
                         <p className="text-xs text-zinc-500 mb-1">
                           Started {format(new Date(currentPdp.start_date), 'PPP')}
                         </p>
-                        <p className="whitespace-pre-line">{currentPdp.content}</p>
+                        <p className="whitespace-pre-line">{currentPdp.content || 'No content available'}</p>
                       </div>
                     ) : (
                       <div className="bg-zinc-800 p-3 rounded text-sm text-zinc-500 text-center">

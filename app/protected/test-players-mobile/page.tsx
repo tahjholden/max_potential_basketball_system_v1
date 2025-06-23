@@ -234,7 +234,7 @@ export default function TestPlayersMobilePage() {
               <p className="text-xs text-zinc-400 mb-1">
                 Started: {format(new Date(currentPdp.start_date), "MMM d, yyyy")}
               </p>
-              <p className="whitespace-pre-wrap">{currentPdp.content}</p>
+              <p className="whitespace-pre-wrap">{currentPdp.content || 'No content available'}</p>
             </div>
           ) : (
             <p className="text-sm text-zinc-500">No PDP created yet.</p>

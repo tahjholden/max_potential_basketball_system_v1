@@ -1,5 +1,3 @@
-import { formatDate } from "@/lib/utils";
-
 export default function CurrentPDPCard({ pdp }: { pdp: any }) {
   if (!pdp) {
     return (
@@ -8,6 +6,15 @@ export default function CurrentPDPCard({ pdp }: { pdp: any }) {
       </div>
     );
   }
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (e) {
+      return "N/A";
+    }
+  };
 
   return (
     <div className="p-4 bg-[#232323] border border-[#323232] rounded-md space-y-2">

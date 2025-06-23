@@ -46,9 +46,11 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
 
   const fetchPdp = async () => {
     if (!selected) {
+      console.log('No player selected, setting currentPdp to null');
       setCurrentPdp(null);
       return;
     }
+    console.log('Fetching PDP for player:', selected);
     const supabase = createClient();
     const { data, error } = await supabase
       .from("pdp")
@@ -61,7 +63,40 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
       console.error("Error fetching PDP:", error.message);
       setCurrentPdp(null);
     } else {
+      console.log("Fetched PDP data:", data);
       setCurrentPdp(data);
+    }
+  };
+
+  // Enhanced fetchPdp with retry mechanism
+  const fetchPdpWithRetry = async (retryCount = 0) => {
+    if (!selected) {
+      console.log('No player selected, setting currentPdp to null');
+      setCurrentPdp(null);
+      return;
+    }
+    
+    console.log(`Fetching PDP for player: ${selected} (attempt ${retryCount + 1})`);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("pdp")
+      .select("id, content, start_date")
+      .eq("player_id", selected)
+      .is("archived_at", null)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching PDP:", error.message);
+      setCurrentPdp(null);
+    } else {
+      console.log("Fetched PDP data:", data);
+      setCurrentPdp(data);
+      
+      // If no PDP found and we haven't retried too many times, retry after a short delay
+      if (!data && retryCount < 2) {
+        console.log(`No PDP found, retrying in 500ms... (attempt ${retryCount + 1})`);
+        setTimeout(() => fetchPdpWithRetry(retryCount + 1), 500);
+      }
     }
   };
 
@@ -152,10 +187,13 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
 
   // Fetch active PDP for the selected player
   useEffect(() => {
-    fetchPdp();
+    fetchPdpWithRetry();
   }, [selected]);
 
   const selectedPlayer = players.find((p) => p.id === selected);
+
+  // Debug logging
+  console.log('Rendering with currentPdp:', currentPdp);
 
   if (loading) {
     return (
@@ -250,14 +288,14 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
                 onClose={() => setCreateModalOpen(false)}
                 player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
                 coachId={coachId}
-                onCreated={fetchPdp}
+                onCreated={fetchPdpWithRetry}
               />
               <EditPDPModal
                 open={isEditModalOpen}
                 onClose={() => setEditModalOpen(false)}
                 player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
                 currentPdp={currentPdp}
-                onSuccess={fetchPdp}
+                onSuccess={fetchPdpWithRetry}
               />
               <div>
                 <h3 className="text-sm font-semibold mb-1">Recent Observations ({selectedPlayer.observations})</h3>

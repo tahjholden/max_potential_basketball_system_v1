@@ -129,7 +129,7 @@ export default function PDPSection({
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    setEditPdpContent(currentPdp.content);
+                    setEditPdpContent(currentPdp.content || '');
                     setIsEditModalOpen(true);
                   }}
                   className="p-1 text-[#d8cc97] hover:bg-[#323232] rounded"
@@ -151,7 +151,7 @@ export default function PDPSection({
               </div>
             </div>
             <p className="text-slate-300 text-sm whitespace-pre-wrap mb-3">
-              {currentPdp.content}
+              {currentPdp.content || 'No content available'}
             </p>
             <p className="text-xs text-slate-500">
               Started: {new Date(currentPdp.start_date).toLocaleDateString()}

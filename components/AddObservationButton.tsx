@@ -12,9 +12,26 @@ export default function AddObservationButton({ player }: { player: any }) {
     const supabase = createClient();
     
     // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       console.error("User not authenticated.");
+      return;
+    }
+
+    // Get the active PDP for the player
+    const { data: activePdp, error: pdpError } = await supabase
+      .from("pdp")
+      .select("id")
+      .eq("player_id", player.id)
+      .is("archived_at", null)
+      .single();
+
+    if (pdpError && pdpError.code !== "PGRST116") {
+      // PGRST116 means no rows found, which is okay.
+      console.error("Error fetching active PDP:", pdpError);
+      // We can decide to show an error to the user here
       return;
     }
 
@@ -23,6 +40,7 @@ export default function AddObservationButton({ player }: { player: any }) {
       content: content,
       observation_date: new Date().toISOString(),
       coach_id: user.id,
+      pdp_id: activePdp?.id,
     });
     if (!error) {
       setModalOpen(false);

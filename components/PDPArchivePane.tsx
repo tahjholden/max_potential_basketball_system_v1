@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import PaneTitle from "@/components/PaneTitle";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
 
 interface Observation {
   id: string;
@@ -14,6 +16,9 @@ interface ArchivedPdp {
   id: string;
   dateRange: string;
   summary: string;
+  observations: Observation[];
+  start_date: string;
+  archived_at: string;
 }
 
 interface PDPArchivePaneProps {
@@ -27,6 +32,18 @@ export default function PDPArchivePane({
   sortOrder,
   onSortOrderChange,
 }: PDPArchivePaneProps) {
+  const [expandedPdps, setExpandedPdps] = useState<Set<string>>(new Set());
+
+  const togglePdpExpansion = (pdpId: string) => {
+    const newExpanded = new Set(expandedPdps);
+    if (newExpanded.has(pdpId)) {
+      newExpanded.delete(pdpId);
+    } else {
+      newExpanded.add(pdpId);
+    }
+    setExpandedPdps(newExpanded);
+  };
+
   return (
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
       <PaneTitle>Archived PDPs</PaneTitle>
@@ -50,9 +67,48 @@ export default function PDPArchivePane({
         ) : (
           pdps.map((pdp) => (
             <div key={pdp.id} className="bg-zinc-800 p-3 rounded text-sm">
-              <p className="text-yellow-400 font-semibold mb-1">{pdp.dateRange}</p>
-              <p className="text-zinc-400 text-xs mb-2">{pdp.dateRange}</p>
-              <p className="text-zinc-300">{pdp.summary}</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-yellow-400 font-semibold">{pdp.dateRange}</p>
+                <button
+                  onClick={() => togglePdpExpansion(pdp.id)}
+                  className="text-zinc-400 hover:text-zinc-200"
+                >
+                  {expandedPdps.has(pdp.id) ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </button>
+              </div>
+              
+              <p className="text-zinc-300 mb-2">{pdp.summary}</p>
+              
+              <p className="text-zinc-400 text-xs mb-2">
+                {format(new Date(pdp.start_date), "MMM d, yyyy")} - {format(new Date(pdp.archived_at), "MMM d, yyyy")}
+              </p>
+
+              {/* Observations Section */}
+              {expandedPdps.has(pdp.id) && (
+                <div className="mt-3 pt-3 border-t border-zinc-700">
+                  <p className="text-zinc-400 text-xs font-semibold mb-2">
+                    Observations ({pdp.observations.length})
+                  </p>
+                  {pdp.observations.length > 0 ? (
+                    <div className="space-y-2">
+                      {pdp.observations.map((obs) => (
+                        <div key={obs.id} className="bg-zinc-900 p-2 rounded text-xs">
+                          <p className="text-zinc-500 mb-1">
+                            {format(new Date(obs.observation_date || obs.created_at), "MMM d, yyyy")}
+                          </p>
+                          <p className="text-zinc-300">{obs.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-500 text-xs italic">No observations in this period.</p>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}
