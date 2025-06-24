@@ -97,7 +97,7 @@ export default function ObservationsPage() {
               <MiddlePane
                 player={selectedPlayer}
                 observations={observations}
-                pdp={currentPdp}
+                pdp={currentPdp ? { ...currentPdp, created_at: currentPdp.start_date } : null}
                 onDeleteMany={handleBulkDelete}
               />
             ) : (
