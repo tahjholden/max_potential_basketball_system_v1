@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { StyledModal } from "@/components/ui/StyledModal";
+// import { StyledModal } from "@/components/ui/StyledModal";
 import { createClient } from "@/lib/supabase/client";
 
 export default function TestEditPDPPage() {
@@ -97,6 +97,7 @@ export default function TestEditPDPPage() {
       </button>
 
       {/* Direct modal implementation for testing */}
+      {/*
       {modalOpen && (
         <StyledModal 
           open={modalOpen} 
@@ -143,6 +144,7 @@ export default function TestEditPDPPage() {
           </div>
         </StyledModal>
       )}
+      */}
     </div>
   );
 } 
