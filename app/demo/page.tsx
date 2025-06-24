@@ -1,4 +1,4 @@
-import DemoPlayerCard from "../protected/dashboard/DemoPlayerCard";
+// import DemoPlayerCard from "../protected/dashboard/DemoPlayerCard";
 
 export default function DemoPage() {
   return (
@@ -40,6 +40,7 @@ export default function DemoPage() {
           </div>
         ))}
       </div>
+      {/* <DemoPlayerCard ... /> was here, but is commented out due to missing file */}
     </div>
   );
 } 
