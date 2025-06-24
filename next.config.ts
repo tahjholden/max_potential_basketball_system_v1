@@ -3,10 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
-  experimental: {
-    // Exclude _dev directory from build
-    excludeDefaultMomentLocales: true,
-  },
   // Exclude _dev directory from build
   webpack: (config, { isServer }) => {
     if (!isServer) {
