@@ -278,8 +278,9 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
                   </div>
                 </div>
                 <DevelopmentPlanCard 
-                  startDate={currentPdp?.start_date || null}
-                  content={currentPdp?.content || 'No active plan.'}
+                  player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
+                  pdp={currentPdp ? { ...currentPdp, created_at: currentPdp.start_date } : null}
+                  showActions={false}
                 />
               </div>
 
