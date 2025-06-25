@@ -6,6 +6,7 @@ import PaneTitle from "@/components/PaneTitle";
 interface Player {
   name: string;
   joined: string;
+  team_name?: string;
 }
 
 interface PlayerMetadataCardProps {
@@ -37,6 +38,12 @@ const PlayerMetadataCard: React.FC<PlayerMetadataCardProps> = ({
         <div>
           <span className="text-zinc-500">Joined:</span> {format(new Date(player.joined), "MMMM do, yyyy")}
         </div>
+        {player.team_name && (
+          <div>
+            <span className="text-zinc-500">Team:</span> 
+            <span className="font-medium text-zinc-300">{player.team_name}</span>
+          </div>
+        )}
       </div>
     </div>
   );

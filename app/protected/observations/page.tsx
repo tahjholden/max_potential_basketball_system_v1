@@ -10,6 +10,7 @@ import MiddlePane from "@/components/MiddlePane";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import EmptyCard from "@/components/EmptyCard";
 import PageTitle from "@/components/PageTitle";
+import AddPlayerButton from "@/components/AddPlayerButton";
 
 // Type definitions - matching dashboard exactly
 interface Player {
@@ -19,6 +20,7 @@ interface Player {
   last_name?: string;
   observations: number;
   joined: string;
+  team_name?: string;
 }
 
 interface Observation {
@@ -50,6 +52,14 @@ export default function ObservationsPage() {
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
+  console.log("Observations page state:", {
+    playersCount: players.length,
+    playerId,
+    selectedPlayer,
+    observationsCount: observations.length,
+    allObservationsCount: allObservations.length
+  });
+
   const fetchPdp = async () => {
     if (!playerId) return setCurrentPdp(null);
     const supabase = createClient();
@@ -76,26 +86,54 @@ export default function ObservationsPage() {
       setError(null);
       try {
         const supabase = createClient();
-        const { data: playersData } = await supabase
+        const { data: playersData, error: playersError } = await supabase
           .from("players")
-          .select("id, name, first_name, last_name, created_at")
+          .select(`
+            id, 
+            name, 
+            first_name, 
+            last_name, 
+            created_at,
+            team_id,
+            teams(name)
+          `)
           .order("last_name", { ascending: true });
-        const { data: observationsData } = await supabase
+        
+        if (playersError) {
+          console.error("Error fetching players:", playersError);
+          setError("Error fetching players");
+          return;
+        }
+        
+        const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
           .select("id, content, observation_date, created_at, player_id");
+        
+        if (observationsError) {
+          console.error("Error fetching observations:", observationsError);
+        }
+        
+        console.log("Fetched players:", playersData);
+        console.log("Fetched observations:", observationsData);
+        
         const counts = new Map<string, number>();
         observationsData?.forEach(obs => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
-        setPlayers(
-          (playersData || []).map(player => ({
-            ...player,
-            observations: counts.get(player.id) || 0,
-            joined: new Date(player.created_at).toLocaleDateString(),
-          }))
-        );
+        
+        const transformedPlayers = (playersData || []).map((player: any) => ({
+          ...player,
+          observations: counts.get(player.id) || 0,
+          joined: new Date(player.created_at).toLocaleDateString(),
+          team_name: player.teams?.name || undefined,
+        }));
+        
+        console.log("Transformed players:", transformedPlayers);
+        
+        setPlayers(transformedPlayers);
         setAllObservations(observationsData || []);
       } catch (err) {
+        console.error("Error in fetchPlayersAndAllObservations:", err);
         setError("Error fetching players");
       } finally {
         setLoading(false);
@@ -107,13 +145,23 @@ export default function ObservationsPage() {
 
   useEffect(() => {
     async function fetchObs() {
-      if (!playerId) return setObservations([]);
+      if (!playerId) {
+        console.log("No playerId selected, clearing observations");
+        return setObservations([]);
+      }
+      console.log("Fetching observations for playerId:", playerId);
       const supabase = createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("observations")
         .select("id, content, observation_date, created_at, player_id")
         .eq("player_id", playerId)
         .order("created_at", { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching observations:", error);
+      }
+      
+      console.log("Fetched observations for player:", data);
       setObservations(data || []);
     }
     fetchObs();
@@ -170,7 +218,15 @@ export default function ObservationsPage() {
             />
           }
           centerPane={
-            selectedPlayer ? (
+            players.length === 0 ? (
+              <div className="flex flex-col gap-4 h-full">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Players Found</h3>
+                  <p className="text-zinc-400 mb-4">There are no players in your team yet. Add your first player to start tracking observations.</p>
+                  <AddPlayerButton onPlayerAdded={() => window.location.reload()} />
+                </div>
+              </div>
+            ) : selectedPlayer ? (
               <MiddlePane
                 player={selectedPlayer}
                 observations={observations}
@@ -186,10 +242,17 @@ export default function ObservationsPage() {
             )
           }
           rightPane={
-            <ObservationInsightsPane
-              total={allObservations.length}
-              playerTotal={selectedPlayer ? observations.filter(o => o.player_id === selectedPlayer.id).length : 0}
-            />
+            players.length === 0 ? (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-zinc-300 mb-2">Insights</h3>
+                <p className="text-zinc-400">Player insights and statistics will appear here once you add players and start tracking observations.</p>
+              </div>
+            ) : (
+              <ObservationInsightsPane
+                total={allObservations.length}
+                playerTotal={selectedPlayer ? observations.filter(o => o.player_id === selectedPlayer.id).length : 0}
+              />
+            )
           }
         />
       </div>

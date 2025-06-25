@@ -12,10 +12,12 @@ import {
   Home,
   Shield,
   BarChart2,
+  Building2,
 } from "lucide-react";
 
 const mainNavLinks = [
   { href: "/protected/dashboard", label: "Dashboard", icon: BarChart2 },
+  { href: "/protected/teams", label: "Teams", icon: Building2 },
   { href: "/protected/players", label: "Players", icon: Users },
   {
     href: "/protected/observations",

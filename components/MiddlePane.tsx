@@ -6,6 +6,7 @@ interface Player {
     id: string;
     name: string;
     joined: string;
+    team_name?: string;
 }
 
 interface Observation {

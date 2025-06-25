@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/client'
 type Pdp = {
   id: string;
   player_id: string;
-  coach_id?: string;
   content: string;
   start_date: string;
   archived_at?: string;
@@ -91,22 +90,7 @@ export async function archiveAndCreateNewPDP({
       }
 
       // Step 2: Archive all observations linked to the old PDP
-      // First, ensure all observations have the correct coach_id
-      const { error: updateCoachError } = await supabase
-        .from('observations')
-        .update({
-          coach_id: coachId,
-          updated_at: now
-        })
-        .eq('pdp_id', currentPdp.id)
-        .is('coach_id', null); // Only update observations without coach_id
-
-      if (updateCoachError) {
-        console.error('Error updating observation coach_id:', updateCoachError);
-        return { success: false, error: `Failed to update observation coach_id: ${updateCoachError.message}` };
-      }
-
-      // Now archive all observations linked to the old PDP
+      // Note: Removed coach_id update since it no longer exists on observations table
       const { error: obsError } = await supabase
         .from('observations')
         .update({
@@ -123,12 +107,11 @@ export async function archiveAndCreateNewPDP({
       console.log(`Archived observations for PDP ${currentPdp.id}`);
     }
 
-    // Step 3: Create the new PDP with coach_id
+    // Step 3: Create the new PDP (removed coach_id since it no longer exists on pdp table)
     const { data: newPdp, error: createPdpError } = await supabase
       .from('pdp')
       .insert({
         player_id: playerId,
-        coach_id: coachId, // Always set coach_id
         content: newContent,
         start_date: now,
         created_at: now,

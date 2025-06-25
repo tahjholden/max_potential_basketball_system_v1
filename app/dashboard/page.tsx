@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { format } from "date-fns";
 import PageTitle from "@/components/PageTitle";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerListPane from "@/components/PlayerListPane";
@@ -49,7 +48,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedPlayer = players.find((p) => p.id === playerId);
+  const selectedPlayer = players.find((p: Player) => p.id === playerId);
 
   const fetchPdp = async () => {
     if (!playerId) return setCurrentPdp(null);
@@ -85,11 +84,11 @@ export default function DashboardPage() {
           .from("observations")
           .select("player_id");
         const counts = new Map<string, number>();
-        observationsData?.forEach(obs => {
+        observationsData?.forEach((obs: any) => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
         setPlayers(
-          (playersData || []).map(player => ({
+          (playersData || []).map((player: any) => ({
             ...player,
             observations: counts.get(player.id) || 0,
             joined: new Date(player.created_at).toLocaleDateString(),

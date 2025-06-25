@@ -11,6 +11,7 @@ import PDPArchivePane from "@/components/PDPArchivePane";
 import EmptyCard from "@/components/EmptyCard";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import PageTitle from "@/components/PageTitle";
+import AddPlayerButton from "@/components/AddPlayerButton";
 
 // Type Definitions
 interface Player {
@@ -21,6 +22,7 @@ interface Player {
   observations: number;
   created_at: string;
   joined: string;
+  team_name?: string;
 }
 
 interface Pdp {
@@ -128,10 +130,18 @@ export default function TestPlayersPage() {
   const fetchAllData = useCallback(async () => {
     const supabase = createClient();
     
-    // Fetch players and observation counts
+    // Fetch players with team information and observation counts
     const { data: playersData, error: playersError } = await supabase
       .from("players")
-      .select("id, name, first_name, last_name, created_at")
+      .select(`
+        id, 
+        name, 
+        first_name, 
+        last_name, 
+        created_at,
+        team_id,
+        teams!inner(name)
+      `)
       .order("last_name", { ascending: true });
 
     if (playersError) {
@@ -157,11 +167,12 @@ export default function TestPlayersPage() {
       counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
     });
     
-    const transformedPlayers = (playersData || []).map(player => ({
+    const transformedPlayers = (playersData || []).map((player: any) => ({
       ...player,
       name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
       observations: counts.get(player.id) || 0,
       joined: new Date(player.created_at).toLocaleDateString(),
+      team_name: player.teams?.name || undefined,
     }));
     setPlayers(transformedPlayers);
     setAllPdps(pdpsData || []);
@@ -190,7 +201,15 @@ export default function TestPlayersPage() {
             />
           }
           centerPane={
-            selectedPlayer ? (
+            players.length === 0 ? (
+              <div className="flex flex-col gap-4 h-full">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Players Found</h3>
+                  <p className="text-zinc-400 mb-4">There are no players in your team yet. Add your first player to get started.</p>
+                  <AddPlayerButton onPlayerAdded={fetchAllData} />
+                </div>
+              </div>
+            ) : selectedPlayer ? (
               <div className="flex flex-col gap-4">
                 <PlayerMetadataCard
                   player={selectedPlayer}
@@ -217,11 +236,18 @@ export default function TestPlayersPage() {
             )
           }
           rightPane={
-            <PDPArchivePane
-              pdps={archivedPdps}
-              onSortOrderChange={setSortOrder}
-              sortOrder={sortOrder}
-            />
+            players.length === 0 ? (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-zinc-300 mb-2">PDP Archive</h3>
+                <p className="text-zinc-400">Archived development plans will appear here once you add players and create PDPs.</p>
+              </div>
+            ) : (
+              <PDPArchivePane
+                pdps={archivedPdps}
+                onSortOrderChange={setSortOrder}
+                sortOrder={sortOrder}
+              />
+            )
           }
         />
       </div>
