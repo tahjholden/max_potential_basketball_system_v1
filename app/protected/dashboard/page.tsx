@@ -189,7 +189,8 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
         // Fetch observation counts for each player
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
-          .select("player_id");
+          .select("player_id")
+          .eq("archived", false);
 
         if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
 
@@ -245,6 +246,7 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
           .from("observations")
           .select("id, content, observation_date, created_at")
           .eq("player_id", playerId)
+          .eq("archived", false)
           .order("created_at", { ascending: false })
           .limit(5);
 

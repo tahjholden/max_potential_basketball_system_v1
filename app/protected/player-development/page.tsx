@@ -54,6 +54,7 @@ export default function PlayerDevDashboard() {
         .from("observations")
         .select("*, coaches(first_name, last_name)")
         .eq("player_id", selected.id)
+        .eq("archived", false)
         .order("observation_date", { ascending: false });
 
       if (obsError) {

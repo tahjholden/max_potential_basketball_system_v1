@@ -74,9 +74,51 @@ export default function ObservationsPage() {
 
   const fetchAllPdps = async () => {
     const supabase = createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get coach record
+    const { data: coachRow } = await supabase
+      .from("coaches")
+      .select("id")
+      .eq("auth_uid", user.id)
+      .single();
+    
+    if (!coachRow) return;
+
+    // Get teams for this coach
+    const { data: teamCoaches } = await supabase
+      .from("team_coaches")
+      .select("team_id")
+      .eq("coach_id", coachRow.id);
+    
+    const teamIds = teamCoaches?.map(tc => tc.team_id) || [];
+    
+    if (teamIds.length === 0) {
+      setAllPdps([]);
+      return;
+    }
+
+    // Get player IDs for this coach's teams
+    const { data: players } = await supabase
+      .from("players")
+      .select("id")
+      .in("team_id", teamIds);
+    
+    const playerIds = players?.map(p => p.id) || [];
+    
+    if (playerIds.length === 0) {
+      setAllPdps([]);
+      return;
+    }
+
+    // Fetch PDPs only for coach's players
     const { data } = await supabase
       .from("pdp")
-      .select("id, content, start_date, created_at, player_id, archived_at");
+      .select("id, content, start_date, created_at, player_id, archived_at")
+      .in("player_id", playerIds);
     setAllPdps(data || []);
   };
 
@@ -86,6 +128,42 @@ export default function ObservationsPage() {
       setError(null);
       try {
         const supabase = createClient();
+        
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setError("User not authenticated");
+          return;
+        }
+
+        // Get coach record
+        const { data: coachRow } = await supabase
+          .from("coaches")
+          .select("id")
+          .eq("auth_uid", user.id)
+          .single();
+        
+        if (!coachRow) {
+          setError("Coach record not found");
+          return;
+        }
+
+        // Get teams for this coach
+        const { data: teamCoaches } = await supabase
+          .from("team_coaches")
+          .select("team_id")
+          .eq("coach_id", coachRow.id);
+        
+        const teamIds = teamCoaches?.map(tc => tc.team_id) || [];
+        
+        if (teamIds.length === 0) {
+          // Coach has no teams, show empty state
+          setPlayers([]);
+          setAllObservations([]);
+          return;
+        }
+
+        // Fetch players only for coach's teams
         const { data: playersData, error: playersError } = await supabase
           .from("players")
           .select(`
@@ -97,6 +175,7 @@ export default function ObservationsPage() {
             team_id,
             teams(name)
           `)
+          .in("team_id", teamIds)
           .order("last_name", { ascending: true });
         
         if (playersError) {
@@ -105,9 +184,15 @@ export default function ObservationsPage() {
           return;
         }
         
+        // Get player IDs for filtering observations
+        const playerIds = playersData?.map(p => p.id) || [];
+        
+        // Fetch observations only for coach's players
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
-          .select("id, content, observation_date, created_at, player_id");
+          .select("id, content, observation_date, created_at, player_id")
+          .in("player_id", playerIds)
+          .eq("archived", false);
         
         if (observationsError) {
           console.error("Error fetching observations:", observationsError);
@@ -155,6 +240,7 @@ export default function ObservationsPage() {
         .from("observations")
         .select("id, content, observation_date, created_at, player_id")
         .eq("player_id", playerId)
+        .eq("archived", false)
         .order("created_at", { ascending: false });
       
       if (error) {
@@ -180,6 +266,7 @@ export default function ObservationsPage() {
         .from("observations")
         .select("id, content, observation_date, created_at, player_id")
         .eq("player_id", playerId)
+        .eq("archived", false)
         .order("created_at", { ascending: false });
       setObservations(data || []);
     }

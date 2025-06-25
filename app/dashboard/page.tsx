@@ -82,7 +82,8 @@ export default function DashboardPage() {
           .order("last_name", { ascending: true });
         const { data: observationsData } = await supabase
           .from("observations")
-          .select("player_id");
+          .select("player_id")
+          .eq("archived", false);
         const counts = new Map<string, number>();
         observationsData?.forEach((obs: any) => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
@@ -112,6 +113,7 @@ export default function DashboardPage() {
         .from("observations")
         .select("id, content, observation_date, created_at")
         .eq("player_id", playerId)
+        .eq("archived", false)
         .order("created_at", { ascending: false })
         .limit(5);
       setObservations(data || []);

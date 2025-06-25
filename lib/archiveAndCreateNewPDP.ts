@@ -94,7 +94,6 @@ export async function archiveAndCreateNewPDP({
       const { error: obsError } = await supabase
         .from('observations')
         .update({
-          archived_at: now,
           archived: true
         })
         .eq('pdp_id', currentPdp.id);

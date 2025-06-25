@@ -78,8 +78,7 @@ export default function ArchiveObservationsModal({ pdpId, open, onClose, onSucce
     const { error } = await supabase
       .from("observations")
       .update({ 
-        archived: true,
-        archived_at: now
+        archived: true
       })
       .in("id", ids);
     setLoading(false);

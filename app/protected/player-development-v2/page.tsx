@@ -81,6 +81,7 @@ export default function PlayerDevDashboard() {
       .from("observations")
       .select("*")
       .eq("player_id", selected.id)
+      .eq("archived", false)
       .order("observation_date", { ascending: false });
     if (obsError) toast.error("Failed to fetch observations");
     else setObservations(obsData);

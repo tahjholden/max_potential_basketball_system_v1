@@ -93,9 +93,9 @@ export default function TestPlayersPage() {
       .from("observations")
       .select("id, content, observation_date, created_at")
       .eq("player_id", playerId)
+      .eq("archived", false)
       .order("created_at", { ascending: false })
       .limit(5);
-
     setObservations(recentObsData || []);
 
     // Fetch archived PDPs
@@ -106,20 +106,28 @@ export default function TestPlayersPage() {
       .not("archived_at", "is", null)
       .order("archived_at", { ascending: sortOrder === "asc" });
 
+    // Fetch all archived observations for this player
+    const { data: archivedObsData } = await supabase
+      .from("observations")
+      .select("id, content, observation_date, created_at, pdp_id, archived")
+      .eq("player_id", playerId)
+      .eq("archived", true);
+
     if(archivedData) {
-       const processedArchived = archivedData.map(pdp => {
-          const startDate = format(new Date(pdp.start_date), "MMM d, yyyy");
-          const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMM d, yyyy") : "Present";
-          
-          return {
-              id: pdp.id,
-              dateRange: `${startDate} - ${endDate}`,
-              summary: pdp.content || "No content available",
-              observations: [], // We'll fetch observations separately if needed
-              created_at: pdp.created_at,
-              start_date: pdp.start_date,
-              archived_at: pdp.archived_at,
-          }
+      const processedArchived = archivedData.map(pdp => {
+        const startDate = format(new Date(pdp.start_date), "MMM d, yyyy");
+        const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMM d, yyyy") : "Present";
+        // Attach observations for this PDP
+        const pdpObservations = (archivedObsData || []).filter(obs => obs.pdp_id === pdp.id && obs.archived === true);
+        return {
+          id: pdp.id,
+          dateRange: `${startDate} - ${endDate}`,
+          summary: pdp.content || "No content available",
+          observations: pdpObservations,
+          created_at: pdp.created_at,
+          start_date: pdp.start_date,
+          archived_at: pdp.archived_at,
+        };
       });
       setArchivedPdps(processedArchived);
     } else {

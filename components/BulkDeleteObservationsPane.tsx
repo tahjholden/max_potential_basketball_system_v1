@@ -5,6 +5,7 @@ interface Observation {
     id: string;
     content: string;
     observation_date: string;
+    archived: boolean;
 }
 
 interface Player {
@@ -28,6 +29,9 @@ export default function BulkDeleteObservationsPane({
     onObservationAdded
 }: BulkDeleteObservationsPaneProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Only show non-archived observations
+  const activeObservations = observations.filter(obs => obs.archived !== true);
 
   function toggle(id: string) {
     setSelected(prev => {
@@ -57,10 +61,10 @@ export default function BulkDeleteObservationsPane({
         )}
       </div>
       <div className="bg-zinc-800 rounded px-4 py-2 space-y-2">
-        {observations.length === 0 && (
+        {activeObservations.length === 0 && (
           <div className="text-zinc-500 text-center py-2">No observations.</div>
         )}
-        {observations.map(obs => (
+        {activeObservations.map(obs => (
             <div key={obs.id} className="bg-zinc-900 border border-zinc-700 rounded-md p-3">
                 <div className="flex justify-between items-end gap-3">
                     <div className="flex-1">

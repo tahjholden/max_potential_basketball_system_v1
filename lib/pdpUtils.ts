@@ -44,8 +44,7 @@ export async function archiveAndCreateNewPDP(playerId: string) {
     .from("observations")
     .update({ 
       pdp_id: currentPDP.id,
-      archived: true,  // Set boolean flag for UI filtering
-      archived_at: now // Keep timestamp for audit purposes
+      archived: true  // Set boolean flag for UI filtering
     })
     .eq("player_id", playerId)
     .eq("archived", false); // Only update unarchived observations

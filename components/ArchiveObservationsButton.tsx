@@ -14,8 +14,7 @@ export default function ArchiveObservationsButton({ pdpId, onSuccess }: ArchiveO
     const now = new Date().toISOString();
 
     const { error, count } = await supabase.from("observations").update({
-      archived: true,
-      archived_at: now
+      archived: true
     }, { count: 'exact' })
     .eq('pdp_id', pdpId)
     .eq('archived', false);
