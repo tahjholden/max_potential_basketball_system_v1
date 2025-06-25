@@ -28,7 +28,9 @@ interface Observation {
 
 interface Pdp {
   id: string;
+  player_id: string;
   content: string | null;
+  archived_at: string | null;
   start_date: string;
 }
 
@@ -37,6 +39,7 @@ export default function ObservationsPage() {
   const { playerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
+  const [allPdps, setAllPdps] = useState<Pdp[]>([]);
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -44,9 +47,13 @@ export default function ObservationsPage() {
   useEffect(() => {
     async function fetchAllData() {
       const supabase = createClient();
-      
       const { data: playersData } = await supabase.from("players").select("id, name, created_at");
       const { data: observationsData } = await supabase.from("observations").select("player_id");
+      const { data: pdpsData } = await supabase
+        .from("pdp")
+        .select("id, player_id, content, archived_at, start_date")
+        .is("archived_at", null);
+      setAllPdps(pdpsData || []);
       const counts = new Map();
       observationsData?.forEach(obs => {
         counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
@@ -72,8 +79,13 @@ export default function ObservationsPage() {
       const { data: obsData } = await supabase.from("observations").select("id, content, observation_date, player_id").eq("player_id", playerId);
       setObservations(obsData || []);
 
-      const { data: pdpData } = await supabase.from("pdp").select("id, content, start_date").eq("player_id", playerId).is("archived_at", null).maybeSingle();
-      setCurrentPdp(pdpData);
+      const { data: pdpData } = await supabase
+        .from("pdp")
+        .select("id, player_id, content, archived_at, start_date")
+        .eq("player_id", playerId)
+        .is("archived_at", null)
+        .maybeSingle();
+      setCurrentPdp(pdpData || null);
     }
     fetchPlayerData();
   }, [playerId]);
@@ -91,7 +103,7 @@ export default function ObservationsPage() {
       <div className="mt-2 px-6">
         <PageTitle>Observations</PageTitle>
         <ThreePaneLayout
-          leftPane={<PlayerListPane players={players} onSelect={() => {}} />}
+          leftPane={<PlayerListPane players={players} pdps={allPdps} onSelect={() => {}} />}
           centerPane={
             selectedPlayer ? (
               <MiddlePane

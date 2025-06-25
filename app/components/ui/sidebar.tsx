@@ -22,6 +22,11 @@ export default function Sidebar({ missingPDPCount = 0 }) {
             Observations
           </Link>
         </li>
+        <li>
+          <Link href="/protected/teams" className="block px-3 py-2 rounded hover:bg-zinc-800 text-white">
+            Teams
+          </Link>
+        </li>
         
         {/* Test Pages Section */}
         <li className="pt-4 border-t border-zinc-700">

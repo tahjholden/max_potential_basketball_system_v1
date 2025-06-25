@@ -170,7 +170,9 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
         // Get all PDPs (active and archived)
         const { data: allPdpsData } = await supabase
           .from("pdp")
-          .select("id, player_id, content, start_date, created_at, archived_at");
+          .select("id, player_id, content, start_date, created_at, archived_at")
+          .order("created_at", { ascending: false })
+          .limit(20);
 
         setAllPdps(allPdpsData || []);
 
@@ -178,7 +180,9 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
         const { data: activePdps } = await supabase
           .from("pdp")
           .select("id, player_id")
-          .is("archived_at", null);
+          .is("archived_at", null)
+          .order("created_at", { ascending: false })
+          .limit(20);
 
         // Mark players with no active PDP
         const activePdpPlayerIds = new Set((activePdps ?? []).map((pdp) => pdp.player_id));
@@ -190,7 +194,8 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
           .select("player_id")
-          .eq("archived", false);
+          .eq("archived", false)
+          .limit(100);
 
         if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
 
@@ -248,7 +253,7 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
           .eq("player_id", playerId)
           .eq("archived", false)
           .order("created_at", { ascending: false })
-          .limit(5);
+          .limit(50);
 
         if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
         setObservations(observationsData || []);

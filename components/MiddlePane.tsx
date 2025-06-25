@@ -38,6 +38,7 @@ export default function MiddlePane({
   onPdpUpdate,
   onObservationAdded
 }: MiddlePaneProps) {
+  console.log("MiddlePane observations prop:", observations);
   return (
     <div className="flex flex-col gap-4">
       {player && <PlayerMetadataCard player={player} observations={observations} />}

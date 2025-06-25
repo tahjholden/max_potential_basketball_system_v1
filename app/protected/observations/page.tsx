@@ -33,11 +33,10 @@ interface Observation {
 
 interface Pdp {
   id: string;
-  content: string | null;
-  start_date: string;
-  created_at: string;
   player_id: string;
+  content: string | null;
   archived_at: string | null;
+  start_date: string;
 }
 
 export default function ObservationsPage() {
@@ -128,42 +127,7 @@ export default function ObservationsPage() {
       setError(null);
       try {
         const supabase = createClient();
-        
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setError("User not authenticated");
-          return;
-        }
-
-        // Get coach record
-        const { data: coachRow } = await supabase
-          .from("coaches")
-          .select("id")
-          .eq("auth_uid", user.id)
-          .single();
-        
-        if (!coachRow) {
-          setError("Coach record not found");
-          return;
-        }
-
-        // Get teams for this coach
-        const { data: teamCoaches } = await supabase
-          .from("team_coaches")
-          .select("team_id")
-          .eq("coach_id", coachRow.id);
-        
-        const teamIds = teamCoaches?.map(tc => tc.team_id) || [];
-        
-        if (teamIds.length === 0) {
-          // Coach has no teams, show empty state
-          setPlayers([]);
-          setAllObservations([]);
-          return;
-        }
-
-        // Fetch players only for coach's teams
+        // Fetch players with team information and observation counts (same as Players page)
         const { data: playersData, error: playersError } = await supabase
           .from("players")
           .select(`
@@ -173,48 +137,46 @@ export default function ObservationsPage() {
             last_name, 
             created_at,
             team_id,
-            teams(name)
+            teams!inner(name)
           `)
-          .in("team_id", teamIds)
           .order("last_name", { ascending: true });
-        
         if (playersError) {
           console.error("Error fetching players:", playersError);
           setError("Error fetching players");
           return;
         }
-        
+        // Fetch all active PDPs
+        const { data: pdpsData } = await supabase
+          .from("pdp")
+          .select("id, player_id, content, archived_at, start_date")
+          .is("archived_at", null);
+        setAllPdps(pdpsData || []);
         // Get player IDs for filtering observations
         const playerIds = playersData?.map(p => p.id) || [];
-        
-        // Fetch observations only for coach's players
+        // Fetch observations only for these players
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
           .select("id, content, observation_date, created_at, player_id")
           .in("player_id", playerIds)
-          .eq("archived", false);
-        
+          .eq("archived", false)
+          .order("created_at", { ascending: false })
+          .limit(100);
         if (observationsError) {
           console.error("Error fetching observations:", observationsError);
+          setError("Error fetching observations");
+          return;
         }
-        
-        console.log("Fetched players:", playersData);
-        console.log("Fetched observations:", observationsData);
-        
         const counts = new Map<string, number>();
         observationsData?.forEach(obs => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
-        
         const transformedPlayers = (playersData || []).map((player: any) => ({
           ...player,
+          name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
           observations: counts.get(player.id) || 0,
           joined: new Date(player.created_at).toLocaleDateString(),
           team_name: player.teams?.name || undefined,
         }));
-        
-        console.log("Transformed players:", transformedPlayers);
-        
         setPlayers(transformedPlayers);
         setAllObservations(observationsData || []);
       } catch (err) {
@@ -230,28 +192,27 @@ export default function ObservationsPage() {
 
   useEffect(() => {
     async function fetchObs() {
-      if (!playerId) {
-        console.log("No playerId selected, clearing observations");
-        return setObservations([]);
+      if (!playerId || !currentPdp) {
+        setObservations([]);
+        return;
       }
-      console.log("Fetching observations for playerId:", playerId);
       const supabase = createClient();
       const { data, error } = await supabase
         .from("observations")
         .select("id, content, observation_date, created_at, player_id")
         .eq("player_id", playerId)
+        .eq("pdp_id", currentPdp.id)
         .eq("archived", false)
-        .order("created_at", { ascending: false });
-      
+        .order("created_at", { ascending: false })
+        .limit(50);
       if (error) {
         console.error("Error fetching observations:", error);
       }
-      
-      console.log("Fetched observations for player:", data);
+      console.log("Fetched observations:", data);
       setObservations(data || []);
     }
     fetchObs();
-  }, [playerId]);
+  }, [playerId, currentPdp]);
 
   useEffect(() => {
     fetchPdp();
@@ -267,7 +228,8 @@ export default function ObservationsPage() {
         .select("id, content, observation_date, created_at, player_id")
         .eq("player_id", playerId)
         .eq("archived", false)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(50);
       setObservations(data || []);
     }
   };

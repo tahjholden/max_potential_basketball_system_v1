@@ -10,5 +10,5 @@ export const hasEnvVars =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Shared button styling for consistency
-export const actionButtonClass = "bg-gold hover:bg-gold/80 text-black text-xs font-semibold px-3 py-1.5 rounded transition-colors";
+// Shared button styling for consistency - matches ArchiveAndReplaceButton with standard sizing
+export const actionButtonClass = "border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50";

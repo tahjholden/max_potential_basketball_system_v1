@@ -13,45 +13,20 @@ import {
   Shield,
   BarChart2,
   Building2,
+  Target,
+  TrendingUp,
+  UserCheck,
 } from "lucide-react";
 
 const mainNavLinks = [
   { href: "/protected/dashboard", label: "Dashboard", icon: BarChart2 },
   { href: "/protected/teams", label: "Teams", icon: Building2 },
+  { href: "/protected/coaches", label: "Coaches", icon: UserCheck },
   { href: "/protected/players", label: "Players", icon: Users },
   {
     href: "/protected/observations",
     label: "Observations",
     icon: Shield,
-  },
-];
-
-const testNavLinks: typeof mainNavLinks = [];
-
-const mobileTestNavLinks = [
-  {
-    href: "/protected/test-dashboard-mobile",
-    label: "Test Dashboard Mobile",
-    icon: Smartphone,
-  },
-  {
-    href: "/protected/test-players-mobile",
-    label: "Test Players Mobile",
-    icon: Smartphone,
-  },
-  {
-    href: "/protected/test-observations-mobile",
-    label: "Test Observations Mobile",
-    icon: Smartphone,
-  },
-];
-
-const legacyNavLinks = [
-  { href: "/dashboard", label: "Legacy Dashboard", icon: Home },
-  {
-    href: "/protected/observations",
-    label: "Legacy Observations",
-    icon: ClipboardList,
   },
 ];
 
@@ -80,30 +55,6 @@ export default function Navigation() {
     <nav className="flex flex-col h-full">
       <div className="flex-grow space-y-2">
         {mainNavLinks.map(renderLink)}
-
-        <div className="pt-4">
-          <h4 className="px-2 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
-            Test Pages
-          </h4>
-          <div className="space-y-2">{testNavLinks.map(renderLink)}</div>
-        </div>
-
-        <div className="pt-4">
-          <h4 className="px-2 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
-            Mobile Test
-          </h4>
-          <div className="space-y-2">
-            {mobileTestNavLinks.map(renderLink)}
-          </div>
-        </div>
-      </div>
-
-      {/* New Legacy section at the bottom */}
-      <div className="pt-4">
-        <h4 className="px-2 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
-          Legacy
-        </h4>
-        <div className="space-y-2">{legacyNavLinks.map(renderLink)}</div>
       </div>
     </nav>
   );

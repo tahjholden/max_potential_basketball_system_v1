@@ -32,10 +32,29 @@ export default function AddObservationModal({
     setError(null);
     try {
       const supabase = createClient();
+      // Fetch the player's current active PDP
+      const { data: pdp, error: pdpError } = await supabase
+        .from("pdp")
+        .select("id")
+        .eq("player_id", player.id)
+        .is("archived_at", null)
+        .maybeSingle();
+      if (pdpError) {
+        setError("Error fetching current PDP");
+        setLoading(false);
+        return;
+      }
+      if (!pdp) {
+        setError("No active development plan (PDP) found for this player. Please create a PDP first.");
+        setLoading(false);
+        return;
+      }
       await supabase.from("observations").insert({
         player_id: player.id,
+        pdp_id: pdp.id,
         content: content.trim(),
         observation_date: date,
+        archived: false,
       });
       setContent("");
       setDate("");

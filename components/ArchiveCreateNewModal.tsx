@@ -128,10 +128,20 @@ export default function ArchiveCreateNewModal({
               <div className="bg-red-900/20 border border-red-500/30 p-3 rounded text-sm text-red-400">{error}</div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={loading}>Cancel</Button>
-              <Button onClick={handleArchive} disabled={loading} className="bg-gold text-black hover:bg-gold/90">
+              <button 
+                onClick={() => handleOpenChange(false)} 
+                disabled={loading}
+                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleArchive} 
+                disabled={loading} 
+                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+              >
                 {loading ? "Archiving..." : "Confirm & Continue"}
-              </Button>
+              </button>
             </div>
           </>
         ) : (
@@ -156,10 +166,20 @@ export default function ArchiveCreateNewModal({
               <div className="bg-red-900/20 border border-red-500/30 p-3 rounded text-sm text-red-400">{error}</div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={loading}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={loading || content.trim() === ""} className="bg-gold text-black hover:bg-gold/90">
+              <button 
+                onClick={() => handleOpenChange(false)} 
+                disabled={loading}
+                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleCreate} 
+                disabled={loading || content.trim() === ""} 
+                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+              >
                 {loading ? "Creating..." : "Create New Plan"}
-              </Button>
+              </button>
             </div>
           </>
         )}

@@ -49,7 +49,7 @@ export default function DeleteButton({
             <Trash2 size={16} />
           </button>
         ) : (
-          <button className={triggerClassName || "text-red-500 hover:text-red-600 text-xs font-semibold px-3 py-1.5 rounded transition-colors border border-red-500/50 hover:border-red-500"}>
+          <button className={triggerClassName || "border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition"}>
             {label}
           </button>
         )}

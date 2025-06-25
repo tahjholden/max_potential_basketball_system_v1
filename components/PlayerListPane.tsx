@@ -9,6 +9,7 @@ interface Player {
   id: string;
   name: string;
   observations: number;
+  team_id?: string;
 }
 
 interface Pdp {
@@ -24,6 +25,9 @@ interface PlayerListPaneProps {
   onSelect?: () => void;
   onPlayerAdded?: () => void;
   sortNoPDPFirst?: boolean;
+  teams?: { id: string; name: string }[];
+  selectedTeamId?: string;
+  setSelectedTeamId?: (id: string) => void;
 }
 
 export default function PlayerListPane({ 
@@ -31,7 +35,10 @@ export default function PlayerListPane({
   pdps = [], 
   onSelect, 
   onPlayerAdded,
-  sortNoPDPFirst = true 
+  sortNoPDPFirst = true,
+  teams = [],
+  selectedTeamId = "",
+  setSelectedTeamId = () => {},
 }: PlayerListPaneProps) {
   const { playerId, setPlayerId } = useSelectedPlayer();
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,6 +71,11 @@ export default function PlayerListPane({
       : players.sort((a, b) => a.name.localeCompare(b.name));
   }, [players, playersWithoutPDP, playersWithPDP, sortNoPDPFirst]);
 
+  // Filter by team
+  const teamFilteredPlayers = selectedTeamId
+    ? players.filter((p) => p.team_id === selectedTeamId)
+    : players;
+
   useEffect(() => {
     const filtered = sortedPlayers.filter(player =>
       player.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -82,7 +94,20 @@ export default function PlayerListPane({
         <PaneTitle>Players</PaneTitle>
         {onPlayerAdded && <AddPlayerButton onPlayerAdded={onPlayerAdded} />}
       </div>
-      
+      {teams.length > 0 && (
+        <div className="mb-2">
+          <select
+            value={selectedTeamId}
+            onChange={e => setSelectedTeamId(e.target.value)}
+            className="w-full h-10 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white text-sm mb-2"
+          >
+            <option value="">All Teams</option>
+            {teams.map(team => (
+              <option key={team.id} value={team.id}>{team.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="mb-4">
         <input
           type="text"
@@ -92,7 +117,6 @@ export default function PlayerListPane({
           className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
         />
       </div>
-
       <div className="space-y-2 max-h-96 overflow-y-auto pr-3">
         {filteredPlayers.length === 0 ? (
           <div className="text-zinc-500 text-sm text-center py-4">
