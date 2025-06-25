@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { archiveAndCreateNewPDP } from "@/lib/archiveAndCreateNewPDP"
+import EntityButton from "./EntityButton"
 
 export default function ArchiveCreateNewModal({
   playerId,
@@ -110,7 +111,7 @@ export default function ArchiveCreateNewModal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="border border-[#d8cc97] text-xs px-3 py-1.5 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition">Archive & Create New</Button>
+        <EntityButton color="gold">Archive & Create New</EntityButton>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border border-zinc-700 text-white max-w-md">
         {modalState === "confirm" ? (

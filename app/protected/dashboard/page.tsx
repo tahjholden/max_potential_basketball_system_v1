@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
-import PlayerListPane from "@/components/PlayerListPane";
+import EntityListPane from "@/components/EntityListPane";
 import ManagePDPModal from "@/components/ManagePDPModal";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
 import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
@@ -15,7 +15,9 @@ import PageTitle from "@/components/PageTitle";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
-import AddPlayerButton from "@/components/AddPlayerButton";
+import EntityButton from '@/components/EntityButton';
+import StatusBadge from '@/components/StatusBadge';
+import { ErrorBadge } from '@/components/StatusBadge';
 
 interface Player {
   id: string;
@@ -50,7 +52,7 @@ interface Team {
   coach_id: string;
 }
 
-export default function DashboardPage({ coachId }: { coachId: string }) {
+export default function DashboardPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const { playerId, setPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -79,23 +81,30 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
           return;
         }
 
+        console.log('Current user:', user.email, 'User ID:', user.id);
+
         // Get coach record
         const { data: coachData, error: coachError } = await supabase
           .from('coaches')
-          .select('id')
+          .select('id, first_name, last_name, is_admin')
           .eq('auth_uid', user.id)
           .single();
 
         if (coachError || !coachData) {
+          console.error('Coach record not found for user:', user.email, 'Error:', coachError);
           setError("Coach record not found.");
           return;
         }
+
+        console.log('Coach data:', coachData);
 
         // Try to get teams for this coach
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
           .select('id, name, coach_id')
           .eq('coach_id', coachData.id);
+
+        console.log('Teams query result:', { teamsData, teamsError });
 
         if (teamsError) {
           // If teams access is denied, create a fallback team or show error
@@ -193,9 +202,10 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
         // Fetch observation counts for each player
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
-          .select("player_id")
+          .select("id, content, observation_date, created_at, player_id")
           .eq("archived", false)
-          .limit(100);
+          .order("created_at", { ascending: false })
+          .limit(1000); // Increase limit to cover all players
 
         if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
 
@@ -249,9 +259,9 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
         const supabase = createClient();
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
-          .select("id, content, observation_date, created_at")
+          .select("id, content, observation_date, created_at, player_id")
           .eq("player_id", playerId)
-          .eq("archived", false)
+          .or("archived.is.null,archived.eq.false")
           .order("created_at", { ascending: false })
           .limit(50);
 
@@ -308,6 +318,43 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
     window.location.reload();
   };
 
+  // Get players without active PDPs for styling
+  const playerIdsWithPDP = new Set(
+    allPdps
+      .filter(pdp => !pdp.archived_at)
+      .map(pdp => pdp.player_id)
+  );
+
+  // Custom render function for player items with PDP status
+  const renderPlayerItem = (player: any, isSelected: boolean) => {
+    const hasNoPlan = !playerIdsWithPDP.has(player.id);
+    
+    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
+    const selectedClasses = isSelected
+      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    return (
+      <div key={player.id} className="space-y-1">
+        <button
+          onClick={() => setPlayerId(player.id)}
+          className={baseClasses + selectedClasses}
+        >
+          {player.name}
+        </button>
+        <div className="flex justify-end">
+          <StatusBadge
+            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
+            size="sm"
+            showIcon
+          >
+            {hasNoPlan ? "No PDP" : "Active PDP"}
+          </StatusBadge>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
@@ -319,9 +366,9 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
   if (error) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
-        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+        <ErrorBadge className="p-4">
           {error}
-        </div>
+        </ErrorBadge>
       </div>
     );
   }
@@ -350,12 +397,24 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
                   </select>
                 </div>
               )}
-              <PlayerListPane
-                players={players}
-                pdps={allPdps}
-                onSelect={() => {
-                  // Player selection is now handled by the global store
-                }}
+              <EntityListPane
+                title="Players"
+                items={players}
+                selectedId={playerId || undefined}
+                onSelect={id => setPlayerId(id)}
+                actions={
+                  <EntityButton 
+                    color="gold"
+                    onClick={() => {
+                      console.log('Add player');
+                      window.location.reload();
+                    }}
+                  >
+                    Add Player
+                  </EntityButton>
+                }
+                searchPlaceholder="Search players..."
+                renderItem={renderPlayerItem}
               />
             </div>
           }
@@ -365,7 +424,15 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Players Found</h3>
                   <p className="text-zinc-400 mb-4">There are no players in your team yet. Add your first player to get started.</p>
-                  <AddPlayerButton onPlayerAdded={() => window.location.reload()} />
+                  <EntityButton 
+                    color="gold"
+                    onClick={() => {
+                      console.log('Add player');
+                      window.location.reload();
+                    }}
+                  >
+                    Add Player
+                  </EntityButton>
                 </div>
               </div>
             ) : selectedPlayer ? (
@@ -414,7 +481,6 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
           open={isCreateModalOpen}
           onClose={() => setCreateModalOpen(false)}
           player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
-          coachId={coachId}
           onCreated={handleCreatePDP}
         />
 

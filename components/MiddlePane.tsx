@@ -13,6 +13,7 @@ interface Observation {
     id: string;
     content: string;
     observation_date: string;
+    archived: boolean;
 }
 
 interface Pdp {

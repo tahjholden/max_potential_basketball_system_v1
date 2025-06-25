@@ -95,7 +95,7 @@ export default function PlayersPageClient({ initialPlayers }: { initialPlayers: 
   return (
     <ThreePaneLayout
       leftPane={LeftPane}
-      mainPane={MainPane}
+      centerPane={MainPane}
       rightPane={RightPane}
     />
   );

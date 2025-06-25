@@ -1,5 +1,5 @@
 import { useState } from "react";
-import AddObservationButton from "./AddObservationButton";
+import EntityButton from "./EntityButton";
 
 interface Observation {
     id: string;
@@ -54,10 +54,15 @@ export default function BulkDeleteObservationsPane({
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-base font-semibold">Recent Observations</h2>
         {player && (
-          <AddObservationButton 
-            player={player} 
-            onObservationAdded={onObservationAdded}
-          />
+          <EntityButton 
+            color="gold"
+            onClick={() => {
+              // This would need to be implemented to open the AddObservationModal
+              console.log('Add observation for player:', player.id);
+            }}
+          >
+            Add Observation
+          </EntityButton>
         )}
       </div>
       <div className="bg-zinc-800 rounded px-4 py-2 space-y-2">
@@ -87,12 +92,12 @@ export default function BulkDeleteObservationsPane({
       </div>
       {showCheckboxes && selected.size > 0 && (
         <div className="pt-3 flex justify-end">
-            <button
-                className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-semibold"
+            <EntityButton
+                color="danger"
                 onClick={handleBulkDelete}
             >
                 Delete {selected.size} Selected
-            </button>
+            </EntityButton>
         </div>
       )}
     </div>

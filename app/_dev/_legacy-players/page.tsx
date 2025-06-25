@@ -63,7 +63,7 @@ export default function TestPlayersPage() {
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
   const [archivedPdps, setArchivedPdps] = useState<ArchivedPdp[]>([]);
-  const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   
   const selectedPlayer = players.find((p) => p.id === playerId);
 

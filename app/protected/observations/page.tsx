@@ -5,12 +5,14 @@ import { createClient } from "@/lib/supabase/client";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 
 import ThreePaneLayout from "@/components/ThreePaneLayout";
-import PlayerListPane from "@/components/PlayerListPane";
+import EntityListPane from "@/components/EntityListPane";
 import MiddlePane from "@/components/MiddlePane";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import EmptyCard from "@/components/EmptyCard";
 import PageTitle from "@/components/PageTitle";
-import AddPlayerButton from "@/components/AddPlayerButton";
+import EntityButton from '@/components/EntityButton';
+import StatusBadge from '@/components/StatusBadge';
+import { ErrorBadge } from '@/components/StatusBadge';
 
 // Type definitions - matching dashboard exactly
 interface Player {
@@ -29,6 +31,7 @@ interface Observation {
   observation_date: string;
   created_at: string;
   player_id: string;
+  archived: boolean;
 }
 
 interface Pdp {
@@ -41,13 +44,14 @@ interface Pdp {
 
 export default function ObservationsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId, clearPlayerId } = useSelectedPlayer();
+  const { playerId, setPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [allObservations, setAllObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [allPdps, setAllPdps] = useState<Pdp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -178,7 +182,7 @@ export default function ObservationsPage() {
           team_name: player.teams?.name || undefined,
         }));
         setPlayers(transformedPlayers);
-        setAllObservations(observationsData || []);
+        setAllObservations((observationsData || []).map(obs => ({ ...obs, archived: false })));
       } catch (err) {
         console.error("Error in fetchPlayersAndAllObservations:", err);
         setError("Error fetching players");
@@ -209,7 +213,7 @@ export default function ObservationsPage() {
         console.error("Error fetching observations:", error);
       }
       console.log("Fetched observations:", data);
-      setObservations(data || []);
+      setObservations((data || []).map(obs => ({ ...obs, archived: false })));
     }
     fetchObs();
   }, [playerId, currentPdp]);
@@ -222,16 +226,66 @@ export default function ObservationsPage() {
     const supabase = createClient();
     await supabase.from("observations").delete().in("id", ids);
     // Refetch observations after deletion
-    if (playerId) {
+    if (playerId && currentPdp) {
       const { data } = await supabase
         .from("observations")
         .select("id, content, observation_date, created_at, player_id")
         .eq("player_id", playerId)
+        .eq("pdp_id", currentPdp.id)
         .eq("archived", false)
         .order("created_at", { ascending: false })
         .limit(50);
-      setObservations(data || []);
+      setObservations((data || []).map(obs => ({ ...obs, archived: false })));
     }
+  };
+
+  const openCreateModal = () => {
+    // Implementation of openCreateModal function
+  };
+
+  const handleEdit = () => {
+    // Implementation of handleEdit function
+  };
+
+  const handleDelete = () => {
+    // Implementation of handleDelete function
+  };
+
+  // Get players without active PDPs for styling
+  const playerIdsWithPDP = new Set(
+    allPdps
+      .filter(pdp => !pdp.archived_at)
+      .map(pdp => pdp.player_id)
+  );
+
+  // Custom render function for player items with PDP status
+  const renderPlayerItem = (player: any, isSelected: boolean) => {
+    const hasNoPlan = !playerIdsWithPDP.has(player.id);
+    
+    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
+    const selectedClasses = isSelected
+      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    return (
+      <div key={player.id} className="space-y-1">
+        <button
+          onClick={() => setPlayerId(player.id)}
+          className={baseClasses + selectedClasses}
+        >
+          {player.name}
+        </button>
+        <div className="flex justify-end">
+          <StatusBadge
+            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
+            size="sm"
+            showIcon
+          >
+            {hasNoPlan ? "No PDP" : "Active PDP"}
+          </StatusBadge>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -245,9 +299,9 @@ export default function ObservationsPage() {
   if (error) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
-        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
+        <ErrorBadge className="p-4">
           {error}
-        </div>
+        </ErrorBadge>
       </div>
     );
   }
@@ -258,12 +312,25 @@ export default function ObservationsPage() {
         <PageTitle>Observations</PageTitle>
         <ThreePaneLayout
           leftPane={
-            <PlayerListPane
-              players={players}
-              pdps={allPdps}
-              onSelect={() => {
-                // Player selection is now handled by the global store
-              }}
+            <EntityListPane
+              title="Players"
+              items={players}
+              selectedId={playerId || undefined}
+              onSelect={id => setPlayerId(id)}
+              actions={
+                <EntityButton 
+                  color="gold"
+                  onClick={() => {
+                    // This would need to be implemented to open the AddPlayerModal
+                    console.log('Add player');
+                    window.location.reload();
+                  }}
+                >
+                  Add Player
+                </EntityButton>
+              }
+              searchPlaceholder="Search players..."
+              renderItem={renderPlayerItem}
             />
           }
           centerPane={
@@ -272,7 +339,15 @@ export default function ObservationsPage() {
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Players Found</h3>
                   <p className="text-zinc-400 mb-4">There are no players in your team yet. Add your first player to start tracking observations.</p>
-                  <AddPlayerButton onPlayerAdded={() => window.location.reload()} />
+                  <EntityButton 
+                    color="gold"
+                    onClick={() => {
+                      console.log('Add player');
+                      window.location.reload();
+                    }}
+                  >
+                    Add Player
+                  </EntityButton>
                 </div>
               </div>
             ) : selectedPlayer ? (

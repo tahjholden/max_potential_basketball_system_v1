@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
-import PlayerListPane from "@/components/PlayerListPane";
+import EntityListPane from "@/components/EntityListPane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
 import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import BulkDeleteObservationsPane from "@/components/BulkDeleteObservationsPane";
@@ -11,7 +11,9 @@ import PDPArchivePane from "@/components/PDPArchivePane";
 import EmptyCard from "@/components/EmptyCard";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import PageTitle from "@/components/PageTitle";
-import AddPlayerButton from "@/components/AddPlayerButton";
+import EntityButton from '@/components/EntityButton';
+import StatusBadge from '@/components/StatusBadge';
+import { NoPlayersEmptyState, NoArchivedPDPsEmptyState } from '@/components/ui/EmptyState';
 
 // Type Definitions
 interface Player {
@@ -39,6 +41,7 @@ interface Observation {
   content: string;
   observation_date: string;
   created_at: string;
+  archived: boolean;
 }
 
 interface ArchivedPdp {
@@ -65,7 +68,7 @@ export default function TestPlayersPage() {
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
   const [archivedPdps, setArchivedPdps] = useState<ArchivedPdp[]>([]);
-  const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -89,14 +92,14 @@ export default function TestPlayersPage() {
     setCurrentPdp(pdpData);
 
     // Fetch recent observations for the player (matching dashboard behavior)
-    const { data: recentObsData } = await supabase
+    const { data: observationsData, error: observationsError } = await supabase
       .from("observations")
-      .select("id, content, observation_date, created_at")
+      .select("id, content, observation_date, created_at, player_id")
       .eq("player_id", playerId)
-      .eq("archived", false)
+      .or("archived.is.null,archived.eq.false")
       .order("created_at", { ascending: false })
-      .limit(5);
-    setObservations(recentObsData || []);
+      .limit(50);
+    setObservations((observationsData || []).map(obs => ({ ...obs, archived: false })));
 
     // Fetch archived PDPs
     const { data: archivedData } = await supabase
@@ -194,6 +197,52 @@ export default function TestPlayersPage() {
     fetchPlayerData();
   }, [fetchPlayerData]);
 
+  const handleEdit = () => {
+    // Implementation for editing player
+    console.log('Edit player:', selectedPlayer?.id);
+  };
+
+  const handleDelete = () => {
+    // Implementation for deleting player
+    console.log('Delete player:', selectedPlayer?.id);
+  };
+
+  // Get players without active PDPs for styling
+  const playerIdsWithPDP = new Set(
+    allPdps
+      .filter(pdp => !pdp.archived_at)
+      .map(pdp => pdp.player_id)
+  );
+
+  // Custom render function for player items with PDP status
+  const renderPlayerItem = (player: any, isSelected: boolean) => {
+    const hasNoPlan = !playerIdsWithPDP.has(player.id);
+    
+    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
+    const selectedClasses = isSelected
+      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    return (
+      <div key={player.id} className="space-y-1">
+        <button
+          onClick={() => setPlayerId(player.id)}
+          className={baseClasses + selectedClasses}
+        >
+          {player.name}
+        </button>
+        <div className="flex justify-end">
+          <StatusBadge
+            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
+            size="sm"
+            showIcon
+          >
+            {hasNoPlan ? "No PDP" : "Active PDP"}
+          </StatusBadge>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
@@ -201,30 +250,37 @@ export default function TestPlayersPage() {
         <PageTitle>Players</PageTitle>
         <ThreePaneLayout
           leftPane={
-            <PlayerListPane
-              players={players}
-              pdps={allPdps}
-              onSelect={() => {}}
-              onPlayerAdded={fetchAllData}
+            <EntityListPane
+              title="Players"
+              items={players}
+              selectedId={playerId || undefined}
+              onSelect={id => setPlayerId(id)}
+              actions={
+                <EntityButton 
+                  color="gold"
+                  onClick={() => {
+                    // This would need to be implemented to open the AddPlayerModal
+                    console.log('Add player');
+                    fetchAllData();
+                  }}
+                >
+                  Add Player
+                </EntityButton>
+              }
+              searchPlaceholder="Search players..."
+              renderItem={renderPlayerItem}
             />
           }
           centerPane={
             players.length === 0 ? (
-              <div className="flex flex-col gap-4 h-full">
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Players Found</h3>
-                  <p className="text-zinc-400 mb-4">There are no players in your team yet. Add your first player to get started.</p>
-                  <AddPlayerButton onPlayerAdded={fetchAllData} />
-                </div>
-              </div>
+              <NoPlayersEmptyState 
+                onAddPlayer={() => {
+                  console.log('Add player');
+                  fetchAllData();
+                }}
+              />
             ) : selectedPlayer ? (
               <div className="flex flex-col gap-4">
-                <PlayerMetadataCard
-                  player={selectedPlayer}
-                  observations={observations}
-                  playerId={selectedPlayer.id}
-                  showDeleteButton
-                />
                 <DevelopmentPlanCard
                   player={selectedPlayer}
                   pdp={currentPdp}
@@ -234,6 +290,14 @@ export default function TestPlayersPage() {
                   observations={observations}
                   showCheckboxes={false}
                 />
+                <div className="flex gap-1">
+                  <EntityButton color="gold" onClick={handleEdit}>
+                    Edit Player
+                  </EntityButton>
+                  <EntityButton color="danger" onClick={handleDelete}>
+                    Delete Player
+                  </EntityButton>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col gap-4 h-full">
@@ -245,10 +309,7 @@ export default function TestPlayersPage() {
           }
           rightPane={
             players.length === 0 ? (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-zinc-300 mb-2">PDP Archive</h3>
-                <p className="text-zinc-400">Archived development plans will appear here once you add players and create PDPs.</p>
-              </div>
+              <NoArchivedPDPsEmptyState />
             ) : (
               <PDPArchivePane
                 pdps={archivedPdps}

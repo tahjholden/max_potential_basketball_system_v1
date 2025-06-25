@@ -47,7 +47,7 @@ export async function archiveAndCreateNewPDP(playerId: string) {
       archived: true  // Set boolean flag for UI filtering
     })
     .eq("player_id", playerId)
-    .eq("archived", false); // Only update unarchived observations
+    .or("archived.is.null,archived.eq.false"); // Only update unarchived observations
 
   if (linkObsError) {
     console.error("Failed to archive observations:", linkObsError);

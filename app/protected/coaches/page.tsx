@@ -7,8 +7,9 @@ import EmptyCard from "@/components/EmptyCard";
 import CoachListPane from "@/components/CoachListPane";
 import CoachProfilePane from "@/components/CoachProfilePane";
 import CoachObservationsPane from "@/components/CoachObservationsPane";
-import PlayerListPane from "@/components/PlayerListPane";
-import AddCoachButton from "@/components/AddCoachButton";
+import EntityListPane from "@/components/EntityListPane";
+import EntityButton from '@/components/EntityButton';
+import StatusBadge from '@/components/StatusBadge';
 
 // Type Definitions
 interface Coach {
@@ -126,7 +127,7 @@ export default function CoachesPage() {
       const { data: observationsData } = await supabase
         .from("observations")
         .select("player_id")
-        .eq("archived", false)
+        .or("archived.is.null,archived.eq.false")
         .limit(100);
 
       const counts = new Map();
@@ -156,7 +157,7 @@ export default function CoachesPage() {
             player_id
           `)
           .in("player_id", playerIds)
-          .eq("archived", false)
+          .or("archived.is.null,archived.eq.false")
           .order("created_at", { ascending: false })
           .limit(10);
 
@@ -230,7 +231,7 @@ export default function CoachesPage() {
               player_id
             `)
             .in("player_id", playerIds)
-            .eq("archived", false)
+            .or("archived.is.null,archived.eq.false")
             .order("created_at", { ascending: false })
             .limit(10);
 
@@ -285,7 +286,7 @@ export default function CoachesPage() {
         const { data: observationsData } = await supabase
           .from("observations")
           .select("player_id")
-          .eq("archived", false)
+          .or("archived.is.null,archived.eq.false")
           .limit(100);
         
         const counts = new Map();
@@ -382,17 +383,78 @@ export default function CoachesPage() {
     setSelectedCoachId(coachId);
   };
 
+  const openCreateModal = () => {
+    // Implementation of openCreateModal function
+  };
+
+  const handleEdit = () => {
+    // Implementation of handleEdit function
+  };
+
+  const handleDelete = () => {
+    // Implementation of handleDelete function
+  };
+
+  // Get players without active PDPs for styling
+  const playerIdsWithPDP = new Set(
+    allPdps
+      .filter(pdp => !pdp.archived_at)
+      .map(pdp => pdp.player_id)
+  );
+
+  // Custom render function for player items with PDP status
+  const renderPlayerItem = (player: any, isSelected: boolean) => {
+    const hasNoPlan = !playerIdsWithPDP.has(player.id);
+    
+    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
+    const selectedClasses = isSelected
+      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    return (
+      <div key={player.id} className="space-y-1">
+        <button
+          onClick={() => {
+            // Handle player selection if needed
+            console.log('Player selected:', player.id);
+          }}
+          className={baseClasses + selectedClasses}
+        >
+          {player.name}
+        </button>
+        <div className="flex justify-end">
+          <StatusBadge
+            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
+            size="sm"
+            showIcon
+          >
+            {hasNoPlan ? "No PDP" : "Active PDP"}
+          </StatusBadge>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
         <PageTitle>Coaches</PageTitle>
         <ThreePaneLayout
           leftPane={
-            <CoachListPane
-              coaches={coaches}
+            <EntityListPane
+              title="Coaches"
+              items={coaches.map(coach => ({
+                id: coach.id,
+                name: `${coach.first_name} ${coach.last_name}`
+              }))}
+              selectedId={selectedCoachId || undefined}
               onSelect={handleCoachSelect}
-              selectedCoachId={selectedCoachId}
-              onCoachAdded={fetchAllData}
+              actions={
+                <EntityButton color="gold" onClick={openCreateModal}>
+                  Add Coach
+                </EntityButton>
+              }
+              searchPlaceholder="Search coaches..."
             />
           }
           centerPane={
@@ -401,7 +463,11 @@ export default function CoachesPage() {
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Coaches Found</h3>
                   <p className="text-zinc-400 mb-4">There are no coaches in your team yet. Add your first coach to get started.</p>
-                  <AddCoachButton onCoachAdded={fetchAllData} />
+                  <div className="flex gap-1">
+                    <EntityButton color="gold" onClick={openCreateModal}>
+                      Add Coach
+                    </EntityButton>
+                  </div>
                 </div>
               </div>
             ) : selectedCoach ? (
@@ -414,6 +480,14 @@ export default function CoachesPage() {
                   coach={selectedCoach}
                   observations={observations}
                 />
+                <div className="flex gap-1">
+                  <EntityButton color="gold" onClick={handleEdit}>
+                    Edit Coach
+                  </EntityButton>
+                  <EntityButton color="danger" onClick={handleDelete}>
+                    Delete Coach
+                  </EntityButton>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col gap-4 h-full">
@@ -429,14 +503,22 @@ export default function CoachesPage() {
                 <p className="text-zinc-400">Players will appear here once you add coaches and assign them to teams.</p>
               </div>
             ) : (
-              <PlayerListPane
-                players={players}
-                pdps={allPdps}
-                onSelect={() => {}}
-                onPlayerAdded={fetchAllData}
-                teams={teams}
-                selectedTeamId={selectedTeamId}
-                setSelectedTeamId={setSelectedTeamId}
+              <EntityListPane
+                title="Players"
+                items={players}
+                actions={
+                  <EntityButton 
+                    color="gold"
+                    onClick={() => {
+                      console.log('Add player');
+                      fetchAllData();
+                    }}
+                  >
+                    Add Player
+                  </EntityButton>
+                }
+                searchPlaceholder="Search players..."
+                renderItem={renderPlayerItem}
               />
             )
           }

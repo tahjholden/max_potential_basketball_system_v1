@@ -31,7 +31,7 @@ export default function ArchiveObservationsModal({ pdpId, open, onClose, onSucce
         .from("observations")
         .select("id, content, archived, archived_at")
         .eq("pdp_id", pdpId)
-        .eq("archived", false);
+        .or("archived.is.null,archived.eq.false");
       if (error) {
         toast.error("Failed to fetch observations");
         return;

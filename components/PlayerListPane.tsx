@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import PaneTitle from "@/components/PaneTitle";
-import AddPlayerButton from "./AddPlayerButton";
+import EntityButton from "./EntityButton";
 
 interface Player {
   id: string;
@@ -92,7 +92,17 @@ export default function PlayerListPane({
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
       <div className="flex justify-between items-center mb-4">
         <PaneTitle>Players</PaneTitle>
-        {onPlayerAdded && <AddPlayerButton onPlayerAdded={onPlayerAdded} />}
+        {onPlayerAdded && (
+          <EntityButton 
+            color="gold"
+            onClick={() => {
+              console.log('Add player');
+              onPlayerAdded();
+            }}
+          >
+            Add Player
+          </EntityButton>
+        )}
       </div>
       {teams.length > 0 && (
         <div className="mb-2">

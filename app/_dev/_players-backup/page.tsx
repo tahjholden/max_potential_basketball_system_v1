@@ -47,7 +47,7 @@ export default function PlayersPage() {
             </div>
           </>
         }
-        mainPane={
+        centerPane={
           selectedPlayer ? (
             <>
               <h2 className="text-xl font-semibold mb-2">{selectedPlayer.name}</h2>

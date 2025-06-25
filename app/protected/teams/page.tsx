@@ -8,6 +8,9 @@ import { GoldButton } from '@/components/ui/gold-button';
 import DeleteButton from '@/components/DeleteButton';
 import { toast } from 'sonner';
 import { format } from "date-fns";
+import EntityListPane from '@/components/EntityListPane';
+import EntityButton from '@/components/EntityButton';
+import StatusBadge from '@/components/StatusBadge';
 
 interface Team {
   id: string;
@@ -213,95 +216,85 @@ export default function TeamsThreePane() {
   return (
     <div className="flex h-full w-full">
       {/* Left Pane: Team List */}
-      <div className="w-1/4 min-w-[220px] bg-zinc-950 px-4 py-6 border-r border-zinc-800">
-        <input
-          type="text"
-          className="w-full mb-3 px-3 py-2 rounded bg-zinc-900 border border-zinc-700 text-gold-200 placeholder-gold-400"
-          placeholder="Search teams…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <div className="space-y-2">
-          {filteredTeams.map(team => (
-            <button
-              key={team.id}
-              className={`w-full text-left px-3 py-2 rounded-md transition-all duration-200
-                ${selectedTeam?.id === team.id
-                  ? "border border-[#FFD700] bg-gradient-to-r from-[#2c2c20] to-[#4d4000] text-white font-bold"
-                  : "border border-zinc-700 text-[#FFD700] bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600"}`
-              }
-              onClick={() => setSelectedTeam(team)}
-            >
-              <div className="font-medium">{team.name}</div>
-              <div className="text-xs text-gold-400 font-medium">
-                {team.created_at && format(new Date(team.created_at), "MMM d, yyyy")}
-              </div>
-            </button>
-          ))}
-        </div>
-        <GoldButton className="w-full mt-6" onClick={openCreateModal}>
-          + Create Team
-        </GoldButton>
-        <CreateTeamModal
-          open={modalOpen}
-          onClose={closeModal}
-          onCreated={() => {
-            // Refresh teams list
-            const fetchData = async () => {
-              const supabase = createClient();
-              const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
-              setTeams(teamData || []);
-            };
-            fetchData();
-          }}
-        />
-      </div>
+      <EntityListPane
+        title="Teams"
+        items={teams}
+        selectedId={selectedTeam?.id}
+        onSelect={id => setSelectedTeam(teams.find(t => t.id === id) || null)}
+        actions={
+          <EntityButton color="gold" onClick={openCreateModal}>
+            Create Team
+          </EntityButton>
+        }
+        searchPlaceholder="Search teams..."
+      />
+      <CreateTeamModal
+        open={modalOpen}
+        onClose={closeModal}
+        onCreated={() => {
+          // Refresh teams list
+          const fetchData = async () => {
+            const supabase = createClient();
+            const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
+            setTeams(teamData || []);
+          };
+          fetchData();
+        }}
+      />
 
       {/* Center Pane: Team Details */}
-      <div className="flex-1 px-8 py-6">
+      <div className="flex-1 p-4">
         {selectedTeam ? (
-          <div className="bg-zinc-900 rounded-2xl shadow-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-extrabold text-gold-500">
-                {selectedTeam.name}
-              </h2>
-              <div className="flex gap-2">
-                <GoldButton onClick={handleEdit}>Edit</GoldButton>
-                <DeleteButton
-                  onConfirm={handleDelete}
-                  entity="Team"
-                  description={`This will permanently delete the team "${selectedTeam.name}". This action cannot be undone.`}
-                  iconOnly={true}
-                  label="Delete Team"
-                  confirmText={selectedTeam.name}
-                />
-              </div>
-            </div>
-            <div className="mb-2 text-gold-300">Created: {selectedTeam.created_at && format(new Date(selectedTeam.created_at), "PP")}</div>
-            <div className="mb-4">
-              <div className="font-bold text-gold-400 mb-1">Coach:</div>
-              {teamCoach ? (
-                <div className="flex items-center px-2 py-1 bg-[#FFD700] text-black font-bold rounded text-sm">
-                  <span className="w-7 h-7 bg-black/20 flex items-center justify-center rounded-full text-black font-bold mr-2">
-                    {initials(teamCoach.first_name + " " + teamCoach.last_name)}
-                  </span>
-                  {teamCoach.first_name} {teamCoach.last_name}
+          <div className="space-y-6">
+            <div className="bg-zinc-900 rounded-2xl shadow-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-extrabold text-gold-500">
+                  {selectedTeam.name}
+                </h2>
+                <div className="flex gap-1">
+                  <EntityButton color="gold" onClick={handleEdit}>
+                    Edit Team
+                  </EntityButton>
+                  <EntityButton color="danger" onClick={handleDelete}>
+                    Delete Team
+                  </EntityButton>
                 </div>
-              ) : (
-                <span className="text-zinc-500 italic">No coach assigned.</span>
-              )}
-            </div>
-            <div>
-              <div className="font-bold text-gold-400 mb-1">Players:</div>
-              {teamPlayers.length === 0 ? (
-                <div className="text-zinc-500 italic">No players on this team.</div>
-              ) : (
-                <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
-                  {teamPlayers.map(player => (
-                    <li key={player.id} className="text-gold-200">{player.first_name} {player.last_name}</li>
-                  ))}
-                </ul>
-              )}
+              </div>
+              <div className="mb-2 text-gold-300">Created: {selectedTeam.created_at && format(new Date(selectedTeam.created_at), "PP")}</div>
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="font-bold text-gold-400">Coach:</div>
+                  <StatusBadge
+                    variant={teamCoach ? "active" : "inactive"}
+                    size="sm"
+                    showIcon
+                  >
+                    {teamCoach ? "Assigned" : "Unassigned"}
+                  </StatusBadge>
+                </div>
+                {teamCoach ? (
+                  <div className="flex items-center px-2 py-1 bg-[#C2B56B] text-black font-bold rounded text-sm">
+                    <span className="w-7 h-7 bg-black/20 flex items-center justify-center rounded-full text-black font-bold mr-2">
+                      {initials(teamCoach.first_name + " " + teamCoach.last_name)}
+                    </span>
+                    {teamCoach.first_name} {teamCoach.last_name}
+                  </div>
+                ) : (
+                  <span className="text-zinc-500 italic">No coach assigned.</span>
+                )}
+              </div>
+              <div>
+                <div className="font-bold text-gold-400 mb-1">Players:</div>
+                {teamPlayers.length === 0 ? (
+                  <div className="text-zinc-500 italic">No players on this team.</div>
+                ) : (
+                  <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+                    {teamPlayers.map(player => (
+                      <li key={player.id} className="text-gold-200">{player.first_name} {player.last_name}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -310,7 +303,7 @@ export default function TeamsThreePane() {
       </div>
 
       {/* Right Pane: Team Info/Meta */}
-      <div className="w-1/3 min-w-[280px] bg-zinc-900 border-l border-zinc-800 p-6 flex flex-col">
+      <div className="w-1/3 min-w-[280px] bg-zinc-900 border-l border-zinc-800 p-4 flex flex-col">
         {selectedTeam ? (
           <div>
             <h3 className="text-lg font-bold text-gold-400 mb-2">Team Info</h3>

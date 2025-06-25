@@ -57,7 +57,7 @@ export default function DashboardPage() {
       .from("pdp")
       .select("id, content, start_date, created_at, player_id, archived_at")
       .eq("player_id", playerId)
-      .is("archived_at", null)
+      .or("archived.is.null,archived.eq.false")
       .maybeSingle();
     setCurrentPdp(data);
   };
@@ -83,7 +83,7 @@ export default function DashboardPage() {
         const { data: observationsData } = await supabase
           .from("observations")
           .select("player_id")
-          .eq("archived", false);
+          .or("archived.is.null,archived.eq.false");
         const counts = new Map<string, number>();
         observationsData?.forEach((obs: any) => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
@@ -113,7 +113,7 @@ export default function DashboardPage() {
         .from("observations")
         .select("id, content, observation_date, created_at")
         .eq("player_id", playerId)
-        .eq("archived", false)
+        .or("archived.is.null,archived.eq.false")
         .order("created_at", { ascending: false })
         .limit(5);
       setObservations(data || []);

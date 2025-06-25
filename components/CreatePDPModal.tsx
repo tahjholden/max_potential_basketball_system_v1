@@ -20,7 +20,7 @@ export default function CreatePDPModal({
   open: boolean;
   onClose: () => void;
   player: { id: string; name: string } | null;
-  coachId: string;
+  coachId?: string;
   onCreated: () => void;
 }) {
   const [content, setContent] = useState("");
