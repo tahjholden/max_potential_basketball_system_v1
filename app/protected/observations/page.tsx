@@ -11,7 +11,6 @@ import ObservationInsightsPane from "@/components/ObservationInsightsPane";
 import EmptyCard from "@/components/EmptyCard";
 import PageTitle from "@/components/PageTitle";
 import EntityButton from '@/components/EntityButton';
-import StatusBadge from '@/components/StatusBadge';
 import { ErrorBadge } from '@/components/StatusBadge';
 
 // Type definitions - matching dashboard exactly
@@ -164,7 +163,7 @@ export default function ObservationsPage() {
           .in("player_id", playerIds)
           .eq("archived", false)
           .order("created_at", { ascending: false })
-          .limit(100);
+          .range(0, 49);
         if (observationsError) {
           console.error("Error fetching observations:", observationsError);
           setError("Error fetching observations");
@@ -263,28 +262,26 @@ export default function ObservationsPage() {
     const hasNoPlan = !playerIdsWithPDP.has(player.id);
     
     const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
-    const selectedClasses = isSelected
-      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
-      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    let classes = baseClasses;
+    if (hasNoPlan) {
+      classes += isSelected
+        ? " bg-[#A22828] text-white border-[#A22828]"
+        : " bg-zinc-900 text-[#A22828] border-[#A22828]";
+    } else {
+      classes += isSelected
+        ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+        : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+    }
 
     return (
-      <div key={player.id} className="space-y-1">
-        <button
-          onClick={() => setPlayerId(player.id)}
-          className={baseClasses + selectedClasses}
-        >
-          {player.name}
-        </button>
-        <div className="flex justify-end">
-          <StatusBadge
-            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
-            size="sm"
-            showIcon
-          >
-            {hasNoPlan ? "No PDP" : "Active PDP"}
-          </StatusBadge>
-        </div>
-      </div>
+      <button
+        key={player.id}
+        onClick={() => setPlayerId(player.id)}
+        className={classes}
+      >
+        {player.name}
+      </button>
     );
   };
 

@@ -64,6 +64,7 @@ export default function DashboardPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [allPdps, setAllPdps] = useState<Pdp[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -96,6 +97,8 @@ export default function DashboardPage() {
         }
 
         console.log('Coach data:', coachData);
+
+        setIsAdmin(!!coachData.is_admin);
 
         // Try to get teams for this coach
         const { data: teamsData, error: teamsError } = await supabase
@@ -139,7 +142,7 @@ export default function DashboardPage() {
   // Fetch players and PDPs for the selected team
   useEffect(() => {
     async function fetchPlayersAndPlans() {
-      if (!selectedTeamId) {
+      if (!selectedTeamId && !isAdmin) {
         setPlayers([]);
         setPlayersWithoutPDP([]);
         return;
@@ -163,11 +166,7 @@ export default function DashboardPage() {
           `)
           .order("last_name", { ascending: true });
 
-        // If using fallback team, fetch all players (temporary until RLS is fixed)
-        if (selectedTeamId === 'fallback-team-id') {
-          // Don't filter by team_id for now
-          console.warn('Using fallback team - fetching all players');
-        } else {
+        if (!isAdmin) {
           playersQuery = playersQuery.eq("team_id", selectedTeamId);
         }
 
@@ -242,7 +241,7 @@ export default function DashboardPage() {
     }
 
     fetchPlayersAndPlans();
-  }, [selectedTeamId]);
+  }, [selectedTeamId, isAdmin]);
 
   // Fetch observations for selected player
   useEffect(() => {
@@ -393,7 +392,7 @@ export default function DashboardPage() {
         <div className="flex gap-4 mt-0">
           {/* LEFT: Player List Card */}
           <div className="flex-1 min-w-0">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0 flex flex-col gap-4">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
               {/* Team selector above player list */}
               {teams.length > 1 && (
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 mb-2">
@@ -411,6 +410,7 @@ export default function DashboardPage() {
                   </select>
                 </div>
               )}
+              {/* Search input and player list, no title */}
               <EntityListPane
                 title=""
                 items={players}
@@ -419,6 +419,8 @@ export default function DashboardPage() {
                 actions={undefined}
                 searchPlaceholder="Search players..."
                 renderItem={renderPlayerItem}
+                showSearch={true}
+                className="bg-transparent p-0 shadow-none"
               />
             </div>
           </div>
@@ -438,7 +440,6 @@ export default function DashboardPage() {
                 </div>
               ) : selectedPlayer ? (
                 <>
-                  <h2 className="font-bold text-lg mb-2">Player Profile</h2>
                   <div className="mb-4 space-y-2">
                     <div>
                       <span className="text-zinc-500">Name:</span> <span className="font-bold" style={{ color: '#d8cc97', fontSize: '1.1rem' }}>{selectedPlayer.name}</span>
@@ -471,15 +472,24 @@ export default function DashboardPage() {
           </div>
           {/* RIGHT: Observations Card */}
           <div className="flex-1 min-w-0">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
-              {players.length === 0 ? (
-                <div className="text-zinc-500 italic">Observations will appear here once you add players and start tracking their progress.</div>
-              ) : (
-                <ObservationFeedPane
-                  observations={observations}
-                />
-              )}
-            </div>
+             <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
+               {players.length === 0 || observations.length === 0 ? (
+                 <div className="flex flex-col items-center justify-center py-12 text-zinc-600">
+                   {/* Replace LogoM with your logo component or remove if not available */}
+                   {/* <LogoM className="w-14 h-14 opacity-30 mb-2" /> */}
+                   <span>No observations found.</span>
+                 </div>
+               ) : (
+                 <div className="flex flex-col gap-3">
+                   {observations.map(obs => (
+                     <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                       <div className="text-xs text-zinc-400 mb-1">{obs.observation_date}</div>
+                       <div className="text-base text-zinc-100">{obs.content}</div>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
           </div>
         </div>
         {/* Modals */}

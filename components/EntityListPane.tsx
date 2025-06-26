@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import PaneTitle from "@/components/PaneTitle";
-import StatusBadge from "@/components/StatusBadge";
 import { SearchEmptyState } from "@/components/ui/EmptyState";
 
 interface EntityListItem {
@@ -86,15 +85,6 @@ const EntityListPane: React.FC<EntityListPaneProps> = ({
                 >
                   {item.name}
                 </button>
-                <div className="flex justify-end">
-                  <StatusBadge
-                    variant="neutral"
-                    size="sm"
-                    showIcon
-                  >
-                    {isSelected ? "Selected" : "Available"}
-                  </StatusBadge>
-                </div>
               </div>
             );
           })

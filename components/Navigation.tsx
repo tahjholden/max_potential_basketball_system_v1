@@ -52,7 +52,7 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="flex flex-col h-full">
+    <nav className="flex flex-col h-full border-r border-zinc-800 shadow-[2px_0_8px_rgba(0,0,0,0.07)]">
       <div className="flex-grow space-y-2">
         {mainNavLinks.map(renderLink)}
       </div>

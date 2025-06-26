@@ -2,7 +2,6 @@ import { format } from "date-fns";
 import PaneTitle from "@/components/PaneTitle";
 import EditPDPButton from "./EditPDPButton";
 import ArchiveCreateNewModal from "./ArchiveCreateNewModal";
-import StatusBadge from "./StatusBadge";
 
 interface Player {
   id: string;
@@ -34,13 +33,6 @@ export default function DevelopmentPlanCard({
         <div>
           <div className="flex items-center gap-2">
             <PaneTitle>Development Plan</PaneTitle>
-            <StatusBadge
-              variant={pdp ? "pdp-active" : "pdp-inactive"}
-              size="sm"
-              showIcon
-            >
-              {pdp ? "Active" : "No Plan"}
-            </StatusBadge>
           </div>
           <div className="text-xs text-zinc-400 mt-1">
             Started: {pdp?.created_at ? format(new Date(pdp.created_at), "MMM dd, yyyy") : "—"}

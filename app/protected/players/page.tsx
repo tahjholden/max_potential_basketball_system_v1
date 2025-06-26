@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
+import Link from "next/link";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import EntityListPane from "@/components/EntityListPane";
-import PlayerMetadataCard from "@/components/PlayerMetadataCard";
+import EntityMetadataCard from "@/components/EntityMetadataCard";
 import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import BulkDeleteObservationsPane from "@/components/BulkDeleteObservationsPane";
 import PDPArchivePane from "@/components/PDPArchivePane";
@@ -12,7 +13,6 @@ import EmptyCard from "@/components/EmptyCard";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import PageTitle from "@/components/PageTitle";
 import EntityButton from '@/components/EntityButton';
-import StatusBadge from '@/components/StatusBadge';
 import { NoPlayersEmptyState, NoArchivedPDPsEmptyState } from '@/components/ui/EmptyState';
 
 // Type Definitions
@@ -98,7 +98,7 @@ export default function TestPlayersPage() {
       .eq("player_id", playerId)
       .or("archived.is.null,archived.eq.false")
       .order("created_at", { ascending: false })
-      .limit(50);
+      .range(0, 49);
     setObservations((observationsData || []).map(obs => ({ ...obs, archived: false })));
 
     // Fetch archived PDPs
@@ -219,28 +219,26 @@ export default function TestPlayersPage() {
     const hasNoPlan = !playerIdsWithPDP.has(player.id);
     
     const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
-    const selectedClasses = isSelected
-      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
-      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    let classes = baseClasses;
+    if (hasNoPlan) {
+      classes += isSelected
+        ? " bg-[#A22828] text-white border-[#A22828]"
+        : " bg-zinc-900 text-[#A22828] border-[#A22828]";
+    } else {
+      classes += isSelected
+        ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+        : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+    }
 
     return (
-      <div key={player.id} className="space-y-1">
-        <button
-          onClick={() => setPlayerId(player.id)}
-          className={baseClasses + selectedClasses}
-        >
-          {player.name}
-        </button>
-        <div className="flex justify-end">
-          <StatusBadge
-            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
-            size="sm"
-            showIcon
-          >
-            {hasNoPlan ? "No PDP" : "Active PDP"}
-          </StatusBadge>
-        </div>
-      </div>
+      <button
+        key={player.id}
+        onClick={() => setPlayerId(player.id)}
+        className={classes}
+      >
+        {player.name}
+      </button>
     );
   };
 
@@ -281,6 +279,31 @@ export default function TestPlayersPage() {
               />
             ) : selectedPlayer ? (
               <div className="flex flex-col gap-4">
+                <EntityMetadataCard
+                  title="Player Profile"
+                  fields={[
+                    {
+                      label: "Name",
+                      value: selectedPlayer.name,
+                      highlight: true
+                    },
+                    {
+                      label: "Joined",
+                      value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy")
+                    },
+                    ...(selectedPlayer.team_name ? [{
+                      label: "Team",
+                      value: (
+                        <Link 
+                          href={`/protected/teams?playerId=${selectedPlayer.id}`}
+                          className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
+                        >
+                          {selectedPlayer.team_name}
+                        </Link>
+                      )
+                    }] : [])
+                  ]}
+                />
                 <DevelopmentPlanCard
                   player={selectedPlayer}
                   pdp={currentPdp}

@@ -9,7 +9,6 @@ import CoachProfilePane from "@/components/CoachProfilePane";
 import CoachObservationsPane from "@/components/CoachObservationsPane";
 import EntityListPane from "@/components/EntityListPane";
 import EntityButton from '@/components/EntityButton';
-import StatusBadge from '@/components/StatusBadge';
 
 // Type Definitions
 interface Coach {
@@ -128,7 +127,7 @@ export default function CoachesPage() {
         .from("observations")
         .select("player_id")
         .or("archived.is.null,archived.eq.false")
-        .limit(100);
+        .range(0, 49);
 
       const counts = new Map();
       observationsData?.forEach(obs => {
@@ -287,7 +286,7 @@ export default function CoachesPage() {
           .from("observations")
           .select("player_id")
           .or("archived.is.null,archived.eq.false")
-          .limit(100);
+          .range(0, 49);
         
         const counts = new Map();
         observationsData?.forEach(obs => {
@@ -407,31 +406,29 @@ export default function CoachesPage() {
     const hasNoPlan = !playerIdsWithPDP.has(player.id);
     
     const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
-    const selectedClasses = isSelected
-      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
-      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    let classes = baseClasses;
+    if (hasNoPlan) {
+      classes += isSelected
+        ? " bg-[#A22828] text-white border-[#A22828]"
+        : " bg-zinc-900 text-[#A22828] border-[#A22828]";
+    } else {
+      classes += isSelected
+        ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+        : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+    }
 
     return (
-      <div key={player.id} className="space-y-1">
-        <button
-          onClick={() => {
-            // Handle player selection if needed
-            console.log('Player selected:', player.id);
-          }}
-          className={baseClasses + selectedClasses}
-        >
-          {player.name}
-        </button>
-        <div className="flex justify-end">
-          <StatusBadge
-            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
-            size="sm"
-            showIcon
-          >
-            {hasNoPlan ? "No PDP" : "Active PDP"}
-          </StatusBadge>
-        </div>
-      </div>
+      <button
+        key={player.id}
+        onClick={() => {
+          // Handle player selection if needed
+          console.log('Player selected:', player.id);
+        }}
+        className={classes}
+      >
+        {player.name}
+      </button>
     );
   };
 

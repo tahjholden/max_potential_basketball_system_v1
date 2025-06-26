@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import PaneTitle from "@/components/PaneTitle";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
-import StatusBadge from "@/components/StatusBadge";
 import { NoArchivedPDPsEmptyState } from "./EmptyState";
 
 interface ArchiveItem {
@@ -151,13 +150,6 @@ export default function ArchivePane({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <p className="text-[#d8cc97] font-semibold">{item.title}</p>
-                  <StatusBadge 
-                    variant={getStatusVariant(item.status)} 
-                    size="sm" 
-                    showIcon
-                  >
-                    {getStatusLabel(item.status)}
-                  </StatusBadge>
                 </div>
                 <div className="flex items-center gap-2">
                   {showActions && onRestore && (

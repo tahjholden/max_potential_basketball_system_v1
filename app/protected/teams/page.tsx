@@ -19,6 +19,8 @@ import EmptyCard from "@/components/EmptyCard";
 import Link from "next/link";
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
 import ComingSoonCard from '@/components/ComingSoonCard';
+import { Card, CardContent } from '@/components/ui/card';
+import PaneTitle from '@/components/PaneTitle';
 
 interface Team {
   id: string;
@@ -259,111 +261,151 @@ export default function TeamsThreePane() {
     }
   }, [currentCoach, teams, selectedTeam, searchParams]);
 
-  return (
-    <div className="min-h-screen p-4 bg-zinc-950">
-      <div className="mt-2 px-6">
-        <div className="grid grid-cols-3 gap-6">
-          {/* Header row */}
-          <div className="mb-0">
-            <span className="text-lg font-bold text-white mr-3 mb-0">Teams</span>
-            <button
-              onClick={openCreateModal}
-              className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-lg"
-              style={{ lineHeight: '1.5', verticalAlign: 'baseline' }}
-            >
-              + Create Team
-            </button>
-          </div>
-          <div className="mb-0">
-            <span className="text-lg font-bold text-white mb-0">Team Profile</span>
-          </div>
-          <div className="mb-0">
-            <span className="text-lg font-bold text-white mb-0">Coming Soon</span>
-          </div>
+  // Render team item for EntityListPane
+  const renderTeamItem = (item: any, selected: boolean) => {
+    const team = item as Team;
+    return (
+      <button
+        onClick={() => setSelectedTeam(team)}
+        className={
+          `w-full flex items-center justify-center text-center px-4 py-2 rounded font-bold border-2 transition-colors duration-100 ` +
+          (selected
+            ? "bg-[#C2B56B] text-black border-[#C2B56B]"
+            : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
+        }
+      >
+        {team.name}
+      </button>
+    );
+  };
 
-          {/* Content row */}
-          <div>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0 max-h-96 overflow-y-auto">
-              {teams.length === 0 ? (
-                <div className="text-zinc-500 italic">No teams available.</div>
-              ) : (
-                teams.map(team => (
-                  <button
-                    key={team.id}
-                    onClick={() => setSelectedTeam(team)}
-                    className={`w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2 ${
-                      selectedTeam?.id === team.id
-                        ? "bg-[#C2B56B] text-black border-[#C2B56B]"
-                        : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B]"
-                    }`}
-                  >
-                    {team.name}
-                  </button>
-                ))
-              )}
+  // Team metadata fields for EntityMetadataCard
+  const getTeamMetadataFields = () => {
+    if (!selectedTeam) return [];
+    
+    return [
+      {
+        label: "Name",
+        value: selectedTeam.name,
+        highlight: true
+      },
+      {
+        label: "Coach",
+        value: teamCoach ? `${teamCoach.first_name} ${teamCoach.last_name}` : "No coach assigned"
+      },
+      {
+        label: "Players",
+        value: `${teamPlayers.length} player${teamPlayers.length !== 1 ? 's' : ''}`
+      },
+      {
+        label: "Created",
+        value: format(new Date(selectedTeam.created_at), "MMMM do, yyyy")
+      }
+    ];
+  };
+
+  // Team actions for EntityMetadataCard
+  const getTeamActions = () => (
+    <div className="flex gap-1">
+      <EntityButton color="gold" onClick={handleEdit}>
+        Edit Team
+      </EntityButton>
+      <EntityButton color="danger" onClick={handleDelete}>
+        Delete Team
+      </EntityButton>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen p-4 bg-zinc-950" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
+      <div className="mt-2 px-6">
+        <div className="flex gap-6">
+          {/* Header row */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-0">
+              <span className="text-lg font-bold text-white">Teams</span>
+              <button
+                onClick={openCreateModal}
+                className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-lg"
+                style={{ lineHeight: '1.5', verticalAlign: 'baseline' }}
+              >
+                + Create Team
+              </button>
             </div>
           </div>
-          <div>
-            <div className="flex flex-col gap-6 mt-0">
-              {teams.length === 0 ? (
-                <div className="text-zinc-500 italic">No teams available.</div>
-              ) : selectedTeam ? (
+          <div className="flex-[2] min-w-0">
+            <span className="text-lg font-bold text-white mb-0">Team Profile</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-lg font-bold text-white mb-0">Coming Soon</span>
+          </div>
+        </div>
+
+        {/* Content row */}
+        <div className="flex gap-6 mt-0">
+          {/* Left: Teams list */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3">
+              {[...teams].sort((a, b) => a.name.localeCompare(b.name)).map((team, idx, arr) => (
+                <button
+                  key={team.id}
+                  className={
+                    "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 " +
+                    (idx !== arr.length - 1 ? "mb-2 " : "") +
+                    (team.id === selectedTeam?.id
+                      ? "bg-[#C2B56B] text-black border-[#C2B56B]"
+                      : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
+                  }
+                  onClick={() => setSelectedTeam(team)}
+                >
+                  {team.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Center: Team Profile + Roster (wider column) */}
+          <div className="flex-[2] min-w-0">
+            <div className="flex flex-col gap-4 mt-0">
+              {selectedTeam ? (
                 <>
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-zinc-500">Name:</span>{' '}
-                        <span className="font-bold text-[#C2B56B] text-base">{selectedTeam.name}</span>
-                      </div>
-                      <div>
-                        <span className="text-zinc-500">Coach:</span>{' '}
-                        {teamCoach ? (
-                          <span className="font-bold text-[#C2B56B]">{teamCoach.first_name} {teamCoach.last_name}</span>
+                  <EntityMetadataCard
+                    title=""
+                    fields={getTeamMetadataFields()}
+                    actions={getTeamActions()}
+                    cardClassName="mt-0"
+                  />
+                  {/* Roster header overlapping the card border */}
+                  <div className="flex flex-col gap-2">
+                    <span className="font-bold text-base text-white -mb-2 z-10 px-2 bg-zinc-950 w-fit">Roster</span>
+                    <Card className="bg-zinc-900 border border-zinc-700 mt-0">
+                      <CardContent className="p-4">
+                        {teamPlayers.length === 0 ? (
+                          <div className="text-zinc-500 italic">No players on this team.</div>
                         ) : (
-                          <span className="italic text-zinc-400">No coach assigned</span>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                            {teamPlayers.map(player => {
+                              const isSelected = playerId === player.id;
+                              let classes = "w-full flex items-center justify-center px-4 py-2 rounded font-medium border border-[#C2B56B] bg-zinc-900 transition-colors";
+                              if (isSelected) {
+                                classes += " bg-[#C2B56B] text-black";
+                              } else {
+                                classes += " text-zinc-300 hover:bg-[#C2B56B]/10";
+                              }
+                              return (
+                                <button
+                                  key={player.id}
+                                  onClick={() => window.location.href = `/protected/players?id=${player.id}`}
+                                  className={classes}
+                                >
+                                  {player.first_name} {player.last_name}
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
-                      </div>
-                      <div>
-                        <span className="text-zinc-500">Players:</span>{' '}
-                        <span className="font-medium text-zinc-300">{teamPlayers.length} player{teamPlayers.length !== 1 ? 's' : ''}</span>
-                      </div>
-                      <div>
-                        <span className="text-zinc-500">Created:</span>{' '}
-                        <span className="font-medium text-zinc-300">{format(new Date(selectedTeam.created_at), "MMMM do, yyyy")}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 mt-2">
-                      <EntityButton color="gold" onClick={handleEdit}>
-                        Edit Team
-                      </EntityButton>
-                      <EntityButton color="danger" onClick={handleDelete}>
-                        Delete Team
-                      </EntityButton>
-                    </div>
-                  </div>
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
-                    {teamPlayers.length === 0 ? (
-                      <div className="text-zinc-500 italic">No players on this team.</div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                        {teamPlayers.map(player => {
-                          const isSelected = playerId === player.id;
-                          let classes = "text-zinc-300 px-3 py-2 rounded font-medium border border-[#C2B56B] bg-zinc-900";
-                          if (isSelected) {
-                            classes += " bg-[#C2B56B] text-black";
-                          }
-                          return (
-                            <button
-                              key={player.id}
-                              onClick={() => window.location.href = `/protected/players?id=${player.id}`}
-                              className={classes}
-                            >
-                              {player.first_name} {player.last_name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                      </CardContent>
+                    </Card>
                   </div>
                 </>
               ) : (
@@ -374,7 +416,9 @@ export default function TeamsThreePane() {
               )}
             </div>
           </div>
-          <div>
+          
+          {/* Right: Coming Soon */}
+          <div className="flex-1 min-w-0">
             <div className="mt-0">
               <ComingSoonCard
                 features={[
