@@ -16,7 +16,6 @@ import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
 import EntityButton from '@/components/EntityButton';
-import StatusBadge from '@/components/StatusBadge';
 import { ErrorBadge } from '@/components/StatusBadge';
 
 interface Player {
@@ -180,9 +179,7 @@ export default function DashboardPage() {
         const { data: allPdpsData } = await supabase
           .from("pdp")
           .select("id, player_id, content, start_date, created_at, archived_at")
-          .order("created_at", { ascending: false })
-          .limit(20);
-
+          .order("created_at", { ascending: false });
         setAllPdps(allPdpsData || []);
 
         // Get all active PDPs (not archived)
@@ -191,7 +188,7 @@ export default function DashboardPage() {
           .select("id, player_id")
           .is("archived_at", null)
           .order("created_at", { ascending: false })
-          .limit(20);
+          .range(0, 49);
 
         // Mark players with no active PDP
         const activePdpPlayerIds = new Set((activePdps ?? []).map((pdp) => pdp.player_id));
@@ -205,7 +202,7 @@ export default function DashboardPage() {
           .select("id, content, observation_date, created_at, player_id")
           .eq("archived", false)
           .order("created_at", { ascending: false })
-          .limit(1000); // Increase limit to cover all players
+          .range(0, 49);
 
         if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
 
@@ -263,7 +260,7 @@ export default function DashboardPage() {
           .eq("player_id", playerId)
           .or("archived.is.null,archived.eq.false")
           .order("created_at", { ascending: false })
-          .limit(50);
+          .range(0, 49);
 
         if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
         setObservations(observationsData || []);
@@ -330,28 +327,26 @@ export default function DashboardPage() {
     const hasNoPlan = !playerIdsWithPDP.has(player.id);
     
     const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
-    const selectedClasses = isSelected
-      ? " bg-[#C2B56B] text-black border-[#C2B56B]"
-      : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+
+    let classes = baseClasses;
+    if (hasNoPlan) {
+      classes += isSelected
+        ? " bg-[#A22828] text-white border-[#A22828]"
+        : " bg-zinc-900 text-[#A22828] border-[#A22828]";
+    } else {
+      classes += isSelected
+        ? " bg-[#C2B56B] text-black border-[#C2B56B]"
+        : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
+    }
 
     return (
-      <div key={player.id} className="space-y-1">
-        <button
-          onClick={() => setPlayerId(player.id)}
-          className={baseClasses + selectedClasses}
-        >
-          {player.name}
-        </button>
-        <div className="flex justify-end">
-          <StatusBadge
-            variant={hasNoPlan ? "pdp-inactive" : "pdp-active"}
-            size="sm"
-            showIcon
-          >
-            {hasNoPlan ? "No PDP" : "Active PDP"}
-          </StatusBadge>
-        </div>
-      </div>
+      <button
+        key={player.id}
+        onClick={() => setPlayerId(player.id)}
+        className={classes}
+      >
+        {player.name}
+      </button>
     );
   };
 
@@ -376,10 +371,29 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
-        <PageTitle>Dashboard</PageTitle>
-        <ThreePaneLayout
-          leftPane={
-            <div className="flex flex-col gap-4">
+        {/* Header Row */}
+        <div className="flex gap-4 items-end mb-0">
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <span className="font-bold text-lg text-white">Players</span>
+            <button className="text-[#C2B56B] font-semibold hover:underline ml-2" onClick={() => {
+              console.log('Add player');
+              window.location.reload();
+            }}>
+              + Add Player
+            </button>
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-bold text-lg text-white">Player Profile</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-bold text-lg text-white">Observations</span>
+          </div>
+        </div>
+        {/* Card Row */}
+        <div className="flex gap-4 mt-0">
+          {/* LEFT: Player List Card */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0 flex flex-col gap-4">
               {/* Team selector above player list */}
               {teams.length > 1 && (
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 mb-2">
@@ -398,84 +412,76 @@ export default function DashboardPage() {
                 </div>
               )}
               <EntityListPane
-                title="Players"
+                title=""
                 items={players}
                 selectedId={playerId || undefined}
                 onSelect={id => setPlayerId(id)}
-                actions={
-                  <EntityButton 
-                    color="gold"
-                    onClick={() => {
-                      console.log('Add player');
-                      window.location.reload();
-                    }}
-                  >
-                    Add Player
-                  </EntityButton>
-                }
+                actions={undefined}
                 searchPlaceholder="Search players..."
                 renderItem={renderPlayerItem}
               />
             </div>
-          }
-          centerPane={
-            players.length === 0 ? (
-              <div className="flex flex-col gap-4 h-full">
+          </div>
+          {/* CENTER: Player Profile + Development Plan in one card, no nested cards */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
+              {players.length === 0 ? (
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Players Found</h3>
                   <p className="text-zinc-400 mb-4">There are no players in your team yet. Add your first player to get started.</p>
-                  <EntityButton 
-                    color="gold"
-                    onClick={() => {
-                      console.log('Add player');
-                      window.location.reload();
-                    }}
-                  >
-                    Add Player
-                  </EntityButton>
-                </div>
-              </div>
-            ) : selectedPlayer ? (
-              <div className="flex flex-col gap-4">
-                <PlayerMetadataCard
-                  player={selectedPlayer}
-                  observations={observations}
-                  playerId={selectedPlayer.id}
-                  showDeleteButton={false}
-                />
-                <DevelopmentPlanCard
-                  player={selectedPlayer}
-                  pdp={currentPdp}
-                  showActions={false}
-                  onPdpUpdate={() => {
-                    // Refresh the data
+                  <button className="text-[#C2B56B] font-semibold hover:underline ml-2" onClick={() => {
+                    console.log('Add player');
                     window.location.reload();
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4 h-full">
+                  }}>
+                    + Add Player
+                  </button>
+                </div>
+              ) : selectedPlayer ? (
+                <>
+                  <h2 className="font-bold text-lg mb-2">Player Profile</h2>
+                  <div className="mb-4 space-y-2">
+                    <div>
+                      <span className="text-zinc-500">Name:</span> <span className="font-bold" style={{ color: '#d8cc97', fontSize: '1.1rem' }}>{selectedPlayer.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">Joined:</span> {selectedPlayer.joined}
+                    </div>
+                    {selectedPlayer.team_name && (
+                      <div>
+                        <span className="text-zinc-500">Team:</span> <span className="font-medium text-zinc-300">{selectedPlayer.team_name}</span>
+                      </div>
+                    )}
+                  </div>
+                  <hr className="border-zinc-700 my-3" />
+                  <h3 className="font-semibold mb-2">Development Plan</h3>
+                  <div>
+                    <div className="text-zinc-400 text-xs mb-1">Started: {currentPdp?.created_at ? currentPdp.created_at : '—'}</div>
+                    <div className="bg-zinc-800 px-3 py-2 rounded text-zinc-300">
+                      {currentPdp?.content || "No active plan."}
+                    </div>
+                  </div>
+                </>
+              ) : (
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-zinc-300 mb-2">Welcome to Dashboard</h3>
                   <p className="text-zinc-400">Select a player from the list to view their development plan and recent observations.</p>
                 </div>
-              </div>
-            )
-          }
-          rightPane={
-            players.length === 0 ? (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-zinc-300 mb-2">Observations</h3>
-                <p className="text-zinc-400">Observations will appear here once you add players and start tracking their progress.</p>
-              </div>
-            ) : (
-              <ObservationFeedPane
-                observations={observations}
-              />
-            )
-          }
-        />
-
+              )}
+            </div>
+          </div>
+          {/* RIGHT: Observations Card */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
+              {players.length === 0 ? (
+                <div className="text-zinc-500 italic">Observations will appear here once you add players and start tracking their progress.</div>
+              ) : (
+                <ObservationFeedPane
+                  observations={observations}
+                />
+              )}
+            </div>
+          </div>
+        </div>
         {/* Modals */}
         <CreatePDPModal
           open={isCreateModalOpen}
