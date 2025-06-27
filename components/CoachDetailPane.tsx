@@ -77,7 +77,7 @@ export default function CoachDetailPane({ coach, onCoachUpdate }: CoachDetailPan
         <div>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition flex items-center"
+            className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition flex items-center"
           >
             <Edit className="w-4 h-4 mr-2" />
             Edit
@@ -148,7 +148,7 @@ export default function CoachDetailPane({ coach, onCoachUpdate }: CoachDetailPan
               // TODO: Implement admin actions
               console.log("Admin actions for:", coach.id);
             }}
-            className="w-full border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition"
+            className="w-full border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition"
           >
             Admin Actions
           </button>
@@ -159,7 +159,7 @@ export default function CoachDetailPane({ coach, onCoachUpdate }: CoachDetailPan
             // TODO: Implement deactivate/reactivate
             console.log("Toggle active status for:", coach.id);
           }}
-          className="w-full border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition"
+          className="w-full border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition"
         >
           {coach.active ? "Deactivate Coach" : "Activate Coach"}
         </button>

@@ -42,7 +42,7 @@ export default function ArchivePDPModal({
       footer={
         <button
           onClick={handleArchive}
-          className="border border-[#d8cc97] text-xs px-3 py-1.5 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition"
+          className="border border-[#C2B56B] text-xs px-3 py-1.5 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition"
         >
           Archive & Create New
         </button>

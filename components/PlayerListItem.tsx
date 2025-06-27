@@ -32,7 +32,7 @@ export default function PlayerListItem({
   return (
     <div
       className={`bg-[#1e1e1e] rounded-lg mb-3 transition-all ${
-        hasPDP ? "border-l-4 border-[#d8cc97]" : "border-l-4 border-transparent"
+        hasPDP ? "border-l-4 border-[#C2B56B]" : "border-l-4 border-transparent"
       }`}
     >
       {/* Collapsed Header */}
@@ -69,7 +69,7 @@ export default function PlayerListItem({
                 <>
                   <button
                     onClick={() => onEditPDP(player)}
-                    className="text-xs px-2 py-1 border border-[#d8cc97] text-[#d8cc97] rounded hover:bg-[#d8cc97] hover:text-black transition"
+                    className="text-xs px-2 py-1 border border-[#C2B56B] text-[#C2B56B] rounded hover:bg-[#C2B56B] hover:text-black transition"
                   >
                     Edit PDP
                   </button>

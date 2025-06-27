@@ -149,7 +149,7 @@ export default function ArchivePane({
             <div key={item.id} className="bg-zinc-800 p-3 rounded text-sm">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <p className="text-[#d8cc97] font-semibold">{item.title}</p>
+                  <p className="text-[#C2B56B] font-semibold">{item.title}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {showActions && onRestore && (

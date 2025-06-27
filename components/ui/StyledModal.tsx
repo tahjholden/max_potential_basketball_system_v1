@@ -10,12 +10,12 @@ import {
 type ModalVariant = "default" | "danger";
 
 const variantClasses: Record<ModalVariant, string> = {
-  default: "bg-[#232323] text-white border border-[#d8cc97]",
+  default: "bg-[#232323] text-white border border-[#C2B56B]",
   danger: "bg-[#1c0e0e] text-red-100 border border-red-600",
 };
 
 const titleVariantClasses: Record<ModalVariant, string> = {
-  default: "text-[#d8cc97] text-lg font-bold",
+  default: "text-[#C2B56B] text-lg font-bold",
   danger:
     "text-red-400 text-lg font-bold uppercase tracking-wide flex items-center gap-2",
 };

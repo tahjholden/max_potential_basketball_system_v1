@@ -132,14 +132,14 @@ export default function ArchiveCreateNewModal({
               <button 
                 onClick={() => handleOpenChange(false)} 
                 disabled={loading}
-                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleArchive} 
                 disabled={loading} 
-                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
               >
                 {loading ? "Archiving..." : "Confirm & Continue"}
               </button>
@@ -170,14 +170,14 @@ export default function ArchiveCreateNewModal({
               <button 
                 onClick={() => handleOpenChange(false)} 
                 disabled={loading}
-                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleCreate} 
                 disabled={loading || content.trim() === ""} 
-                className="border border-[#d8cc97] text-sm px-4 py-2 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50"
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
               >
                 {loading ? "Creating..." : "Create New Plan"}
               </button>

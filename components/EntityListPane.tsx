@@ -18,6 +18,8 @@ interface EntityListPaneProps {
   renderItem?: (item: EntityListItem, selected: boolean) => React.ReactNode;
   showSearch?: boolean;
   className?: string;
+  footer?: React.ReactNode;
+  headerActions?: React.ReactNode;
 }
 
 const EntityListPane: React.FC<EntityListPaneProps> = ({
@@ -30,6 +32,8 @@ const EntityListPane: React.FC<EntityListPaneProps> = ({
   renderItem,
   showSearch = true,
   className = "",
+  footer,
+  headerActions,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredItems, setFilteredItems] = useState<EntityListItem[]>(items);
@@ -43,13 +47,68 @@ const EntityListPane: React.FC<EntityListPaneProps> = ({
   }, [items, searchTerm]);
 
   return (
-    <div className={`bg-zinc-900 p-4 rounded-md shadow-sm ${className}`}>
-      <div className="flex justify-between items-center mb-4">
+    <div 
+      className={`bg-zinc-900 p-4 rounded-lg border border-zinc-700 ${className}`} 
+      style={{ 
+        height: '600px', 
+        display: 'flex', 
+        flexDirection: 'column',
+        minHeight: '600px',
+        maxHeight: '600px'
+      }}
+    >
+      {/* Header - Fixed */}
+      <div className="flex justify-between items-center mb-4 flex-shrink-0">
         <PaneTitle>{title}</PaneTitle>
-        {actions}
+        {headerActions || actions}
       </div>
-      {showSearch && (
-        <div className="mb-4">
+      
+      {/* Scrollable Content Area - Takes remaining space */}
+      <div 
+        className="flex-1 overflow-y-auto"
+        style={{ 
+          minHeight: 0,
+          maxHeight: 'calc(600px - 120px)' // Account for header and footer
+        }}
+      >
+        <div className="space-y-2">
+          {filteredItems.length === 0 ? (
+            searchTerm ? (
+              <SearchEmptyState searchTerm={searchTerm} />
+            ) : (
+              <div className="text-zinc-500 text-sm text-center py-4">
+                No {title.toLowerCase()} available.
+              </div>
+            )
+          ) : (
+            filteredItems.map((item) => {
+              const isSelected = selectedId === item.id;
+              return renderItem ? (
+                renderItem(item, isSelected)
+              ) : (
+                <div key={item.id} className="space-y-1">
+                  <button
+                    onClick={() => onSelect && onSelect(item.id)}
+                    className={`w-full text-left px-4 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2 ${
+                      isSelected
+                        ? "bg-[#C2B56B] text-black border-[#C2B56B]"
+                        : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B]"
+                    }`}
+                  >
+                    {item.name}
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+      
+      {/* Footer - Fixed */}
+      {footer ? (
+        <div className="mt-4 flex-shrink-0">{footer}</div>
+      ) : showSearch && (
+        <div className="mt-4 flex-shrink-0">
           <input
             type="text"
             placeholder={searchPlaceholder}
@@ -59,37 +118,6 @@ const EntityListPane: React.FC<EntityListPaneProps> = ({
           />
         </div>
       )}
-      <div className="space-y-2 max-h-96 overflow-y-auto pr-3">
-        {filteredItems.length === 0 ? (
-          searchTerm ? (
-            <SearchEmptyState searchTerm={searchTerm} />
-          ) : (
-            <div className="text-zinc-500 text-sm text-center py-4">
-              No {title.toLowerCase()} available.
-            </div>
-          )
-        ) : (
-          filteredItems.map((item) => {
-            const isSelected = selectedId === item.id;
-            return renderItem ? (
-              renderItem(item, isSelected)
-            ) : (
-              <div key={item.id} className="space-y-1">
-                <button
-                  onClick={() => onSelect && onSelect(item.id)}
-                  className={`w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2 ${
-                    isSelected
-                      ? "bg-[#C2B56B] text-black border-[#C2B56B]"
-                      : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B]"
-                  }`}
-                >
-                  {item.name}
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
     </div>
   );
 };

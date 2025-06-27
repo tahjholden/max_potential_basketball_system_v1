@@ -14,7 +14,7 @@ export default function ArchivedPDPsList({ pdps }: { pdps: any[] }) {
 
   return (
     <details className="bg-[#232323] border border-[#323232] rounded-md p-3">
-      <summary className="cursor-pointer text-sm font-semibold text-[#d8cc97] hover:text-white">
+      <summary className="cursor-pointer text-sm font-semibold text-[#C2B56B] hover:text-white">
         Archived Development Plans ({pdps.length})
       </summary>
       <ul className="mt-2 list-disc list-inside text-sm text-gray-300 space-y-1">
