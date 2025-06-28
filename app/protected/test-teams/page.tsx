@@ -368,7 +368,7 @@ export default function TestTeamsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
+      <div className="flex-1 min-h-0 flex items-center justify-center">
         <span className="text-zinc-400">Loading test teams...</span>
       </div>
     );
@@ -376,17 +376,15 @@ export default function TestTeamsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
-        <ErrorBadge className="p-4">
-          {error}
-        </ErrorBadge>
+      <div className="flex-1 min-h-0 flex items-center justify-center">
+        <ErrorBadge className="p-4">{error}</ErrorBadge>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 bg-zinc-950" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
-      <div className="mt-2 px-6">
+    <div className="flex-1 min-h-0 flex flex-col" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
+      <div className="mt-2 px-6 flex-1 min-h-0 flex flex-col">
         {/* Canonical main content row: three columns, scrollable */}
         <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Teams list */}

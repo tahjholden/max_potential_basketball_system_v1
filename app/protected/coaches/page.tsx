@@ -424,7 +424,7 @@ export default function CoachesPage() {
             />
           </div>
           {/* Center: Coach Profile and Observations */}
-          <div className="flex flex-col gap-4 h-full">
+          <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
             {coaches.length === 0 ? (
               <div className="flex flex-col gap-4 h-full">
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">

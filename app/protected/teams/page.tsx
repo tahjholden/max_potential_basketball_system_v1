@@ -221,8 +221,8 @@ export default function TeamsPage() {
 
   // --- CANONICAL DASHBOARD LAYOUT STARTS HERE ---
   return (
-    <div className="min-h-screen p-4 bg-zinc-950">
-      <div className="mt-2 px-6">
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="mt-2 px-6 flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Teams list */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
