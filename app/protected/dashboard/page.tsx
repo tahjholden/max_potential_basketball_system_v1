@@ -10,6 +10,11 @@ import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import { ErrorBadge } from '@/components/StatusBadge';
 import EntityMetadataCard from "@/components/EntityMetadataCard";
 import EmptyCard from "@/components/EmptyCard";
+import SectionLabel from "@/components/SectionLabel";
+import { format } from "date-fns";
+import { ChevronDown } from "lucide-react";
+import Image from "next/image";
+import PaneTitle from '@/components/PaneTitle';
 
 interface Player {
   id: string;
@@ -58,8 +63,45 @@ export default function DashboardPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [allPdps, setAllPdps] = useState<Pdp[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showAllObservations, setShowAllObservations] = useState(false);
+  const [observationRange, setObservationRange] = useState('all');
+  const [observationSearch, setObservationSearch] = useState('');
+  const [showAllPlayers, setShowAllPlayers] = useState(false);
+  const MAX_PLAYERS = 10;
 
   const selectedPlayer = players.find((p) => p.id === playerId);
+
+  // Helper to filter observations by range
+  function filterObservationsByRange(observations: Observation[], range: string): Observation[] {
+    if (range === 'all') return observations;
+    const now = new Date();
+    if (range === 'week') {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      return observations.filter((obs: Observation) => new Date(obs.observation_date) >= weekAgo);
+    }
+    if (range === 'month') {
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(now.getMonth() - 1);
+      return observations.filter((obs: Observation) => new Date(obs.observation_date) >= monthAgo);
+    }
+    return observations;
+  }
+  // Helper to filter by search keyword
+  function filterObservationsBySearch(observations: Observation[], keyword: string): Observation[] {
+    if (!keyword.trim()) return observations;
+    const lower = keyword.toLowerCase();
+    return observations.filter(obs =>
+      obs.content.toLowerCase().includes(lower) ||
+      obs.observation_date.toLowerCase().includes(lower)
+    );
+  }
+  const filteredByRange = filterObservationsByRange(observations, observationRange);
+  const filteredObservations = filterObservationsBySearch(filteredByRange, observationSearch);
+  const MAX_OBSERVATIONS = 10;
+  // Sort observations alphabetically by content (or by date if you prefer)
+  const sortedObservations = [...filteredObservations].sort((a, b) => a.content.localeCompare(b.content));
+  const displayedObservations = showAllObservations ? sortedObservations : sortedObservations.slice(0, MAX_OBSERVATIONS);
 
   // Fetch teams for the current coach
   useEffect(() => {
@@ -238,7 +280,9 @@ export default function DashboardPage() {
           };
         });
 
-        setPlayers(transformedPlayers);
+        // Sort players alphabetically by name
+        const sortedPlayers = [...transformedPlayers].sort((a, b) => a.name.localeCompare(b.name));
+        setPlayers(sortedPlayers);
         // Don't override global player selection - let the global store handle it
         setError(null);
       } catch (err) {
@@ -334,7 +378,7 @@ export default function DashboardPage() {
   const renderPlayerItem = (player: any, isSelected: boolean) => {
     const hasNoPlan = !playerIdsWithPDP.has(player.id);
     
-    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
+    const baseClasses = "w-[calc(100%-0.5rem)] text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
 
     let classes = baseClasses;
     if (hasNoPlan) {
@@ -351,7 +395,7 @@ export default function DashboardPage() {
       <button
         key={player.id}
         onClick={() => setPlayerId(player.id)}
-        className={classes}
+        className={classes + " text-center"}
       >
         {player.name}
       </button>
@@ -365,12 +409,11 @@ export default function DashboardPage() {
   ];
   const [playerSearch, setPlayerSearch] = useState("");
   // Filter players by selected team - if no team is selected (All Teams), show all players
+  const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
   const filteredPlayers = selectedTeamId
-    ? players.filter(p => p.team_id === selectedTeamId)
-    : players;
-  const displayedPlayers = filteredPlayers.filter(p =>
-    p.name.toLowerCase().includes(playerSearch.toLowerCase())
-  );
+    ? sortedPlayers.filter(p => p.team_id === selectedTeamId)
+    : sortedPlayers;
+  const displayedPlayers = showAllPlayers ? filteredPlayers : filteredPlayers.slice(0, MAX_PLAYERS);
 
   if (loading) {
     return (
@@ -393,107 +436,169 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen p-4 bg-zinc-950" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
       <div className="mt-2 px-6">
-        {/* Header Row */}
-        <div className="flex gap-6">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-0">
-              <span className="text-lg font-bold text-white">Players</span>
-              <button
-                onClick={() => setCreateModalOpen(true)}
-                className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-lg"
-                style={{ lineHeight: '1.5', verticalAlign: 'baseline' }}
-              >
-                + Add Player
-              </button>
-            </div>
-          </div>
-          <div className="flex-[2] min-w-0">
-            <span className="text-lg font-bold text-white mb-0">Player Profile</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-lg font-bold text-white mb-0">Observations</span>
-          </div>
-        </div>
-        {/* Content Row */}
-        <div className="flex gap-6 mt-0" style={{ height: '600px' }}>
+        {/* Canonical main content row: three columns, scrollable */}
+        <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Player list */}
-          <div className="flex-1 min-w-0">
-            <EntityListPane
-              title=""
-              items={displayedPlayers}
-              selectedId={playerId || undefined}
-              onSelect={id => setPlayerId(id)}
-              actions={undefined}
-              searchPlaceholder="Search players..."
-              renderItem={renderPlayerItem}
-              showSearch={false}
-              headerActions={
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Players</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              {/* Header: Team select and Add Player */}
+              <div className="flex items-center gap-2 mb-2">
                 <select
                   value={selectedTeamId || ''}
                   onChange={e => setSelectedTeamId(e.target.value || null)}
-                  className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm ml-2"
+                  className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
                   style={{ minWidth: 120 }}
                 >
                   {teamOptions.map(opt => (
                     <option key={opt.id || 'all'} value={opt.id || ''}>{opt.name}</option>
                   ))}
                 </select>
-              }
-              footer={
-                <input
-                  type="text"
-                  placeholder="Search players..."
-                  value={playerSearch}
-                  onChange={e => setPlayerSearch(e.target.value)}
-                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-                />
-              }
-            />
-          </div>
-          {/* Center: Player Profile + Development Plan (wider column) */}
-          <div className="flex-[2] min-w-0">
-            <div className="flex flex-col gap-4 mt-0">
-              {selectedPlayer ? (
-                <>
-                  <EntityMetadataCard
-                    title=""
-                    fields={[
-                      { label: "Name", value: selectedPlayer.name, highlight: true },
-                      { label: "Joined", value: selectedPlayer.joined },
-                      ...(selectedPlayer.team_name ? [{ label: "Team", value: <span className="text-[#C2B56B]">{selectedPlayer.team_name}</span> }] : [])
-                    ]}
-                    actions={null}
-                    cardClassName="mt-0"
-                  />
-                  <DevelopmentPlanCard
-                    player={selectedPlayer}
-                    pdp={currentPdp}
-                    onPdpUpdate={() => {}}
-                    showActions={true}
-                  />
-                </>
-              ) : (
-                <EmptyCard title="Welcome to Dashboard" />
-              )}
+                <button
+                  onClick={() => setCreateModalOpen(true)}
+                  className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                >
+                  + Add Player
+                </button>
+              </div>
+              {/* Scrollable player list, responsive height */}
+              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                {displayedPlayers.map(player => renderPlayerItem(player, playerId === player.id))}
+                {filteredPlayers.length > MAX_PLAYERS && (
+                  <div
+                    className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                    onClick={() => setShowAllPlayers(!showAllPlayers)}
+                    title={showAllPlayers ? "Show less" : "Show more"}
+                  >
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                    <ChevronDown className={`w-5 h-5 transition-transform ${showAllPlayers ? 'rotate-180' : ''}`} />
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                  </div>
+                )}
+              </div>
+              {/* Search bar at the bottom */}
+              <input
+                type="text"
+                placeholder="Search players..."
+                value={playerSearch}
+                onChange={e => setPlayerSearch(e.target.value)}
+                className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+              />
             </div>
           </div>
+          {/* Center: Player Profile + Development Plan (wider column) */}
+          <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Player Profile</SectionLabel>
+            {selectedPlayer ? (
+              <EntityMetadataCard
+                fields={[
+                  { label: "Name", value: selectedPlayer.name, highlight: true },
+                  { label: "Joined", value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy") },
+                  ...(selectedPlayer.team_name ? [{ label: "Team", value: <span className="text-[#C2B56B]">{selectedPlayer.team_name}</span> }] : [])
+                ]}
+                actions={null}
+                cardClassName="mt-0"
+              />
+            ) : (
+              <EmptyCard title="Select a Player to View Their Profile" titleClassName="font-bold text-center" />
+            )}
+
+            <SectionLabel>Development Plan</SectionLabel>
+            {selectedPlayer ? (
+              <EntityMetadataCard
+                fields={[
+                  { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
+                  { label: "Plan", value: currentPdp?.content || "No active plan." }
+                ]}
+                actions={null}
+                cardClassName="mt-0"
+              />
+            ) : (
+              <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
+            )}
+          </div>
           {/* Right: Observations Card */}
-          <div className="flex-1 min-w-0">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
-              {observations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-zinc-600">
-                  <span>No observations found.</span>
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Observations</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              {/* Header: Range selector */}
+              {selectedPlayer ? (
+                <div className="flex items-center gap-2 mb-2">
+                  <select
+                    value={observationRange}
+                    onChange={e => setObservationRange(e.target.value)}
+                    className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                    style={{ minWidth: 120 }}
+                  >
+                    <option value="week">This week</option>
+                    <option value="month">This month</option>
+                    <option value="all">All</option>
+                  </select>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {observations.map(obs => (
-                    <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                      <div className="text-xs text-zinc-400 mb-1">{obs.observation_date}</div>
-                      <div className="text-base text-zinc-100">{obs.content}</div>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-center mb-2 w-full">
+                  <PaneTitle className="w-full text-center">Select a Player to View Observations</PaneTitle>
                 </div>
               )}
+              {/* Scrollable observation list, responsive height */}
+              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                {!selectedPlayer ? (
+                  <div className="flex items-center justify-center w-full overflow-x-hidden h-full">
+                    <div style={{
+                      position: 'relative',
+                      width: '100%',
+                      maxWidth: '220px',
+                      height: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}>
+                      <Image
+                        src={require('@/public/maxsM.png')}
+                        alt="MP Shield"
+                        priority
+                        style={{
+                          objectFit: 'contain',
+                          width: '100%',
+                          height: '100%',
+                          filter: 'drop-shadow(0 2px 12px #2226)',
+                          opacity: 0.75,
+                          transform: 'scale(3)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 w-full">
+                    {displayedObservations.map(obs => (
+                      <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                        <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
+                        <div className="text-base text-zinc-100">{obs.content}</div>
+                      </div>
+                    ))}
+                    {filteredObservations.length > MAX_OBSERVATIONS && (
+                      <div
+                        className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                        onClick={() => setShowAllObservations(!showAllObservations)}
+                        title={showAllObservations ? "Show less" : "Show more"}
+                      >
+                        <div className="flex-1 border-t border-zinc-700"></div>
+                        <ChevronDown className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} />
+                        <div className="flex-1 border-t border-zinc-700"></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* Search bar at the bottom */}
+              <input
+                type="text"
+                placeholder="Search observations..."
+                value={observationSearch}
+                onChange={e => setObservationSearch(e.target.value)}
+                className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+              />
             </div>
           </div>
         </div>
