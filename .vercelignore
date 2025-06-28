@@ -1,0 +1,18 @@
+# Development and test files
+app/_dev/
+app/__dev/
+app/protected/_legacy-*
+app/protected/_test-*
+app/protected/_showcase/
+app/protected/_players-backup/
+app/protected/player-development-v2/
+app/test-*
+app/_test-*
+
+# Backup files
+**/*.backup
+**/*.archive
+
+# Development directories
+**/__dev/
+**/_dev/ 

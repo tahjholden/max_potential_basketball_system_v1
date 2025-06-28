@@ -109,11 +109,11 @@ export default function PDPSection({
   return (
     <div className="bg-[#232323] rounded-lg p-4 border border-[#323232] h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold text-[#d8cc97]">{player.name}</h2>
+        <h2 className="text-lg font-bold text-[#C2B56B]">{player.name}</h2>
         {!currentPdp && (
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-1 bg-[#d8cc97] text-[#161616] px-3 py-1 rounded text-sm font-semibold hover:bg-[#d8cc97]/80 transition-colors"
+            className="flex items-center gap-1 bg-[#C2B56B] text-[#161616] px-3 py-1 rounded text-sm font-semibold hover:bg-[#C2B56B]/80 transition-colors"
           >
             <Plus size={14} /> Create PDP
           </button>
@@ -132,14 +132,14 @@ export default function PDPSection({
                     setEditPdpContent(currentPdp.content || '');
                     setIsEditModalOpen(true);
                   }}
-                  className="p-1 text-[#d8cc97] hover:bg-[#323232] rounded"
+                  className="p-1 text-[#C2B56B] hover:bg-[#323232] rounded"
                 >
                   <Edit size={16} />
                 </button>
                 <ArchiveAndReplaceButton
                   playerId={player.id}
                   onSuccess={onRefresh}
-                  className="p-1 text-[#d8cc97] hover:bg-[#323232] rounded"
+                  className="p-1 text-[#C2B56B] hover:bg-[#323232] rounded"
                   variant="button"
                 />
                 <button
@@ -187,7 +187,7 @@ export default function PDPSection({
                       </p>
                       <button
                         onClick={() => handleRestorePDP(pdp.id)}
-                        className="text-xs text-[#d8cc97] hover:underline"
+                        className="text-xs text-[#C2B56B] hover:underline"
                       >
                         Restore
                       </button>
@@ -204,10 +204,10 @@ export default function PDPSection({
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#d8cc97] mb-4">Create New PDP</h3>
+            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Create New PDP</h3>
             <textarea
               placeholder="Enter PDP content..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#d8cc97] focus:outline-none mb-4 h-32 resize-none"
+              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
               value={newPdpContent}
               onChange={(e) => setNewPdpContent(e.target.value)}
               autoFocus
@@ -215,7 +215,7 @@ export default function PDPSection({
             <div className="flex gap-3">
               <button
                 onClick={handleCreatePDP}
-                className="flex-1 bg-[#d8cc97] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#d8cc97]/80 transition-colors"
+                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
               >
                 Create PDP
               </button>
@@ -237,10 +237,10 @@ export default function PDPSection({
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#d8cc97] mb-4">Edit PDP</h3>
+            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Edit PDP</h3>
             <textarea
               placeholder="Enter PDP content..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#d8cc97] focus:outline-none mb-4 h-32 resize-none"
+              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
               value={editPdpContent}
               onChange={(e) => setEditPdpContent(e.target.value)}
               autoFocus
@@ -248,7 +248,7 @@ export default function PDPSection({
             <div className="flex gap-3">
               <button
                 onClick={handleEditPDP}
-                className="flex-1 bg-[#d8cc97] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#d8cc97]/80 transition-colors"
+                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
               >
                 Update PDP
               </button>
@@ -270,7 +270,7 @@ export default function PDPSection({
       {isArchiveModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#d8cc97] mb-4">Archive PDP</h3>
+            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Archive PDP</h3>
             <p className="text-slate-300 mb-4">
               Are you sure you want to archive this PDP? This will move it to the archived section.
             </p>

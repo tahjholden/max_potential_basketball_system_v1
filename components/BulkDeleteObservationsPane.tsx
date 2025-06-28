@@ -1,10 +1,11 @@
 import { useState } from "react";
-import AddObservationButton from "./AddObservationButton";
+import EntityButton from "./EntityButton";
 
 interface Observation {
     id: string;
     content: string;
     observation_date: string;
+    archived: boolean;
 }
 
 interface Player {
@@ -29,6 +30,9 @@ export default function BulkDeleteObservationsPane({
 }: BulkDeleteObservationsPaneProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  // Only show non-archived observations
+  const activeObservations = observations.filter(obs => obs.archived !== true);
+
   function toggle(id: string) {
     setSelected(prev => {
       const copy = new Set(prev);
@@ -50,17 +54,22 @@ export default function BulkDeleteObservationsPane({
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-base font-semibold">Recent Observations</h2>
         {player && (
-          <AddObservationButton 
-            player={player} 
-            onObservationAdded={onObservationAdded}
-          />
+          <EntityButton 
+            color="gold"
+            onClick={() => {
+              // This would need to be implemented to open the AddObservationModal
+              console.log('Add observation for player:', player.id);
+            }}
+          >
+            Add Observation
+          </EntityButton>
         )}
       </div>
       <div className="bg-zinc-800 rounded px-4 py-2 space-y-2">
-        {observations.length === 0 && (
+        {activeObservations.length === 0 && (
           <div className="text-zinc-500 text-center py-2">No observations.</div>
         )}
-        {observations.map(obs => (
+        {activeObservations.map(obs => (
             <div key={obs.id} className="bg-zinc-900 border border-zinc-700 rounded-md p-3">
                 <div className="flex justify-between items-end gap-3">
                     <div className="flex-1">
@@ -83,12 +92,12 @@ export default function BulkDeleteObservationsPane({
       </div>
       {showCheckboxes && selected.size > 0 && (
         <div className="pt-3 flex justify-end">
-            <button
-                className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-semibold"
+            <EntityButton
+                color="danger"
                 onClick={handleBulkDelete}
             >
                 Delete {selected.size} Selected
-            </button>
+            </EntityButton>
         </div>
       )}
     </div>

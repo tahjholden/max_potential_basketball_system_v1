@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { format } from "date-fns";
 import PageTitle from "@/components/PageTitle";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerListPane from "@/components/PlayerListPane";
@@ -49,7 +48,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedPlayer = players.find((p) => p.id === playerId);
+  const selectedPlayer = players.find((p: Player) => p.id === playerId);
 
   const fetchPdp = async () => {
     if (!playerId) return setCurrentPdp(null);
@@ -58,7 +57,7 @@ export default function DashboardPage() {
       .from("pdp")
       .select("id, content, start_date, created_at, player_id, archived_at")
       .eq("player_id", playerId)
-      .is("archived_at", null)
+      .or("archived.is.null,archived.eq.false")
       .maybeSingle();
     setCurrentPdp(data);
   };
@@ -83,13 +82,14 @@ export default function DashboardPage() {
           .order("last_name", { ascending: true });
         const { data: observationsData } = await supabase
           .from("observations")
-          .select("player_id");
+          .select("player_id")
+          .or("archived.is.null,archived.eq.false");
         const counts = new Map<string, number>();
-        observationsData?.forEach(obs => {
+        observationsData?.forEach((obs: any) => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
         setPlayers(
-          (playersData || []).map(player => ({
+          (playersData || []).map((player: any) => ({
             ...player,
             observations: counts.get(player.id) || 0,
             joined: new Date(player.created_at).toLocaleDateString(),
@@ -113,6 +113,7 @@ export default function DashboardPage() {
         .from("observations")
         .select("id, content, observation_date, created_at")
         .eq("player_id", playerId)
+        .or("archived.is.null,archived.eq.false")
         .order("created_at", { ascending: false })
         .limit(5);
       setObservations(data || []);
@@ -180,8 +181,8 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-4 h-full">
-                <EmptyCard title="Player Profile" />
-                <EmptyCard title="Development Plan" />
+                <EmptyCard title="Player Profile" titleClassName="font-bold text-center" />
+                <EmptyCard title="Development Plan" titleClassName="font-bold text-center" />
               </div>
             )
           }

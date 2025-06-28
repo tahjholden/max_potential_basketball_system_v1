@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { archiveAndCreateNewPDP } from "@/lib/archiveAndCreateNewPDP"
+import EntityButton from "./EntityButton"
 
 export default function ArchiveCreateNewModal({
   playerId,
@@ -110,7 +111,7 @@ export default function ArchiveCreateNewModal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="border border-[#d8cc97] text-xs px-3 py-1.5 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition">Archive & Create New</Button>
+        <EntityButton color="gold">Archive & Create New</EntityButton>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border border-zinc-700 text-white max-w-md">
         {modalState === "confirm" ? (
@@ -128,10 +129,20 @@ export default function ArchiveCreateNewModal({
               <div className="bg-red-900/20 border border-red-500/30 p-3 rounded text-sm text-red-400">{error}</div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={loading}>Cancel</Button>
-              <Button onClick={handleArchive} disabled={loading} className="bg-gold text-black hover:bg-gold/90">
+              <button 
+                onClick={() => handleOpenChange(false)} 
+                disabled={loading}
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleArchive} 
+                disabled={loading} 
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
+              >
                 {loading ? "Archiving..." : "Confirm & Continue"}
-              </Button>
+              </button>
             </div>
           </>
         ) : (
@@ -156,10 +167,20 @@ export default function ArchiveCreateNewModal({
               <div className="bg-red-900/20 border border-red-500/30 p-3 rounded text-sm text-red-400">{error}</div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={loading}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={loading || content.trim() === ""} className="bg-gold text-black hover:bg-gold/90">
+              <button 
+                onClick={() => handleOpenChange(false)} 
+                disabled={loading}
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleCreate} 
+                disabled={loading || content.trim() === ""} 
+                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
+              >
                 {loading ? "Creating..." : "Create New Plan"}
-              </Button>
+              </button>
             </div>
           </>
         )}

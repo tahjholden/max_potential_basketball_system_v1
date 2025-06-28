@@ -39,10 +39,10 @@ export default function PlayerDetailLayout({
                 <p className="text-slate-300 italic mb-2">{pdp.content}</p>
                 <p className="text-xs text-slate-500">Started: {formattedStartDate}</p>
                 <div className="mt-4 space-y-2">
-                  <button onClick={onEditPDP} className="w-full text-sm border border-[#d8cc97] text-[#d8cc97] rounded px-3 py-2 hover:bg-[#d8cc97] hover:text-black transition">
+                  <button onClick={onEditPDP} className="w-full border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition">
                     Edit PDP
                   </button>
-                  <button onClick={onArchivePDP} className="w-full bg-red-600 text-white text-sm px-3 py-2 rounded hover:bg-red-500 transition">
+                  <button onClick={onArchivePDP} className="w-full border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition">
                     Archive & Replace
                   </button>
                 </div>
@@ -59,7 +59,7 @@ export default function PlayerDetailLayout({
             <h2 className="text-sm text-slate-300 font-semibold">Recent Observations ({observations.length})</h2>
             <button
               onClick={onAddObservation}
-              className="bg-[#d8cc97] text-black px-3 py-1 rounded font-semibold text-sm hover:bg-yellow-300"
+              className="border border-[#C2B56B] text-xs px-3 py-1.5 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition"
             >
               + Add Observation
             </button>

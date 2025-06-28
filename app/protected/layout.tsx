@@ -7,30 +7,27 @@ import { LogoutButton } from "@/components/logout-button";
 import Image from "next/image";
 import { Toaster, toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
+import CoachProviderWrapper from "@/components/CoachProviderWrapper";
 import React from "react";
 
 export default async function ProtectedLayout({ children }: { children: ReactNode }) {
   // Auth check (server-side)
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  
+  if (userError) {
+    console.error("Auth error:", userError);
+  }
+  
   if (!user) {
     redirect("/auth/login");
   }
 
-  // Fetch coach's name from coaches table using auth_uid
-  let coachName = "";
-  let coach;
-  if (user?.id) {
-    const { data: coachData } = await supabase
-      .from("coaches")
-      .select("id, first_name, last_name")
-      .eq("auth_uid", user.id)
-      .single();
-    coach = coachData;
-    if (coach) {
-      coachName = `${coach.first_name || ""} ${coach.last_name || ""}`.trim();
-    }
-  }
+  console.log("🔍 ProtectedLayout Debug:", {
+    userEmail: user.email,
+    userId: user.id,
+    userMetadata: user.user_metadata
+  });
 
   // Pass coachId to children
   const childrenWithProps = React.Children.map(children, (child) => {
@@ -41,11 +38,11 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
     return child;
   });
 
-  // TODO: Implement mobile sidebar toggle state with useState in a client component if needed
-
   return (
-    <DashboardLayout coachName={coachName}>
-      {childrenWithProps}
-    </DashboardLayout>
+    <CoachProviderWrapper>
+      <DashboardLayout>
+        {childrenWithProps}
+      </DashboardLayout>
+    </CoachProviderWrapper>
   );
 }

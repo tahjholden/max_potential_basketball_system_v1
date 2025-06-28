@@ -94,10 +94,10 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
   return (
     <div className="bg-[#232323] rounded-lg p-4 border border-[#323232] h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold text-[#d8cc97]">Observations ({observations.length})</h2>
+        <h2 className="text-lg font-bold text-[#C2B56B]">Observations ({observations.length})</h2>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-1 bg-[#d8cc97] text-[#161616] px-3 py-1 rounded text-sm font-semibold hover:bg-[#d8cc97]/80 transition-colors"
+          className="flex items-center gap-1 bg-[#C2B56B] text-[#161616] px-3 py-1 rounded text-sm font-semibold hover:bg-[#C2B56B]/80 transition-colors"
         >
           <Plus size={14} /> Add
         </button>
@@ -125,7 +125,7 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
                       setEditObservationContent(obs.content);
                       setIsEditModalOpen(true);
                     }}
-                    className="p-1 text-[#d8cc97] hover:bg-[#323232] rounded"
+                    className="p-1 text-[#C2B56B] hover:bg-[#323232] rounded"
                   >
                     <Edit size={14} />
                   </button>
@@ -157,10 +157,10 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#d8cc97] mb-4">Add New Observation</h3>
+            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Add New Observation</h3>
             <textarea
               placeholder="Enter observation details..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#d8cc97] focus:outline-none mb-4 h-32 resize-none"
+              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
               value={newObservationContent}
               onChange={(e) => setNewObservationContent(e.target.value)}
               autoFocus
@@ -168,7 +168,7 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
             <div className="flex gap-3">
               <button
                 onClick={handleAddObservation}
-                className="flex-1 bg-[#d8cc97] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#d8cc97]/80 transition-colors"
+                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
               >
                 Add Observation
               </button>
@@ -190,10 +190,10 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#d8cc97] mb-4">Edit Observation</h3>
+            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Edit Observation</h3>
             <textarea
               placeholder="Enter observation details..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#d8cc97] focus:outline-none mb-4 h-32 resize-none"
+              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
               value={editObservationContent}
               onChange={(e) => setEditObservationContent(e.target.value)}
               autoFocus
@@ -201,7 +201,7 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
             <div className="flex gap-3">
               <button
                 onClick={handleEditObservation}
-                className="flex-1 bg-[#d8cc97] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#d8cc97]/80 transition-colors"
+                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
               >
                 Update Observation
               </button>
@@ -224,7 +224,7 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#d8cc97] mb-4">Delete Observation</h3>
+            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Delete Observation</h3>
             <p className="text-slate-300 mb-4">
               Are you sure you want to delete this observation? This action cannot be undone.
             </p>

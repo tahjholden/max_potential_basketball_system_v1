@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import EditPDPModal from "@/components/EditPDPModal";
+import EntityButton from "./EntityButton";
 
 interface Player {
   id: string;
@@ -31,12 +32,12 @@ export default function EditPDPButton({
 
   return (
     <>
-      <button
+      <EntityButton
+        color="gold"
         onClick={() => setModalOpen(true)}
-        className="border border-zinc-600 text-xs px-3 py-1.5 rounded font-semibold text-white hover:bg-zinc-800 transition"
       >
         Edit Plan
-      </button>
+      </EntityButton>
       <EditPDPModal
         open={isModalOpen}
         onClose={() => setModalOpen(false)}

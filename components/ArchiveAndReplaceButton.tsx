@@ -74,7 +74,7 @@ export default function ArchiveAndReplaceButton({
     <button
       onClick={handleArchiveAndNew}
       disabled={loading}
-      className={`border border-[#d8cc97] text-xs px-3 py-1.5 rounded font-semibold text-[#d8cc97] hover:bg-[#d8cc97]/10 transition disabled:opacity-50 ${className}`}
+      className={`border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50 ${className}`}
     >
       {loading ? "Processing..." : "Archive & Create New"}
     </button>

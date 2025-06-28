@@ -1,61 +1,54 @@
-import { format } from "date-fns";
-import PaneTitle from "@/components/PaneTitle";
-import EditPDPButton from "./EditPDPButton";
-import ArchiveCreateNewModal from "./ArchiveCreateNewModal";
+// Archived: The original DevelopmentPlanCard has been moved to _dev/DevelopmentPlanCard.archived.tsx for historical reference. Do not use in production.
 
-interface Player {
-  id: string;
-  name: string;
-}
-
-interface Pdp {
-  id: string;
-  content: string | null;
-  created_at: string;
-}
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface DevelopmentPlanCardProps {
-  player: Player | null;
-  pdp: Pdp | null;
-  onPdpUpdate?: () => void;
-  showActions?: boolean;
+  plan: string;
+  started: string;
+  onEdit?: () => void;
+  onArchive?: () => void;
 }
 
-export default function DevelopmentPlanCard({
-  player,
-  pdp,
-  onPdpUpdate,
-  showActions = true,
-}: DevelopmentPlanCardProps) {
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          <PaneTitle>Development Plan</PaneTitle>
-          <div className="text-xs text-zinc-400 mt-1">
-            Started: {pdp?.created_at ? format(new Date(pdp.created_at), "MMM dd, yyyy") : "—"}
-          </div>
-        </div>
-        {pdp && player && showActions && (
-          <div className="flex gap-2">
-            {onPdpUpdate && (
-              <>
-                <EditPDPButton
-                  player={player}
-                  pdp={{...pdp, start_date: pdp.created_at}}
-                  onUpdate={onPdpUpdate}
-                />
-                <ArchiveCreateNewModal playerId={player.id} onSuccess={onPdpUpdate} />
-              </>
-            )}
-          </div>
+const DevelopmentPlanCard: React.FC<DevelopmentPlanCardProps> = ({
+  plan,
+  started,
+  onEdit,
+  onArchive,
+}) => (
+  <Card className="mb-4">
+    <CardHeader className="flex flex-row items-center justify-between mb-2">
+      <CardTitle>
+        <span className="text-lg font-semibold text-neutral-200">
+          Development Plan
+        </span>
+        <span className="ml-3 text-zinc-400 text-sm font-normal">
+          Started: {started}
+        </span>
+      </CardTitle>
+      <div className="flex gap-2">
+        {onEdit && (
+          <button
+            className="rounded border border-zinc-700 bg-zinc-800 px-3 py-1 text-sm font-medium text-neutral-200 hover:bg-zinc-700"
+            onClick={onEdit}
+          >
+            Edit Plan
+          </button>
+        )}
+        {onArchive && (
+          <button
+            className="rounded border border-[#C2B56B] bg-transparent px-3 py-1 text-sm font-medium text-[#C2B56B] hover:bg-zinc-900"
+            onClick={onArchive}
+          >
+            Archive & Create New
+          </button>
         )}
       </div>
-      <div className="bg-zinc-800 rounded px-4 py-3">
-        <div className="text-sm text-zinc-200 whitespace-pre-line">
-          {pdp?.content || "No active plan."}
-        </div>
-      </div>
-    </div>
-  );
-} 
+    </CardHeader>
+    <CardContent>
+      <div className="text-zinc-300 text-base">{plan}</div>
+    </CardContent>
+  </Card>
+);
+
+export default DevelopmentPlanCard; 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/ui-utils";
 import DeleteButton from "./DeleteButton";
 import SuccessMessage from "./SuccessMessage";
 import PaneTitle from "@/components/PaneTitle";
@@ -29,7 +29,7 @@ export default function ObservationFeedPane({
   const [selected, setSelected] = useState<string[]>([]);
 
   const dateRange = observations.length
-    ? `Observations from ${format(new Date(observations[0].observation_date), "MMM d, yyyy")} to ${format(new Date(observations[observations.length - 1].observation_date), "MMM d, yyyy")}`
+    ? `Observations from ${formatDate(observations[0].observation_date)} to ${formatDate(observations[observations.length - 1].observation_date)}`
     : null;
 
   const toggleSelect = (id: string) => {
@@ -75,7 +75,7 @@ export default function ObservationFeedPane({
             <div key={observation.id} className="bg-zinc-800 p-3 rounded text-sm">
               <p className="text-zinc-300 mb-2">{observation.content}</p>
               <p className="text-xs text-zinc-500">
-                {format(new Date(observation.observation_date), 'MMM d, yyyy')}
+                {formatDate(observation.observation_date)}
               </p>
             </div>
           ))

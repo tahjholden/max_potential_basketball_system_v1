@@ -2,9 +2,14 @@ import Image from "next/image";
 import PaneTitle from "@/components/PaneTitle";
 import maxsM from "@/public/maxsM.png";
 
-const EmptyCard = ({ title }: { title: string }) => (
-  <div className="relative flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 p-4 min-h-[160px]">
-    <PaneTitle className="relative z-10">{title}</PaneTitle>
+interface EmptyCardProps {
+  title: string;
+  titleClassName?: string;
+}
+
+const EmptyCard = ({ title, titleClassName }: EmptyCardProps) => (
+  <div className="relative flex-1 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 p-4 min-h-[160px]">
+    <PaneTitle className={`relative z-10 text-center ${titleClassName || ''}`}>{title}</PaneTitle>
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
       <Image
         src={maxsM}

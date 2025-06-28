@@ -8,7 +8,7 @@ interface PaneTitleProps {
 const PaneTitle = ({ children, className = "" }: PaneTitleProps) => {
   return (
     <h2
-      className={`text-zinc-100 text-lg font-semibold mb-2 ${className}`}
+      className={`text-zinc-100 text-lg font-semibold ${className}`}
     >
       {children}
     </h2>

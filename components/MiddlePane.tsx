@@ -6,12 +6,14 @@ interface Player {
     id: string;
     name: string;
     joined: string;
+    team_name?: string;
 }
 
 interface Observation {
     id: string;
     content: string;
     observation_date: string;
+    archived: boolean;
 }
 
 interface Pdp {
@@ -37,6 +39,7 @@ export default function MiddlePane({
   onPdpUpdate,
   onObservationAdded
 }: MiddlePaneProps) {
+  console.log("MiddlePane observations prop:", observations);
   return (
     <div className="flex flex-col gap-4">
       {player && <PlayerMetadataCard player={player} observations={observations} />}

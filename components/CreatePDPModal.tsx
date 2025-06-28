@@ -20,7 +20,7 @@ export default function CreatePDPModal({
   open: boolean;
   onClose: () => void;
   player: { id: string; name: string } | null;
-  coachId: string;
+  coachId?: string;
   onCreated: () => void;
 }) {
   const [content, setContent] = useState("");
@@ -87,10 +87,9 @@ export default function CreatePDPModal({
         coachId = coachRow.id;
       }
 
-      // Create the new PDP with coach_id
+      // Create the new PDP (removed coach_id since it no longer exists on pdp table)
       const { error: insertError } = await supabase.from("pdp").insert({
         player_id: player.id,
-        coach_id: coachId, // Always set coach_id
         content: content.trim(),
         start_date: now,
         created_at: now,
