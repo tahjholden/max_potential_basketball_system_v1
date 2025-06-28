@@ -317,19 +317,6 @@ export default function ObservationsPage() {
             ) : (
               <EmptyCard title="Select a Player to View Their Profile" titleClassName="font-bold text-center" />
             )}
-            <SectionLabel>Development Plan</SectionLabel>
-            {selectedPlayer ? (
-              <EntityMetadataCard
-                fields={[
-                  { label: "Started", value: currentPdp?.start_date ? currentPdp.start_date : "—" },
-                  { label: "Plan", value: currentPdp?.content || "No active plan." }
-                ]}
-                actions={null}
-                cardClassName="mt-0"
-              />
-            ) : (
-              <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
-            )}
             <SectionLabel>Recent Observations</SectionLabel>
             {selectedPlayer ? (
               <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
@@ -348,6 +335,19 @@ export default function ObservationsPage() {
               </div>
             ) : (
               <EmptyCard title="Select a Player to View Their Observations" titleClassName="font-bold text-center" />
+            )}
+            <SectionLabel>Development Plan</SectionLabel>
+            {selectedPlayer ? (
+              <EntityMetadataCard
+                fields={[
+                  { label: "Started", value: currentPdp?.start_date ? currentPdp.start_date : "—" },
+                  { label: "Plan", value: currentPdp?.content || "No active plan." }
+                ]}
+                actions={null}
+                cardClassName="mt-0"
+              />
+            ) : (
+              <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
             )}
           </div>
           {/* Right: Insights or additional info */}
