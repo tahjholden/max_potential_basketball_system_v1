@@ -10,6 +10,7 @@ import CoachObservationsPane from "@/components/CoachObservationsPane";
 import EntityListPane from "@/components/EntityListPane";
 import EntityButton from '@/components/EntityButton';
 import DashboardPlayerListPane from '@/components/DashboardPlayerListPane';
+import PlayerListShared from "@/components/PlayerListShared";
 
 // Type Definitions
 interface Coach {
@@ -131,7 +132,7 @@ export default function CoachesPage() {
         .range(0, 49);
 
       const counts = new Map();
-      observationsData?.forEach(obs => {
+      observationsData?.forEach((obs: any) => {
         counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
       });
 
@@ -163,7 +164,7 @@ export default function CoachesPage() {
 
         if (recentObsData) {
           // Fetch player information for these observations
-          const obsPlayerIds = recentObsData.map(obs => obs.player_id).filter(Boolean);
+          const obsPlayerIds = recentObsData.map((obs: any) => obs.player_id).filter(Boolean);
           if (obsPlayerIds.length > 0) {
             const { data: obsPlayersData } = await supabase
               .from("players")
@@ -171,11 +172,11 @@ export default function CoachesPage() {
               .in("id", obsPlayerIds);
 
             const playerMap = new Map();
-            obsPlayersData?.forEach(player => {
+            obsPlayersData?.forEach((player: any) => {
               playerMap.set(player.id, player);
             });
 
-            const transformedObservations = recentObsData.map(obs => {
+            const transformedObservations = recentObsData.map((obs: any) => {
               const player = playerMap.get(obs.player_id);
               return {
                 ...obs,
@@ -217,7 +218,7 @@ export default function CoachesPage() {
         .eq("team_id", coachTeamId);
 
       if (teamPlayers && teamPlayers.length > 0) {
-        const playerIds = teamPlayers.map(p => p.id);
+        const playerIds = teamPlayers.map((p: any) => p.id);
         // Only query observations if playerIds is not empty
         if (playerIds.length > 0) {
           // Then get observations for those players
@@ -243,11 +244,11 @@ export default function CoachesPage() {
               .in("id", playerIds);
 
             const playerMap = new Map();
-            playersData?.forEach(player => {
+            playersData?.forEach((player: any) => {
               playerMap.set(player.id, player);
             });
 
-            const transformedObservations = recentObsData.map(obs => {
+            const transformedObservations = recentObsData.map((obs: any) => {
               const player = playerMap.get(obs.player_id);
               return {
                 ...obs,
@@ -290,7 +291,7 @@ export default function CoachesPage() {
           .range(0, 49);
         
         const counts = new Map();
-        observationsData?.forEach(obs => {
+        observationsData?.forEach((obs: any) => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
 
@@ -339,9 +340,9 @@ export default function CoachesPage() {
 
     // Create a map of coach_id to team_name
     const coachTeamMap = new Map();
-    teamsData?.forEach(team => {
-      if (team.coach_id) {
-        coachTeamMap.set(team.coach_id, team.name);
+    teamsData?.forEach((t: any) => {
+      if (t.coach_id) {
+        coachTeamMap.set(t.coach_id, t.name);
       }
     });
 
@@ -395,48 +396,14 @@ export default function CoachesPage() {
     // Implementation of handleDelete function
   };
 
-  // Get players without active PDPs for styling
+  // Get playerIdsWithPDP for styling (all active PDPs, not filtered by team/coach)
   const playerIdsWithPDP = new Set(
-    allPdps
-      .filter(pdp => !pdp.archived_at)
-      .map(pdp => pdp.player_id)
+    allPdps.filter((pdp) => !pdp.archived_at).map((pdp) => pdp.player_id)
   );
 
-  // Custom render function for player items with PDP status
-  const renderPlayerItem = (player: any, isSelected: boolean) => {
-    const hasNoPlan = !playerIdsWithPDP.has(player.id);
-    
-    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
-
-    let classes = baseClasses;
-    if (hasNoPlan) {
-      classes += isSelected
-        ? " bg-[#A22828] text-white border-[#A22828]"
-        : " bg-zinc-900 text-[#A22828] border-[#A22828]";
-    } else {
-      classes += isSelected
-        ? " bg-[#C2B56B] text-black border-[#C2B56B]"
-        : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
-    }
-
-    return (
-      <button
-        key={player.id}
-        onClick={() => {
-          // Handle player selection if needed
-          console.log('Player selected:', player.id);
-        }}
-        className={classes}
-      >
-        {player.name}
-      </button>
-    );
-  };
-
   return (
-    <div className="p-4 bg-zinc-950">
-      <div className="mt-2 px-6">
-        <PageTitle>Coaches</PageTitle>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="mt-2 px-6 flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Coaches list */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
@@ -457,7 +424,7 @@ export default function CoachesPage() {
             />
           </div>
           {/* Center: Coach Profile and Observations */}
-          <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
+          <div className="flex flex-col gap-4 h-full">
             {coaches.length === 0 ? (
               <div className="flex flex-col gap-4 h-full">
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
@@ -471,24 +438,17 @@ export default function CoachesPage() {
                 </div>
               </div>
             ) : selectedCoach ? (
-              <div className="flex-1 min-h-0 flex flex-col gap-4">
-                <CoachProfilePane
-                  coach={selectedCoach}
-                  observations={observations}
-                />
-                <CoachObservationsPane
-                  coach={selectedCoach}
-                  observations={observations}
-                />
-                <div className="flex gap-1">
-                  <EntityButton color="gold" onClick={handleEdit}>
-                    Edit Coach
-                  </EntityButton>
-                  <EntityButton color="danger" onClick={handleDelete}>
-                    Delete Coach
-                  </EntityButton>
+              <>
+                <CoachProfilePane coach={selectedCoach} />
+                {/* Development Plan card would go here if you have it, e.g. <DevelopmentPlanCard ... /> */}
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Recent Observations</h3>
+                  <CoachObservationsPane
+                    coach={selectedCoach}
+                    observations={observations}
+                  />
                 </div>
-              </div>
+              </>
             ) : (
               <div className="flex flex-col gap-4 h-full">
                 <EmptyCard title="Coach Profile" />
@@ -498,23 +458,15 @@ export default function CoachesPage() {
           </div>
           {/* Right: Players list */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            {coaches.length === 0 ? (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-zinc-300 mb-2">Players</h3>
-                <p className="text-zinc-400">Players will appear here once you add coaches and assign them to teams.</p>
-              </div>
-            ) : (
-              <DashboardPlayerListPane
-                players={players}
-                selectedPlayerId={null} // or selectedPlayerId if you have player selection logic
-                onSelectPlayer={() => {}}
-                onAddPlayer={() => {
-                  console.log('Add player');
-                  fetchAllData();
-                }}
-                showAddPlayer={true}
-              />
-            )}
+            <PlayerListShared
+              players={players}
+              teams={teams}
+              selectedPlayerId={null}
+              setSelectedPlayerId={() => {}}
+              selectedTeamId={selectedTeamId}
+              setSelectedTeamId={(id: string | null) => setSelectedTeamId(id ?? "")}
+              playerIdsWithPDP={playerIdsWithPDP}
+            />
           </div>
         </div>
       </div>

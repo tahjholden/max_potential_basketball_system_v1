@@ -12,6 +12,7 @@ import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import EntityButton from '@/components/EntityButton';
 import { NoPlayersEmptyState, NoArchivedPDPsEmptyState } from '@/components/ui/EmptyState';
 import { ErrorBadge } from '@/components/StatusBadge';
+import PlayerListShared from "@/components/PlayerListShared";
 
 // Type Definitions
 interface Player {
@@ -193,7 +194,7 @@ export default function TestPlayersPage() {
       .or("archived.is.null,archived.eq.false")
       .order("created_at", { ascending: false })
       .range(0, 49);
-    setObservations((observationsData || []).map(obs => ({ ...obs, archived: false })));
+    setObservations((observationsData || []).map((obs: any) => ({ ...obs, archived: false })));
 
     // Fetch archived PDPs
     const { data: archivedData } = await supabase
@@ -211,11 +212,11 @@ export default function TestPlayersPage() {
       .eq("archived", true);
 
     if(archivedData) {
-      const processedArchived = archivedData.map(pdp => {
+      const processedArchived = archivedData.map((pdp: any) => {
         const startDate = format(new Date(pdp.start_date), "MMM d, yyyy");
         const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMM d, yyyy") : "Present";
         // Attach observations for this PDP
-        const pdpObservations = (archivedObsData || []).filter(obs => obs.pdp_id === pdp.id && obs.archived === true);
+        const pdpObservations = (archivedObsData || []).filter((obs: any) => obs.pdp_id === pdp.id && obs.archived === true);
         return {
           id: pdp.id,
           dateRange: `${startDate} - ${endDate}`,
@@ -279,7 +280,7 @@ export default function TestPlayersPage() {
 
       const { data: observationsData } = await supabase.from("observations").select("player_id");
       const counts = new Map();
-      observationsData?.forEach(obs => {
+      observationsData?.forEach((obs: any) => {
         counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
       });
       
@@ -317,53 +318,9 @@ export default function TestPlayersPage() {
     console.log('Delete player:', selectedPlayer?.id);
   };
 
-  // Get players without active PDPs for styling
+  // Get playerIdsWithPDP for styling (all active PDPs, not filtered by team/coach)
   const playerIdsWithPDP = new Set(
-    allPdps
-      .filter(pdp => !pdp.archived_at)
-      .map(pdp => pdp.player_id)
-  );
-
-  // Custom render function for player items with PDP status (copied from dashboard)
-  const renderPlayerItem = (player: any, isSelected: boolean) => {
-    const hasNoPlan = !playerIdsWithPDP.has(player.id);
-    
-    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
-
-    let classes = baseClasses;
-    if (hasNoPlan) {
-      classes += isSelected
-        ? " bg-[#A22828] text-white border-[#A22828]"
-        : " bg-zinc-900 text-[#A22828] border-[#A22828]";
-    } else {
-      classes += isSelected
-        ? " bg-[#C2B56B] text-black border-[#C2B56B]"
-        : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
-    }
-
-    return (
-      <button
-        key={player.id}
-        onClick={() => setPlayerId(player.id)}
-        className={classes}
-      >
-        {player.name}
-      </button>
-    );
-  };
-
-  // Team filter for player list (copied from dashboard)
-  const teamOptions = [
-    { id: null, name: 'All Teams' },
-    ...teams.map(t => ({ id: t.id, name: t.name }))
-  ];
-
-  // Filter players by selected team - if no team is selected (All Teams), show all players
-  const filteredPlayers = selectedTeamId
-    ? players.filter(p => p.team_id === selectedTeamId)
-    : players;
-  const displayedPlayers = filteredPlayers.filter(p =>
-    p.name.toLowerCase().includes(playerSearch.toLowerCase())
+    allPdps.filter((pdp) => !pdp.archived_at).map((pdp) => pdp.player_id)
   );
 
   if (loading) {
@@ -387,61 +344,17 @@ export default function TestPlayersPage() {
   return (
     <div className="min-h-screen p-4 bg-zinc-950" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
       <div className="mt-2 px-6">
-        {/* Header Row */}
         <div className="flex gap-6">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-0">
-              <span className="text-lg font-bold text-white">Players</span>
-              <button
-                onClick={() => setCreateModalOpen(true)}
-                className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-lg"
-                style={{ lineHeight: '1.5', verticalAlign: 'baseline' }}
-              >
-                + Add Player
-              </button>
-            </div>
-          </div>
-          <div className="flex-[2] min-w-0">
-            <span className="text-lg font-bold text-white mb-0">Player Profile</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-lg font-bold text-white mb-0">Archived PDPs</span>
-          </div>
-        </div>
-        {/* Content Row */}
-        <div className="flex gap-6 mt-0" style={{ height: '600px' }}>
-          {/* Left: Player list */}
-          <div className="flex-1 min-w-0">
-            <EntityListPane
-              title=""
-              items={displayedPlayers}
-              selectedId={playerId || undefined}
-              onSelect={id => setPlayerId(id)}
-              actions={undefined}
-              searchPlaceholder="Search players..."
-              renderItem={renderPlayerItem}
-              showSearch={false}
-              headerActions={
-                <select
-                  value={selectedTeamId || ''}
-                  onChange={e => setSelectedTeamId(e.target.value || null)}
-                  className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm ml-2"
-                  style={{ minWidth: 120 }}
-                >
-                  {teamOptions.map(opt => (
-                    <option key={opt.id || 'all'} value={opt.id || ''}>{opt.name}</option>
-                  ))}
-                </select>
-              }
-              footer={
-                <input
-                  type="text"
-                  placeholder="Search players..."
-                  value={playerSearch}
-                  onChange={e => setPlayerSearch(e.target.value)}
-                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-                />
-              }
+          {/* Player list panel */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <PlayerListShared
+              players={players}
+              teams={teams}
+              selectedPlayerId={playerId}
+              setSelectedPlayerId={setPlayerId}
+              selectedTeamId={selectedTeamId}
+              setSelectedTeamId={setSelectedTeamId}
+              playerIdsWithPDP={playerIdsWithPDP}
             />
           </div>
           {/* Center: Player Profile + Development Plan (wider column) */}

@@ -14,6 +14,7 @@ import EntityButton from '@/components/EntityButton';
 import { ErrorBadge } from '@/components/StatusBadge';
 import SectionLabel from "@/components/SectionLabel";
 import EntityMetadataCard from "@/components/EntityMetadataCard";
+import PlayerListShared from "@/components/PlayerListShared";
 
 // Type definitions - matching dashboard exactly
 interface Player {
@@ -24,6 +25,7 @@ interface Player {
   observations: number;
   joined: string;
   team_name?: string;
+  team_id?: string;
 }
 
 interface Observation {
@@ -53,6 +55,8 @@ export default function ObservationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
+  const [teams, setTeams] = useState<{ id: string | null; name: string }[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -78,52 +82,11 @@ export default function ObservationsPage() {
 
   const fetchAllPdps = async () => {
     const supabase = createClient();
-    
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // Get coach record
-    const { data: coachRow } = await supabase
-      .from("coaches")
-      .select("id")
-      .eq("auth_uid", user.id)
-      .single();
-    
-    if (!coachRow) return;
-
-    // Get teams for this coach
-    const { data: teamCoaches } = await supabase
-      .from("team_coaches")
-      .select("team_id")
-      .eq("coach_id", coachRow.id);
-    
-    const teamIds = teamCoaches?.map(tc => tc.team_id) || [];
-    
-    if (teamIds.length === 0) {
-      setAllPdps([]);
-      return;
-    }
-
-    // Get player IDs for this coach's teams
-    const { data: players } = await supabase
-      .from("players")
-      .select("id")
-      .in("team_id", teamIds);
-    
-    const playerIds = players?.map(p => p.id) || [];
-    
-    if (playerIds.length === 0) {
-      setAllPdps([]);
-      return;
-    }
-
-    // Fetch PDPs only for coach's players
-    const { data } = await supabase
+    const { data: pdpsData } = await supabase
       .from("pdp")
-      .select("id, content, start_date, created_at, player_id, archived_at")
-      .in("player_id", playerIds);
-    setAllPdps(data || []);
+      .select("id, player_id, content, archived_at, start_date")
+      .is("archived_at", null);
+    setAllPdps(pdpsData || []);
   };
 
   useEffect(() => {
@@ -150,14 +113,9 @@ export default function ObservationsPage() {
           setError("Error fetching players");
           return;
         }
-        // Fetch all active PDPs
-        const { data: pdpsData } = await supabase
-          .from("pdp")
-          .select("id, player_id, content, archived_at, start_date")
-          .is("archived_at", null);
-        setAllPdps(pdpsData || []);
+        // No need to fetch PDPs here, handled by fetchAllPdps
         // Get player IDs for filtering observations
-        const playerIds = playersData?.map(p => p.id) || [];
+        const playerIds = playersData?.map((p: any) => p.id) || [];
         // Fetch observations only for these players
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
@@ -172,18 +130,18 @@ export default function ObservationsPage() {
           return;
         }
         const counts = new Map<string, number>();
-        observationsData?.forEach(obs => {
+        observationsData?.forEach((obs: any) => {
           counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
         });
-        const transformedPlayers = (playersData || []).map((player: any) => ({
-          ...player,
-          name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
-          observations: counts.get(player.id) || 0,
-          joined: new Date(player.created_at).toLocaleDateString(),
-          team_name: player.teams?.name || undefined,
+        const transformedPlayers = (playersData || []).map((p: any) => ({
+          ...p,
+          name: p.first_name && p.last_name ? `${p.first_name} ${p.last_name}`: p.name,
+          observations: counts.get(p.id) || 0,
+          joined: new Date(p.created_at).toLocaleDateString(),
+          team_name: p.teams?.name || undefined,
         }));
         setPlayers(transformedPlayers);
-        setAllObservations((observationsData || []).map(obs => ({ ...obs, archived: false })));
+        setAllObservations((observationsData || []).map((obs: any) => ({ ...obs, archived: false })));
       } catch (err) {
         console.error("Error in fetchPlayersAndAllObservations:", err);
         setError("Error fetching players");
@@ -214,7 +172,7 @@ export default function ObservationsPage() {
         console.error("Error fetching observations:", error);
       }
       console.log("Fetched observations:", data);
-      setObservations((data || []).map(obs => ({ ...obs, archived: false })));
+      setObservations((data || []).map((obs: any) => ({ ...obs, archived: false })));
     }
     fetchObs();
   }, [playerId, currentPdp]);
@@ -222,6 +180,42 @@ export default function ObservationsPage() {
   useEffect(() => {
     fetchPdp();
   }, [playerId]);
+
+  useEffect(() => {
+    async function fetchTeams() {
+      try {
+        const supabase = createClient();
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) return;
+        const { data: coachData, error: coachError } = await supabase
+          .from('coaches')
+          .select('id, is_admin')
+          .eq('auth_uid', user.id)
+          .single();
+        if (coachError || !coachData) return;
+        if (coachData.is_admin) {
+          const { data: teamsData } = await supabase
+            .from('teams')
+            .select('id, name, coach_id')
+            .order('name', { ascending: true });
+          setTeams(teamsData || []);
+        } else {
+          const { data: teamsData } = await supabase
+            .from('teams')
+            .select('id, name, coach_id')
+            .eq('coach_id', coachData.id)
+            .order('name', { ascending: true });
+          setTeams(teamsData || []);
+          if (teamsData && teamsData.length > 0) {
+            setSelectedTeamId(teamsData[0].id);
+          }
+        }
+      } catch (err) {
+        // ignore errors for now
+      }
+    }
+    fetchTeams();
+  }, []);
 
   const handleBulkDelete = async (ids: string[]) => {
     const supabase = createClient();
@@ -236,7 +230,7 @@ export default function ObservationsPage() {
         .eq("archived", false)
         .order("created_at", { ascending: false })
         .limit(50);
-      setObservations((data || []).map(obs => ({ ...obs, archived: false })));
+      setObservations((data || []).map((obs: any) => ({ ...obs, archived: false })));
     }
   };
 
@@ -252,40 +246,19 @@ export default function ObservationsPage() {
     // Implementation of handleDelete function
   };
 
-  // Get players without active PDPs for styling
+  // Filter players by selected team (to match dashboard logic)
+  const filteredPlayers = selectedTeamId
+    ? players.filter((p) => p.team_id === selectedTeamId)
+    : players;
+  // Get playerIdsWithPDP for styling
   const playerIdsWithPDP = new Set(
-    allPdps
-      .filter(pdp => !pdp.archived_at)
-      .map(pdp => pdp.player_id)
+    allPdps.filter((pdp) => !pdp.archived_at).map((pdp) => pdp.player_id)
   );
 
-  // Custom render function for player items with PDP status
-  const renderPlayerItem = (player: any, isSelected: boolean) => {
-    const hasNoPlan = !playerIdsWithPDP.has(player.id);
-    
-    const baseClasses = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
-
-    let classes = baseClasses;
-    if (hasNoPlan) {
-      classes += isSelected
-        ? " bg-[#A22828] text-white border-[#A22828]"
-        : " bg-zinc-900 text-[#A22828] border-[#A22828]";
-    } else {
-      classes += isSelected
-        ? " bg-[#C2B56B] text-black border-[#C2B56B]"
-        : " bg-zinc-900 text-[#C2B56B] border-[#C2B56B]";
-    }
-
-    return (
-      <button
-        key={player.id}
-        onClick={() => setPlayerId(player.id)}
-        className={classes}
-      >
-        {player.name}
-      </button>
-    );
-  };
+  // DEBUG LOGS
+  console.log('DEBUG allPdps:', allPdps);
+  console.log('DEBUG playerIdsWithPDP:', Array.from(playerIdsWithPDP));
+  console.log('DEBUG players:', players);
 
   if (loading) {
     return (
@@ -312,12 +285,21 @@ export default function ObservationsPage() {
           {/* Left: Player list */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Players</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-              {/* Add Player button and search bar can be added here if needed */}
-              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-                {players.map(player => renderPlayerItem(player, playerId === player.id))}
+            {players.length > 0 && playerIdsWithPDP.size > 0 ? (
+              <PlayerListShared
+                players={players}
+                teams={teams}
+                selectedPlayerId={playerId}
+                setSelectedPlayerId={setPlayerId}
+                selectedTeamId={selectedTeamId}
+                setSelectedTeamId={setSelectedTeamId}
+                playerIdsWithPDP={playerIdsWithPDP}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 min-h-0">
+                <span className="text-zinc-400">Loading players...</span>
               </div>
-            </div>
+            )}
           </div>
           {/* Center: Player Profile + Development Plan */}
           <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
@@ -355,7 +337,7 @@ export default function ObservationsPage() {
                   <div className="text-zinc-500 italic">No observations for this player.</div>
                 ) : (
                   <div className="flex flex-col gap-3 w-full">
-                    {observations.map(obs => (
+                    {observations.map((obs: any) => (
                       <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
                         <div className="text-xs text-zinc-400 mb-1">{obs.observation_date}</div>
                         <div className="text-base text-zinc-100">{obs.content}</div>
