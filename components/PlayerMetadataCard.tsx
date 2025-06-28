@@ -1,7 +1,7 @@
-import React from "react";
-import { format } from "date-fns";
+import EntityMetadataCard from "@/components/EntityMetadataCard";
+import Link from "next/link";
+import { formatDate } from "@/lib/ui-utils";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
-import PaneTitle from "@/components/PaneTitle";
 
 interface Player {
   name: string;
@@ -11,41 +11,38 @@ interface Player {
 
 interface PlayerMetadataCardProps {
   player: Player;
-  observations: any[];
   playerId?: string;
   showDeleteButton?: boolean;
 }
 
 const PlayerMetadataCard: React.FC<PlayerMetadataCardProps> = ({
   player,
-  observations,
   playerId,
   showDeleteButton = false,
 }) => {
+  const fields = [
+    { label: "Name", value: <span className="font-bold text-[#C2B56B] text-base">{player.name}</span>, highlight: true },
+    { label: "Joined", value: formatDate(player.joined) },
+    player.team_name
+      ? {
+          label: "Team",
+          value: (
+            <Link href={`/protected/teams?playerId=${playerId}`} className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors">
+              {player.team_name}
+            </Link>
+          ),
+        }
+      : undefined,
+  ].filter((f) => f !== undefined);
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4">
-      <div className="flex justify-between items-start mb-2">
-        <PaneTitle>Player Profile</PaneTitle>
-        {showDeleteButton && playerId && (
+    <EntityMetadataCard
+      actions={
+        showDeleteButton && playerId ? (
           <DeletePlayerButton playerId={playerId} playerName={player.name} />
-        )}
-      </div>
-      <div className="bg-zinc-800 rounded px-4 py-3 text-sm space-y-2">
-        <div>
-          <span className="text-zinc-500">Name:</span> 
-          <span className="font-bold" style={{ color: '#C2B56B', fontSize: '1.1rem' }}>{player.name}</span>
-        </div>
-        <div>
-          <span className="text-zinc-500">Joined:</span> {format(new Date(player.joined), "MMMM do, yyyy")}
-        </div>
-        {player.team_name && (
-          <div>
-            <span className="text-zinc-500">Team:</span> 
-            <span className="font-medium text-zinc-300">{player.team_name}</span>
-          </div>
-        )}
-      </div>
-    </div>
+        ) : null
+      }
+      fields={fields}
+    />
   );
 };
 

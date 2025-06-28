@@ -1,5 +1,5 @@
 import React from "react";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/ui-utils";
 
 export interface BubbleRowProps {
   id: string;
@@ -43,7 +43,7 @@ const BubbleRow: React.FC<BubbleRowProps> = ({
       <div className="flex items-center justify-between">
         {subtitle && <p className="text-zinc-300 text-xs">{subtitle}</p>}
         <p className="text-zinc-500 text-xs">
-          {format(new Date(date), "MMM d, yyyy")}
+          {formatDate(date)}
         </p>
       </div>
     </div>

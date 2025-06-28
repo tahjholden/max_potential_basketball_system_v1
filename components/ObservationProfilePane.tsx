@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/ui-utils";
 import DeleteObservationButton from "./DeleteObservationButton";
 import { actionButtonClass } from "@/lib/utils";
 
@@ -41,10 +41,7 @@ export default function ObservationProfilePane({
 
   // Calculate date range
   const dateRange = sorted.length > 0
-    ? `Observations from ${format(new Date(sorted[0].observation_date || sorted[0].created_at), "MMM d, yyyy")} to ${format(
-        new Date(sorted[sorted.length - 1].observation_date || sorted[sorted.length - 1].created_at),
-        "MMM d, yyyy"
-      )}`
+    ? `Observations from ${formatDate(sorted[0].observation_date || sorted[0].created_at)} to ${formatDate(sorted[sorted.length - 1].observation_date || sorted[sorted.length - 1].created_at)}`
     : null;
 
   if (!player) {
@@ -87,7 +84,7 @@ export default function ObservationProfilePane({
                   <DeleteObservationButton observationId={obs.id} />
                 </div>
                 <p className="text-xs text-zinc-500 mb-1">
-                  {format(new Date(obs.observation_date || obs.created_at), "MMM d, yyyy")}
+                  {formatDate(obs.observation_date || obs.created_at)}
                 </p>
                 <p>{obs.content}</p>
               </li>

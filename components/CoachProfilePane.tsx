@@ -41,7 +41,7 @@ export default function CoachProfilePane({ coach, observations }: CoachProfilePa
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 flex-1 h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-white">

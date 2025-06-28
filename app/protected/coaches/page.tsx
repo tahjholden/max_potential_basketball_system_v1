@@ -9,6 +9,7 @@ import CoachProfilePane from "@/components/CoachProfilePane";
 import CoachObservationsPane from "@/components/CoachObservationsPane";
 import EntityListPane from "@/components/EntityListPane";
 import EntityButton from '@/components/EntityButton';
+import DashboardPlayerListPane from '@/components/DashboardPlayerListPane';
 
 // Type Definitions
 interface Coach {
@@ -433,11 +434,12 @@ export default function CoachesPage() {
   };
 
   return (
-    <div className="min-h-screen p-4 bg-zinc-950">
+    <div className="p-4 bg-zinc-950">
       <div className="mt-2 px-6">
         <PageTitle>Coaches</PageTitle>
-        <ThreePaneLayout
-          leftPane={
+        <div className="flex-1 min-h-0 flex gap-6">
+          {/* Left: Coaches list */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <EntityListPane
               title="Coaches"
               items={coaches.map(coach => ({
@@ -453,9 +455,10 @@ export default function CoachesPage() {
               }
               searchPlaceholder="Search coaches..."
             />
-          }
-          centerPane={
-            coaches.length === 0 ? (
+          </div>
+          {/* Center: Coach Profile and Observations */}
+          <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
+            {coaches.length === 0 ? (
               <div className="flex flex-col gap-4 h-full">
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Coaches Found</h3>
@@ -468,7 +471,7 @@ export default function CoachesPage() {
                 </div>
               </div>
             ) : selectedCoach ? (
-              <div className="flex flex-col gap-4">
+              <div className="flex-1 min-h-0 flex flex-col gap-4">
                 <CoachProfilePane
                   coach={selectedCoach}
                   observations={observations}
@@ -491,35 +494,29 @@ export default function CoachesPage() {
                 <EmptyCard title="Coach Profile" />
                 <EmptyCard title="Recent Observations" />
               </div>
-            )
-          }
-          rightPane={
-            coaches.length === 0 ? (
+            )}
+          </div>
+          {/* Right: Players list */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            {coaches.length === 0 ? (
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-zinc-300 mb-2">Players</h3>
                 <p className="text-zinc-400">Players will appear here once you add coaches and assign them to teams.</p>
               </div>
             ) : (
-              <EntityListPane
-                title="Players"
-                items={players}
-                actions={
-                  <EntityButton 
-                    color="gold"
-                    onClick={() => {
-                      console.log('Add player');
-                      fetchAllData();
-                    }}
-                  >
-                    Add Player
-                  </EntityButton>
-                }
-                searchPlaceholder="Search players..."
-                renderItem={renderPlayerItem}
+              <DashboardPlayerListPane
+                players={players}
+                selectedPlayerId={null} // or selectedPlayerId if you have player selection logic
+                onSelectPlayer={() => {}}
+                onAddPlayer={() => {
+                  console.log('Add player');
+                  fetchAllData();
+                }}
+                showAddPlayer={true}
               />
-            )
-          }
-        />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

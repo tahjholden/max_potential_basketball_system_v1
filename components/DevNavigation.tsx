@@ -18,9 +18,10 @@ import {
 } from "lucide-react";
 
 const testNavLinks = [
-  { href: "/protected/dashboard", label: "Test Dashboard", icon: BarChart2 },
-  { href: "/protected/players", label: "Test Players", icon: Users },
-  { href: "/protected/observations", label: "Test Observations", icon: Shield },
+  { href: "/protected/test-teams", label: "Test Teams", icon: Building2 },
+  { href: "/protected/test-coaches", label: "Test Coaches", icon: Users },
+  { href: "/protected/test-players", label: "Test Players", icon: Users },
+  { href: "/protected/test-observations", label: "Test Observations", icon: Shield },
 ];
 
 const playerDevelopmentLinks = [

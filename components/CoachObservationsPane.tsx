@@ -51,7 +51,7 @@ export default function CoachObservationsPane({ coach, observations }: CoachObse
   const hasMoreObservations = observations.length > 5;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 flex-1 h-full">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-white">Recent Observations</h3>
         <div className="text-sm text-zinc-400">

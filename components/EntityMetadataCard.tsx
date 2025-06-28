@@ -1,5 +1,4 @@
 import React from "react";
-import PaneTitle from "@/components/PaneTitle";
 
 export interface EntityField {
   label: string;
@@ -8,41 +7,33 @@ export interface EntityField {
 }
 
 interface EntityMetadataCardProps {
-  title?: string;
   fields: EntityField[];
   actions?: React.ReactNode;
   headerClassName?: string;
   innerClassName?: string;
   cardClassName?: string;
+  className?: string;
 }
 
 const EntityMetadataCard: React.FC<EntityMetadataCardProps> = ({
-  title,
   fields,
   actions,
   headerClassName = "",
   innerClassName = "",
   cardClassName = "",
+  className = "",
 }) => (
-  <div className={`bg-zinc-900 border border-zinc-700 rounded-lg px-4 pt-3 pb-4 relative ${cardClassName}`}>
+  <div className={`bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-neutral-200 ${cardClassName} ${className}`}>
     {/* Action buttons positioned absolutely in top-right corner */}
     {actions && (
       <div className="absolute top-3 right-4 z-10">
         {actions}
       </div>
     )}
-    
-    {/* Title only - no layout impact */}
-    {title && (
-      <div className={`mb-1 ${headerClassName}`}>
-        <PaneTitle>{title}</PaneTitle>
-      </div>
-    )}
-    
     {/* Metadata content anchored to top */}
     <div className={`text-sm flex flex-col items-start gap-1 ${innerClassName}`}>
       {fields.map(({ label, value, highlight }, idx) => (
-        <div key={idx}>
+        <div key={idx} className="mb-1 last:mb-0">
           <span className="text-zinc-500">{label}:</span>{" "}
           <span
             className={

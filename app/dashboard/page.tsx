@@ -181,8 +181,8 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-4 h-full">
-                <EmptyCard title="Player Profile" />
-                <EmptyCard title="Development Plan" />
+                <EmptyCard title="Player Profile" titleClassName="font-bold text-center" />
+                <EmptyCard title="Development Plan" titleClassName="font-bold text-center" />
               </div>
             )
           }

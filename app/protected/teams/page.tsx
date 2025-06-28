@@ -2,25 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoldButton } from '@/components/ui/gold-button';
-import DeleteButton from '@/components/DeleteButton';
-import { toast } from 'sonner';
-import { format } from "date-fns";
-import EntityListPane from '@/components/EntityListPane';
-import EntityButton from '@/components/EntityButton';
+import EntityMetadataCard from '@/components/EntityMetadataCard';
+import EmptyCard from '@/components/EmptyCard';
+import SectionLabel from '@/components/SectionLabel';
+import ComingSoonCard from '@/components/ComingSoonCard';
 import { useSearchParams } from 'next/navigation';
 import { useCurrentCoach } from '@/hooks/useCurrentCoach';
-import ThreePaneLayout from "@/components/ThreePaneLayout";
-import EntityMetadataCard from "@/components/EntityMetadataCard";
-import PageTitle from "@/components/PageTitle";
-import EmptyCard from "@/components/EmptyCard";
-import Link from "next/link";
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
-import ComingSoonCard from '@/components/ComingSoonCard';
-import { Card, CardContent } from '@/components/ui/card';
-import PaneTitle from '@/components/PaneTitle';
 
 interface Team {
   id: string;
@@ -57,44 +47,33 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-
     setLoading(true);
     setError(null);
-
     try {
       const supabase = createClient();
-      
-      // Get the current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         setError("User not authenticated.");
         return;
       }
-
-      // Get coach record
       const { data: coachData, error: coachError } = await supabase
         .from('coaches')
         .select('id')
         .eq('auth_uid', user.id)
         .single();
-
       if (coachError || !coachData) {
         setError("Coach record not found.");
         return;
       }
-
-      // Create the team
       const { error: insertError } = await supabase.from("teams").insert({
         name: name.trim(),
         coach_id: coachData.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
-
       if (insertError) {
         setError(`Failed to create team: ${insertError.message}`);
       } else {
-        toast.success(`Team "${name.trim()}" created successfully`);
         setName('');
         onCreated();
         onClose();
@@ -105,14 +84,11 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
       setLoading(false);
     }
   };
-
   if (!open) return null;
-
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
       <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-semibold text-white mb-4">Create New Team</h2>
-        
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">
@@ -126,19 +102,10 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white focus:outline-none focus:ring focus:border-gold"
             />
           </div>
-
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
-
+          {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <GoldButton
-              onClick={handleCreate}
-              disabled={!name.trim() || loading}
-            >
+            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <GoldButton onClick={handleCreate} disabled={!name.trim() || loading}>
               {loading ? "Creating..." : "Create Team"}
             </GoldButton>
           </div>
@@ -148,20 +115,18 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
   );
 }
 
-export default function TeamsThreePane() {
+export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [teamPlayers, setTeamPlayers] = useState<Player[]>([]);
   const [teamCoach, setTeamCoach] = useState<Coach | null>(null);
-  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const searchParams = useSearchParams();
   const { coach: currentCoach } = useCurrentCoach();
   const { playerId } = useSelectedPlayer();
 
-  // Fetch teams, coaches, players on mount
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
@@ -175,7 +140,6 @@ export default function TeamsThreePane() {
     fetchData();
   }, []);
 
-  // Update teamPlayers and teamCoach when selected team changes
   useEffect(() => {
     if (!selectedTeam) {
       setTeamPlayers([]);
@@ -184,13 +148,11 @@ export default function TeamsThreePane() {
     }
     const fetchTeamDetails = async () => {
       const supabase = createClient();
-      // Get team players
       const { data: teamPlayerList } = await supabase
         .from("players")
         .select("*")
         .eq("team_id", selectedTeam.id);
       setTeamPlayers(teamPlayerList || []);
-      // Get team coach (one-to-many relationship)
       const { data: coachData } = await supabase
         .from("coaches")
         .select("*")
@@ -201,225 +163,149 @@ export default function TeamsThreePane() {
     fetchTeamDetails();
   }, [selectedTeam]);
 
-  const filteredTeams = teams.filter(team =>
-    team.name.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    if (teams.length === 0) return;
+    const teamId = searchParams.get('teamId');
+    if (teamId) {
+      const team = teams.find(t => t.id === teamId);
+      if (team) {
+        setSelectedTeam(team);
+        return;
+      }
+    }
+    if (!selectedTeam && currentCoach) {
+      const coachTeams = teams.filter(team => team.coach_id === currentCoach.id);
+      if (coachTeams.length > 0) {
+        setSelectedTeam(coachTeams[0]);
+      }
+    }
+    if (playerId && !selectedTeam) {
+      const fetchPlayerTeam = async () => {
+        const supabase = createClient();
+        const { data: playerData } = await supabase
+          .from("players")
+          .select("team_id")
+          .eq("id", playerId)
+          .single();
+        if (playerData?.team_id) {
+          const playerTeam = teams.find(team => team.id === playerData.team_id);
+          if (playerTeam) {
+            setSelectedTeam(playerTeam);
+          }
+        }
+      };
+      fetchPlayerTeam();
+    }
+  }, [currentCoach, teams, selectedTeam, searchParams, playerId]);
 
-  // Example create/edit/delete handlers
   const openCreateModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
-  const handleEdit = () => {
-    // Open edit modal, not implemented here for brevity
-    alert("Edit team modal (not implemented)");
-  };
-  const handleDelete = () => {
-    if (window.confirm("Delete this team? This cannot be undone.")) {
-      // Call delete API (not implemented)
-      alert("Delete team logic here.");
-    }
-  };
+  const handleEdit = () => {};
+  const handleDelete = () => {};
 
-  // Helper: get initials for avatar
-  const initials = (name: string) => (name || "")
-    .split(" ")
-    .map((n: string) => n[0]?.toUpperCase())
-    .join("")
-    .slice(0, 2);
-
-  // Logic to default select a team based on the coach's teams and context
-  useEffect(() => {
-    if (!currentCoach || teams.length === 0 || selectedTeam) return;
-
-    // Get all teams for the current coach
-    const coachTeams = teams.filter(team => team.coach_id === currentCoach.id);
-    
-    if (coachTeams.length === 1) {
-      // If coach has only one team, select it
-      setSelectedTeam(coachTeams[0]);
-    } else if (coachTeams.length > 1) {
-      // If coach has multiple teams, check if coming from players page
-      const playerId = searchParams.get('playerId');
-      if (playerId) {
-        // Find the player's team
-        const fetchPlayerTeam = async () => {
-          const supabase = createClient();
-          const { data: playerData } = await supabase
-            .from('players')
-            .select('team_id')
-            .eq('id', playerId)
-            .single();
-          
-          if (playerData?.team_id) {
-            const playerTeam = coachTeams.find(team => team.id === playerData.team_id);
-            if (playerTeam) {
-              setSelectedTeam(playerTeam);
-            }
-          }
-        };
-        fetchPlayerTeam();
-      }
-    }
-  }, [currentCoach, teams, selectedTeam, searchParams]);
-
-  // Render team item for EntityListPane
-  const renderTeamItem = (item: any, selected: boolean) => {
-    const team = item as Team;
-    return (
-      <button
-        onClick={() => setSelectedTeam(team)}
-        className={
-          `w-full flex items-center justify-center text-center px-4 py-2 rounded font-bold border-2 transition-colors duration-100 ` +
-          (selected
-            ? "bg-[#C2B56B] text-black border-[#C2B56B]"
-            : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
-        }
-      >
-        {team.name}
-      </button>
-    );
-  };
-
-  // Team metadata fields for EntityMetadataCard
   const getTeamMetadataFields = () => {
     if (!selectedTeam) return [];
-    
     return [
-      {
-        label: "Name",
-        value: selectedTeam.name,
-        highlight: true
-      },
-      {
-        label: "Coach",
-        value: teamCoach ? `${teamCoach.first_name} ${teamCoach.last_name}` : "No coach assigned"
-      },
-      {
-        label: "Players",
-        value: `${teamPlayers.length} player${teamPlayers.length !== 1 ? 's' : ''}`
-      },
-      {
-        label: "Created",
-        value: format(new Date(selectedTeam.created_at), "MMMM do, yyyy")
-      }
+      { label: "Name", value: selectedTeam.name, highlight: true },
+      { label: "Coach", value: teamCoach ? `${teamCoach.first_name} ${teamCoach.last_name}` : "No coach assigned" },
+      { label: "Players", value: `${teamPlayers.length} player${teamPlayers.length !== 1 ? 's' : ''}` },
+      { label: "Created", value: new Date(selectedTeam.created_at).toLocaleDateString() },
     ];
   };
-
-  // Team actions for EntityMetadataCard
   const getTeamActions = () => (
     <div className="flex gap-1">
-      <EntityButton color="gold" onClick={handleEdit}>
-        Edit Team
-      </EntityButton>
-      <EntityButton color="danger" onClick={handleDelete}>
-        Delete Team
-      </EntityButton>
+      <GoldButton onClick={handleEdit}>Edit Team</GoldButton>
+      <Button variant="destructive" onClick={handleDelete}>Delete Team</Button>
     </div>
   );
 
+  // --- CANONICAL DASHBOARD LAYOUT STARTS HERE ---
   return (
-    <div className="min-h-screen p-4 bg-zinc-950" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
+    <div className="min-h-screen p-4 bg-zinc-950">
       <div className="mt-2 px-6">
-        <div className="flex gap-6">
-          {/* Header row */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-0">
-              <span className="text-lg font-bold text-white">Teams</span>
-              <button
-                onClick={openCreateModal}
-                className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-lg"
-                style={{ lineHeight: '1.5', verticalAlign: 'baseline' }}
-              >
-                + Create Team
-              </button>
-            </div>
-          </div>
-          <div className="flex-[2] min-w-0">
-            <span className="text-lg font-bold text-white mb-0">Team Profile</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-lg font-bold text-white mb-0">Coming Soon</span>
-          </div>
-        </div>
-
-        {/* Content row */}
-        <div className="flex gap-6 mt-0">
+        <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Teams list */}
-          <div className="flex-1 min-w-0">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3">
-              {[...teams].sort((a, b) => a.name.localeCompare(b.name)).map((team, idx, arr) => (
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Teams</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
                 <button
-                  key={team.id}
-                  className={
-                    "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 " +
-                    (idx !== arr.length - 1 ? "mb-2 " : "") +
-                    (team.id === selectedTeam?.id
-                      ? "bg-[#C2B56B] text-black border-[#C2B56B]"
-                      : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
-                  }
-                  onClick={() => setSelectedTeam(team)}
+                  onClick={openCreateModal}
+                  className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
                 >
-                  {team.name}
+                  + Create Team
                 </button>
-              ))}
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                {teams.length === 0 ? (
+                  <div className="text-zinc-500 italic text-center py-8">No teams yet. Create one!</div>
+                ) : (
+                  [...teams].sort((a, b) => a.name.localeCompare(b.name)).map((team) => (
+                    <button
+                      key={team.id}
+                      className={
+                        "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
+                        (team.id === selectedTeam?.id
+                          ? "bg-[#C2B56B] text-black border-[#C2B56B]"
+                          : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
+                      }
+                      onClick={() => setSelectedTeam(team)}
+                    >
+                      {team.name}
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
           </div>
-          
-          {/* Center: Team Profile + Roster (wider column) */}
-          <div className="flex-[2] min-w-0">
-            <div className="flex flex-col gap-4 mt-0">
-              {selectedTeam ? (
-                <>
-                  <EntityMetadataCard
-                    title=""
-                    fields={getTeamMetadataFields()}
-                    actions={getTeamActions()}
-                    cardClassName="mt-0"
-                  />
-                  {/* Roster header overlapping the card border */}
-                  <div className="flex flex-col gap-2">
-                    <span className="font-bold text-base text-white -mb-2 z-10 px-2 bg-zinc-950 w-fit">Roster</span>
-                    <Card className="bg-zinc-900 border border-zinc-700 mt-0">
-                      <CardContent className="p-4">
-                        {teamPlayers.length === 0 ? (
-                          <div className="text-zinc-500 italic">No players on this team.</div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                            {teamPlayers.map(player => {
-                              const isSelected = playerId === player.id;
-                              let classes = "w-full flex items-center justify-center px-4 py-2 rounded font-medium border border-[#C2B56B] bg-zinc-900 transition-colors";
-                              if (isSelected) {
-                                classes += " bg-[#C2B56B] text-black";
-                              } else {
-                                classes += " text-zinc-300 hover:bg-[#C2B56B]/10";
-                              }
-                              return (
-                                <button
-                                  key={player.id}
-                                  onClick={() => window.location.href = `/protected/players?id=${player.id}`}
-                                  className={classes}
-                                >
-                                  {player.first_name} {player.last_name}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+          {/* Center: Team Profile + Roster */}
+          <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Team Profile</SectionLabel>
+            {selectedTeam ? (
+              <EntityMetadataCard
+                fields={getTeamMetadataFields()}
+                actions={getTeamActions()}
+                cardClassName="mt-0"
+              />
+            ) : (
+              <EmptyCard title="Select a Team to View Their Profile" titleClassName="font-bold text-center" />
+            )}
+            <SectionLabel>Roster</SectionLabel>
+            {selectedTeam ? (
+              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+                {teamPlayers.length === 0 ? (
+                  <div className="text-zinc-500 italic">No players on this team.</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {teamPlayers.map(player => {
+                      const isSelected = playerId === player.id;
+                      let classes = "w-full flex items-center justify-center px-4 py-2 rounded font-medium border border-[#C2B56B] bg-zinc-900 transition-colors";
+                      if (isSelected) {
+                        classes += " bg-[#C2B56B] text-black";
+                      } else {
+                        classes += " text-zinc-300 hover:bg-[#C2B56B]/10";
+                      }
+                      return (
+                        <button
+                          key={player.id}
+                          onClick={() => window.location.href = `/protected/players?id=${player.id}`}
+                          className={classes}
+                        >
+                          {player.first_name} {player.last_name}
+                        </button>
+                      );
+                    })}
                   </div>
-                </>
-              ) : (
-                <div className="flex flex-col gap-4 h-full">
-                  <EmptyCard title="Team Profile" />
-                  <EmptyCard title="Roster" />
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              <EmptyCard title="Select a Team to View Their Roster" titleClassName="font-bold text-center" />
+            )}
           </div>
-          
           {/* Right: Coming Soon */}
-          <div className="flex-1 min-w-0">
-            <div className="mt-0">
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Coming Soon</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
               <ComingSoonCard
                 features={[
                   { label: "Practice & game schedule", description: "(calendar integration)" },
@@ -430,20 +316,19 @@ export default function TeamsThreePane() {
               />
             </div>
           </div>
+          <CreateTeamModal
+            open={modalOpen}
+            onClose={closeModal}
+            onCreated={() => {
+              const fetchData = async () => {
+                const supabase = createClient();
+                const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
+                setTeams(teamData || []);
+              };
+              fetchData();
+            }}
+          />
         </div>
-        <CreateTeamModal
-          open={modalOpen}
-          onClose={closeModal}
-          onCreated={() => {
-            // Refresh teams list
-            const fetchData = async () => {
-              const supabase = createClient();
-              const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
-              setTeams(teamData || []);
-            };
-            fetchData();
-          }}
-        />
       </div>
     </div>
   );

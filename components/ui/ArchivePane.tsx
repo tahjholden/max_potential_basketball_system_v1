@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import PaneTitle from "@/components/PaneTitle";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/ui-utils";
 import { NoArchivedPDPsEmptyState } from "./EmptyState";
 
 interface ArchiveItem {
@@ -186,7 +186,7 @@ export default function ArchivePane({
               <div className="flex items-center justify-between mb-2">
                 <p className="text-zinc-300 text-xs">{item.summary}</p>
                 <p className="text-zinc-500 text-xs">
-                  {format(new Date(item.archivedAt), "MMM dd, yyyy")}
+                  {formatDate(item.archivedAt)}
                 </p>
               </div>
 
@@ -209,7 +209,7 @@ export default function ArchivePane({
                             <div className="flex justify-between items-start mb-1">
                               <span className="text-zinc-400 font-medium">{child.title}</span>
                               <span className="text-zinc-500">
-                                {format(new Date(child.archivedAt), "MMM dd, yyyy")}
+                                {formatDate(child.archivedAt)}
                               </span>
                             </div>
                             <p className="text-zinc-300">{child.summary}</p>
@@ -252,9 +252,9 @@ export function PDPArchivePane({
       status: "archived" as const,
       children: pdp.observations?.map((obs: any) => ({
         id: obs.id,
-        title: `Observation - ${format(new Date(obs.observation_date), "MMM dd, yyyy")}`,
+        title: `Observation - ${formatDate(obs.observation_date)}`,
         summary: obs.content,
-        dateRange: format(new Date(obs.observation_date), "MMM dd, yyyy"),
+        dateRange: formatDate(obs.observation_date),
         archivedAt: obs.created_at,
         status: "archived" as const,
       })) || []
@@ -273,7 +273,7 @@ export function PDPArchivePane({
               <div key={obs.id} className="bg-zinc-900 p-2 rounded text-xs">
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-zinc-400">
-                    {format(new Date(obs.archivedAt), "MMM dd, yyyy")}
+                    {formatDate(obs.archivedAt)}
                   </span>
                 </div>
                 <p className="text-zinc-300">{obs.summary}</p>
@@ -318,7 +318,7 @@ export function ObservationArchivePane({
       id: obs.id,
       title: `Observation - ${obs.player_name || 'Unknown Player'}`,
       summary: obs.content,
-      dateRange: format(new Date(obs.observation_date), "MMM dd, yyyy"),
+      dateRange: formatDate(obs.observation_date),
       archivedAt: obs.created_at,
       status: "archived" as const,
       metadata: {

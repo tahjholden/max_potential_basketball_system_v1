@@ -7,7 +7,7 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 /**
  * Format a date string to a readable format
  */
-export function formatDate(date: string | Date, formatString: string = "MMM dd, yyyy"): string {
+export function formatDate(date: string | Date, formatString: string = "MMMM do, yyyy"): string {
   try {
     const dateObj = typeof date === "string" ? parseISO(date) : date;
     return format(dateObj, formatString);

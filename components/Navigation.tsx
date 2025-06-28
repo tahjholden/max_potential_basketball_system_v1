@@ -46,6 +46,10 @@ const mainNavLinks = [
     label: "Observations",
     icon: Shield,
   },
+  { href: "/protected/test-teams", label: "Test Teams", icon: Building2 },
+  { href: "/protected/test-coaches", label: "Test Coaches", icon: UserCheck },
+  { href: "/protected/test-players", label: "Test Players", icon: Users },
+  { href: "/protected/test-observations", label: "Test Observations", icon: Shield },
 ];
 
 const quickActionLinks = [

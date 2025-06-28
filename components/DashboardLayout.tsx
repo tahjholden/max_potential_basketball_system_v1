@@ -18,6 +18,9 @@ export default function DashboardLayout({
     <div className="flex flex-col h-screen w-screen">
       {/* HEADER (spans entire page, sticky) */}
       <header className="sticky top-0 left-0 right-0 z-40 h-16 w-full bg-zinc-900 border-b border-zinc-800 flex items-center px-6">
+        <div className="flex items-center gap-4 text-lg font-bold text-[#C2B56B]">
+          MP Player Development
+        </div>
         <div className="flex items-center gap-4 text-sm text-zinc-500 ml-auto">
           <span>{coachName}</span>
           <LogoutButton />

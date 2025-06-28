@@ -1,6 +1,7 @@
 import React from "react";
 import { format } from "date-fns";
 import SuccessMessage from "@/components/SuccessMessage";
+import { formatDate } from "@/lib/ui-utils";
 
 export default function PlayerObservationPane({
   playerName,
@@ -14,7 +15,7 @@ export default function PlayerObservationPane({
   showSuccess?: boolean;
 }) {
   const dateRange = observations.length
-    ? `Observations from ${format(new Date(observations[0].observation_date), "MMM d, yyyy")} to ${format(new Date(observations[observations.length - 1].observation_date), "MMM d, yyyy")}`
+    ? `Observations from ${formatDate(observations[0].observation_date)} to ${formatDate(observations[observations.length - 1].observation_date)}`
     : null;
 
   return (
@@ -42,7 +43,7 @@ export default function PlayerObservationPane({
           {observations.map((obs) => (
             <li key={obs.id} className="bg-zinc-800 p-3 rounded text-sm text-zinc-200">
               <p className="text-xs text-zinc-500 mb-1">
-                {format(new Date(obs.observation_date), "MMM d, yyyy")}
+                {formatDate(obs.observation_date)}
               </p>
               <p>{obs.content}</p>
             </li>

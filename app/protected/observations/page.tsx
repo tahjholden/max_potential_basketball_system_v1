@@ -12,6 +12,8 @@ import EmptyCard from "@/components/EmptyCard";
 import PageTitle from "@/components/PageTitle";
 import EntityButton from '@/components/EntityButton';
 import { ErrorBadge } from '@/components/StatusBadge';
+import SectionLabel from "@/components/SectionLabel";
+import EntityMetadataCard from "@/components/EntityMetadataCard";
 
 // Type definitions - matching dashboard exactly
 interface Player {
@@ -288,7 +290,7 @@ export default function ObservationsPage() {
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
-        <span className="text-zinc-400">Loading players...</span>
+        <span className="text-zinc-400">Loading observations...</span>
       </div>
     );
   }
@@ -296,86 +298,84 @@ export default function ObservationsPage() {
   if (error) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
-        <ErrorBadge className="p-4">
+        <div className="bg-red-900/20 border border-red-500 rounded p-4 text-red-300">
           {error}
-        </ErrorBadge>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 bg-zinc-950">
+    <div className="min-h-screen p-4 bg-zinc-950" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
       <div className="mt-2 px-6">
-        <PageTitle>Observations</PageTitle>
-        <ThreePaneLayout
-          leftPane={
-            <EntityListPane
-              title="Players"
-              items={players}
-              selectedId={playerId || undefined}
-              onSelect={id => setPlayerId(id)}
-              actions={
-                <EntityButton 
-                  color="gold"
-                  onClick={() => {
-                    // This would need to be implemented to open the AddPlayerModal
-                    console.log('Add player');
-                    window.location.reload();
-                  }}
-                >
-                  Add Player
-                </EntityButton>
-              }
-              searchPlaceholder="Search players..."
-              renderItem={renderPlayerItem}
-            />
-          }
-          centerPane={
-            players.length === 0 ? (
-              <div className="flex flex-col gap-4 h-full">
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Players Found</h3>
-                  <p className="text-zinc-400 mb-4">There are no players in your team yet. Add your first player to start tracking observations.</p>
-                  <EntityButton 
-                    color="gold"
-                    onClick={() => {
-                      console.log('Add player');
-                      window.location.reload();
-                    }}
-                  >
-                    Add Player
-                  </EntityButton>
-                </div>
+        <div className="flex-1 min-h-0 flex gap-6">
+          {/* Left: Player list */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Players</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              {/* Add Player button and search bar can be added here if needed */}
+              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                {players.map(player => renderPlayerItem(player, playerId === player.id))}
               </div>
-            ) : selectedPlayer ? (
-              <MiddlePane
-                player={selectedPlayer}
-                observations={observations}
-                pdp={currentPdp as any}
-                onDeleteMany={handleBulkDelete}
+            </div>
+          </div>
+          {/* Center: Player Profile + Development Plan */}
+          <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Player Profile</SectionLabel>
+            {selectedPlayer ? (
+              <EntityMetadataCard
+                fields={[
+                  { label: "Name", value: selectedPlayer.name, highlight: true },
+                  { label: "Joined", value: selectedPlayer.joined },
+                  ...(selectedPlayer.team_name ? [{ label: "Team", value: selectedPlayer.team_name }] : [])
+                ]}
+                actions={null}
+                cardClassName="mt-0"
               />
             ) : (
-              <div className="flex flex-col gap-4 h-full">
-                <EmptyCard title="Player Profile" />
-                <EmptyCard title="Development Plan" />
-                <EmptyCard title="Recent Observations" />
-              </div>
-            )
-          }
-          rightPane={
-            players.length === 0 ? (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-zinc-300 mb-2">Insights</h3>
-                <p className="text-zinc-400">Player insights and statistics will appear here once you add players and start tracking observations.</p>
+              <EmptyCard title="Select a Player to View Their Profile" titleClassName="font-bold text-center" />
+            )}
+            <SectionLabel>Development Plan</SectionLabel>
+            {selectedPlayer ? (
+              <EntityMetadataCard
+                fields={[
+                  { label: "Started", value: currentPdp?.start_date ? currentPdp.start_date : "—" },
+                  { label: "Plan", value: currentPdp?.content || "No active plan." }
+                ]}
+                actions={null}
+                cardClassName="mt-0"
+              />
+            ) : (
+              <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
+            )}
+            <SectionLabel>Recent Observations</SectionLabel>
+            {selectedPlayer ? (
+              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+                {observations.length === 0 ? (
+                  <div className="text-zinc-500 italic">No observations for this player.</div>
+                ) : (
+                  <div className="flex flex-col gap-3 w-full">
+                    {observations.map(obs => (
+                      <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                        <div className="text-xs text-zinc-400 mb-1">{obs.observation_date}</div>
+                        <div className="text-base text-zinc-100">{obs.content}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
-              <ObservationInsightsPane
-                total={allObservations.length}
-                playerTotal={selectedPlayer ? observations.filter(o => o.player_id === selectedPlayer.id).length : 0}
-              />
-            )
-          }
-        />
+              <EmptyCard title="Select a Player to View Their Observations" titleClassName="font-bold text-center" />
+            )}
+          </div>
+          {/* Right: Insights or additional info */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <SectionLabel>Insights</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              {/* Add insights or summary info here if needed */}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
