@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import { format } from "date-fns";
+import Image from "next/image";
 
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import EntityListPane from "@/components/EntityListPane";
@@ -299,8 +300,29 @@ export default function ObservationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
-        <span className="text-zinc-400">Loading observations...</span>
+      <div className="h-screen w-screen bg-zinc-950 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center w-full">
+          <span className="text-zinc-400 text-lg font-semibold mb-4">Loading observations...</span>
+          <Image
+            src="/maxsM.png"
+            alt="MP Shield"
+            width={220}
+            height={120}
+            priority
+            style={{
+              objectFit: "contain",
+              width: "100%",
+              height: "100%",
+              maxWidth: "220px",
+              maxHeight: "120px",
+              display: "block",
+              margin: "0 auto",
+              filter: "drop-shadow(0 2px 12px #2226)",
+              opacity: 0.75,
+              transform: "scale(3)",
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -333,8 +355,27 @@ export default function ObservationsPage() {
                 playerIdsWithPDP={playerIdsWithPDP}
               />
             ) : (
-              <div className="flex-1 flex items-center justify-center bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 min-h-0">
-                <span className="text-zinc-400">Loading players...</span>
+              <div className="flex-1 flex flex-col items-center justify-center bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 min-h-0">
+                <span className="text-zinc-400 text-lg font-semibold mb-4">Loading players...</span>
+                <Image
+                  src="/maxsM.png"
+                  alt="MP Shield"
+                  width={220}
+                  height={120}
+                  priority
+                  style={{
+                    objectFit: "contain",
+                    width: "100%",
+                    height: "100%",
+                    maxWidth: "220px",
+                    maxHeight: "120px",
+                    display: "block",
+                    margin: "0 auto",
+                    filter: "drop-shadow(0 2px 12px #2226)",
+                    opacity: 0.75,
+                    transform: "scale(3)",
+                  }}
+                />
               </div>
             )}
           </div>
@@ -403,8 +444,10 @@ export default function ObservationsPage() {
                       overflow: 'hidden',
                     }}>
                       <img
-                        src={require('@/public/maxsM.png')}
+                        src="/maxsM.png"
                         alt="MP Shield"
+                        width={220}
+                        height={120}
                         style={{
                           objectFit: 'contain',
                           width: '100%',

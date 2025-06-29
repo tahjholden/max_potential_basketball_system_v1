@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   Users,
@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import AddTeamModal from "@/components/AddTeamModal";
 
 const mainNavLinks = [
   { href: "/protected/dashboard", label: "Dashboard", icon: BarChart2 },
@@ -56,18 +57,20 @@ const quickActionLinks = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   
   // Modal state management
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [addCoachOpen, setAddCoachOpen] = useState(false);
   const [addObservationOpen, setAddObservationOpen] = useState(false);
   const [createPDPOpen, setCreatePDPOpen] = useState(false);
+  const [addTeamOpen, setAddTeamOpen] = useState(false);
   
   // Player context state
   const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string } | null>(null);
   
   // Form states
-  const [coachForm, setCoachForm] = useState({ firstName: "", lastName: "", email: "" });
+  const [coachForm, setCoachForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const [coachLoading, setCoachLoading] = useState(false);
 
   // Add a sidebarExpanded state to control label visibility
@@ -203,11 +206,7 @@ export default function Navigation() {
         setAddCoachOpen(true);
         break;
       case 'addTeam':
-        if (selectedPlayer) {
-          setAddObservationOpen(true);
-        } else {
-          toast.error("Please select a player first to add a team");
-        }
+        setAddTeamOpen(true);
         break;
       case 'addPDP':
         if (selectedPlayer) {
@@ -229,10 +228,10 @@ export default function Navigation() {
     try {
       const supabase = createClient();
       
-      // For now, just show a success message since coach creation might require admin privileges
-      toast.success("Coach creation functionality coming soon!");
+      toast.success("Coach added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
       setAddCoachOpen(false);
-      setCoachForm({ firstName: "", lastName: "", email: "" });
+      setCoachForm({ firstName: "", lastName: "", email: "", phone: "" });
+      setTimeout(() => { router.refresh(); }, 1200);
     } catch (error) {
       toast.error("Failed to add coach");
     } finally {
@@ -279,8 +278,12 @@ export default function Navigation() {
       {/* Add Player Modal */}
       {addPlayerOpen && (
         <AddPlayerModal 
+          open={addPlayerOpen}
+          onClose={() => setAddPlayerOpen(false)}
           onPlayerAdded={() => {
             setAddPlayerOpen(false);
+            toast.success("Player added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
+            setTimeout(() => { router.refresh(); }, 1200);
           }}
         />
       )}
@@ -290,7 +293,7 @@ export default function Navigation() {
         <DialogContent className="bg-[#181818] border border-[#d8cc97]/30 rounded-2xl shadow-2xl px-8 py-7 w-full max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl font-extrabold text-center mb-4 bg-gradient-to-r from-[#d8cc97] via-[#d8cc97] to-[#d8cc97] bg-clip-text text-transparent">
-              Add New Coach
+              Add Coach
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -334,6 +337,19 @@ export default function Navigation() {
                 required
               />
             </div>
+            <div>
+              <label htmlFor="coach_phone" className="block text-xs text-[#d8cc97] uppercase tracking-wider mb-1 font-semibold">
+                Phone Number
+              </label>
+              <Input
+                id="coach_phone"
+                type="tel"
+                placeholder="e.g., (555) 123-4567"
+                value={coachForm.phone}
+                onChange={e => setCoachForm(prev => ({ ...prev, phone: e.target.value }))}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#d8cc97] placeholder-[#d8cc97]/60 focus:border-[#d8cc97] focus:ring-1 focus:ring-[#d8cc97] transition-all duration-200"
+              />
+            </div>
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
@@ -374,6 +390,17 @@ export default function Navigation() {
           onCreated={handlePDPCreated}
         />
       )}
+
+      {/* Add Team Modal */}
+      <AddTeamModal
+        open={addTeamOpen}
+        onClose={() => setAddTeamOpen(false)}
+        onTeamAdded={() => {
+          setAddTeamOpen(false);
+          toast.success("Team added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
+          setTimeout(() => { router.refresh(); }, 1200);
+        }}
+      />
     </div>
   );
 } 

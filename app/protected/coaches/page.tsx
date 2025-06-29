@@ -75,6 +75,7 @@ export default function CoachesPage() {
   const [coachSearch, setCoachSearch] = useState("");
   const [showAllCoaches, setShowAllCoaches] = useState(false);
   const MAX_COACHES = 5;
+  const [error, setError] = useState<string | null>(null);
 
   // Get current user's coach ID and set as default
   const getCurrentUserCoachId = useCallback(async () => {
@@ -474,6 +475,34 @@ export default function CoachesPage() {
   const sortedCoaches = [...coaches].sort((a, b) => (a.last_name + a.first_name).localeCompare(b.last_name + b.first_name));
   const filteredCoaches = sortedCoaches.filter(c => `${c.first_name} ${c.last_name}`.toLowerCase().includes(coachSearch.toLowerCase()));
   const displayedCoaches = showAllCoaches ? filteredCoaches : filteredCoaches.slice(0, MAX_COACHES);
+
+  if (typeof window !== "undefined" && (coaches.length === 0 && !error)) {
+    return (
+      <div className="h-screen w-screen bg-zinc-950 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center w-full">
+          <span className="text-zinc-400 text-lg font-semibold mb-4">Loading coaches...</span>
+          <img
+            src="/maxsM.png"
+            alt="MP Shield"
+            width={220}
+            height={120}
+            style={{
+              objectFit: "contain",
+              width: "100%",
+              height: "100%",
+              maxWidth: "220px",
+              maxHeight: "120px",
+              display: "block",
+              margin: "0 auto",
+              filter: "drop-shadow(0 2px 12px #2226)",
+              opacity: 0.75,
+              transform: "scale(3)",
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">

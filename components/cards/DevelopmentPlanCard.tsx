@@ -2,10 +2,12 @@ import type { Pdp } from "@/types/entities";
 import EntityMetadataCard from "@/components/ui/EntityMetadataCard";
 import EmptyCard from "@/components/ui/EmptyCard";
 import ManagePDPModal from "@/components/ManagePDPModal";
-import React from "react";
+import EditPDPModal from "@/components/EditPDPModal";
+import React, { useState } from "react";
 import { format } from "date-fns";
 
-export default function DevelopmentPlanCard({ pdp, playerId, playerName }: { pdp: Pdp | null, playerId: string, playerName: string }) {
+export default function DevelopmentPlanCard({ pdp, playerId, playerName, onPdpUpdate }: { pdp: Pdp | null, playerId: string, playerName: string, onPdpUpdate?: () => void }) {
+  const [editOpen, setEditOpen] = useState(false);
   if (!pdp) return <EmptyCard title="No active development plan." />;
 
   let formattedStart = "—";
@@ -21,7 +23,7 @@ export default function DevelopmentPlanCard({ pdp, playerId, playerName }: { pdp
       <div className="text-zinc-300 text-base text-left whitespace-pre-line mb-4">{pdp.content ?? "No active plan."}</div>
       <hr className="border-zinc-700 my-2" />
       <div className="flex w-full justify-end gap-4">
-        <button className="text-xs text-[#C2B56B] underline hover:text-[#b3a04e] bg-transparent border-none p-0 m-0 shadow-none cursor-pointer" type="button">
+        <button className="text-xs text-[#C2B56B] underline hover:text-[#b3a04e] bg-transparent border-none p-0 m-0 shadow-none cursor-pointer" type="button" onClick={() => setEditOpen(true)}>
           Edit PDP
         </button>
         <ManagePDPModal
@@ -30,6 +32,16 @@ export default function DevelopmentPlanCard({ pdp, playerId, playerName }: { pdp
           buttonClassName="text-xs text-[#C2B56B] underline hover:text-[#b3a04e] bg-transparent border-none p-0 m-0 shadow-none cursor-pointer"
         />
       </div>
+      <EditPDPModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        player={{ id: playerId, name: playerName }}
+        currentPdp={{ id: pdp.id, content: pdp.content, start_date: pdp.start_date }}
+        onSuccess={() => {
+          setEditOpen(false);
+          onPdpUpdate?.();
+        }}
+      />
     </div>
   );
 } 
