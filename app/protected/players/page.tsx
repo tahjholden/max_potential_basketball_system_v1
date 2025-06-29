@@ -15,6 +15,9 @@ import { ErrorBadge } from '@/components/StatusBadge';
 import PlayerListShared from "@/components/PlayerListShared";
 import SectionLabel from "@/components/SectionLabel";
 import PaneTitle from "@/components/PaneTitle";
+import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
+import maxsM from "@/public/maxsM.png";
 
 // Type Definitions
 interface Player {
@@ -90,6 +93,7 @@ export default function TestPlayersPage() {
   const MAX_OBSERVATIONS = 10;
   
   const selectedPlayer = players.find((p) => p.id === playerId);
+  const searchParams = useSearchParams();
 
   // Fetch teams for the current coach (copied from dashboard)
   useEffect(() => {
@@ -314,6 +318,13 @@ export default function TestPlayersPage() {
     fetchPlayerData();
   }, [fetchPlayerData]);
 
+  useEffect(() => {
+    const playerIdParam = searchParams.get("id");
+    const teamIdParam = searchParams.get("teamId");
+    if (playerIdParam) setPlayerId(playerIdParam);
+    if (teamIdParam) setSelectedTeamId(teamIdParam);
+  }, [searchParams, setPlayerId, setSelectedTeamId]);
+
   const handleEdit = () => {
     // Implementation for editing player
     console.log('Edit player:', selectedPlayer?.id);
@@ -357,6 +368,12 @@ export default function TestPlayersPage() {
   const sortedObservations = [...filteredObservations].sort((a, b) => a.content.localeCompare(b.content));
   const displayedObservations = showAllObservations ? sortedObservations : sortedObservations.slice(0, MAX_OBSERVATIONS);
 
+  // When rendering the player list, filter by teamId from searchParams if present
+  const teamIdFromParams = searchParams.get("teamId");
+  const filteredPlayers = teamIdFromParams
+    ? players.filter(p => p.team_id === teamIdFromParams)
+    : players;
+
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
@@ -383,7 +400,7 @@ export default function TestPlayersPage() {
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Players</SectionLabel>
             <PlayerListShared
-              players={players}
+              players={filteredPlayers}
               teams={teams}
               selectedPlayerId={playerId}
               setSelectedPlayerId={setPlayerId}
@@ -412,7 +429,7 @@ export default function TestPlayersPage() {
                       label: "Team",
                       value: (
                         <Link 
-                          href={`/protected/teams?playerId=${selectedPlayer.id}`}
+                          href={`/protected/teams?teamId=${selectedPlayer.team_id}`}
                           className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
                         >
                           {selectedPlayer.team_name}
@@ -439,9 +456,9 @@ export default function TestPlayersPage() {
                 <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
               )}
               <SectionLabel>Observations</SectionLabel>
-              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-                {/* Header: Range selector */}
-                {selectedPlayer ? (
+              {selectedPlayer ? (
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+                  {/* Header: Range selector */}
                   <div className="flex items-center gap-2 mb-2">
                     <select
                       value={observationRange}
@@ -454,40 +471,8 @@ export default function TestPlayersPage() {
                       <option value="all">All</option>
                     </select>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center mb-2 w-full">
-                    <PaneTitle className="w-full text-center">Select a Player to View Observations</PaneTitle>
-                  </div>
-                )}
-                {/* Scrollable observation list, responsive height */}
-                <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-                  {!selectedPlayer ? (
-                    <div className="flex items-center justify-center w-full overflow-x-hidden h-full">
-                      <div style={{
-                        position: 'relative',
-                        width: '100%',
-                        maxWidth: '220px',
-                        height: '120px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        overflow: 'hidden',
-                      }}>
-                        <img
-                          src={require('@/public/maxsM.png')}
-                          alt="MP Shield"
-                          style={{
-                            objectFit: 'contain',
-                            width: '100%',
-                            height: '100%',
-                            filter: 'drop-shadow(0 2px 12px #2226)',
-                            opacity: 0.75,
-                            transform: 'scale(3)',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
+                  {/* Scrollable observation list, responsive height */}
+                  <div className="flex-1 min-h-0 overflow-y-auto mb-2">
                     <div className="flex flex-col gap-3 w-full">
                       {displayedObservations.map(obs => (
                         <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
@@ -507,32 +492,57 @@ export default function TestPlayersPage() {
                         </div>
                       )}
                     </div>
-                  )}
+                  </div>
                 </div>
-                {/* Search bar at the bottom - only show when chevron is needed */}
-                {filteredObservations.length > MAX_OBSERVATIONS && (
-                  <input
-                    type="text"
-                    placeholder="Search observations..."
-                    value={observationSearch}
-                    onChange={e => setObservationSearch(e.target.value)}
-                    className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-                  />
-                )}
-              </div>
+              ) : (
+                <EmptyCard title="Select a Player to View Observations" titleClassName="font-bold text-center" />
+              )}
             </div>
           </div>
           {/* Right: PDP Archive */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>PDP Archive</SectionLabel>
-            <PDPArchivePane
-              pdps={archivedPdps}
-              onSortOrderChange={setSortOrder}
-              sortOrder={sortOrder}
-            />
+            {archivedPdps.length === 0 ? (
+              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex flex-col">
+                <div className="w-full text-center font-bold text-lg text-white mb-4">No archived plans found.</div>
+                <div className="flex-1 flex items-center justify-center w-full overflow-x-hidden h-full">
+                  <div style={{
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '220px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    margin: '0 auto',
+                  }}>
+                    <Image
+                      src={maxsM}
+                      alt="MP Shield"
+                      priority
+                      style={{
+                        objectFit: 'contain',
+                        width: '100%',
+                        height: '100%',
+                        filter: 'drop-shadow(0 2px 12px #2226)',
+                        opacity: 0.75,
+                        transform: 'scale(3)',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <PDPArchivePane
+                pdps={archivedPdps}
+                onSortOrderChange={setSortOrder}
+                sortOrder={sortOrder}
+              />
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
