@@ -51,8 +51,7 @@ const mainNavLinks = [
 const quickActionLinks = [
   { label: "Add Player", icon: UserPlus, action: "addPlayer" },
   { label: "Add Coach", icon: UserCog, action: "addCoach" },
-  { label: "Add Observation", icon: MessageCirclePlus, action: "addObservation" },
-  { label: "Add Dev Plan", icon: ClipboardPlus, action: "addPDP" },
+  { label: "Add Team", icon: Building2, action: "addTeam" },
 ];
 
 export default function Navigation() {
@@ -203,11 +202,11 @@ export default function Navigation() {
       case 'addCoach':
         setAddCoachOpen(true);
         break;
-      case 'addObservation':
+      case 'addTeam':
         if (selectedPlayer) {
           setAddObservationOpen(true);
         } else {
-          toast.error("Please select a player first to add an observation");
+          toast.error("Please select a player first to add a team");
         }
         break;
       case 'addPDP':
