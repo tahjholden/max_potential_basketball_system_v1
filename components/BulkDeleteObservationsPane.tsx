@@ -50,7 +50,7 @@ export default function BulkDeleteObservationsPane({
   }
 
   return (
-    <div className="bg-zinc-900 rounded border border-zinc-800 p-4">
+    <div>
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-base font-semibold">Recent Observations</h2>
         {player && (

@@ -288,7 +288,7 @@ export function PDPArchivePane({
 
   return (
     <ArchivePane
-      title="PDP Archive"
+      title=""
       items={formatPDPItems(pdps)}
       sortOrder={sortOrder}
       onSortOrderChange={onSortOrderChange}

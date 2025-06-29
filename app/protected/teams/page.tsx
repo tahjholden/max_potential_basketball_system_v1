@@ -126,6 +126,12 @@ export default function TeamsPage() {
   const searchParams = useSearchParams();
   const { coach: currentCoach } = useCurrentCoach();
   const { playerId } = useSelectedPlayer();
+  const [teamSearch, setTeamSearch] = useState("");
+  const [showAllTeams, setShowAllTeams] = useState(false);
+  const MAX_TEAMS = 5;
+  const sortedTeams = [...teams].sort((a, b) => a.name.localeCompare(b.name));
+  const filteredTeams = sortedTeams.filter(t => t.name.toLowerCase().includes(teamSearch.toLowerCase()));
+  const displayedTeams = showAllTeams ? filteredTeams : filteredTeams.slice(0, MAX_TEAMS);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -225,22 +231,15 @@ export default function TeamsPage() {
       <div className="mt-2 px-6 flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Teams list */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
             <SectionLabel>Teams</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
-                <button
-                  onClick={openCreateModal}
-                  className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
-                >
-                  + Create Team
-                </button>
-              </div>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 h-96 flex flex-col">
+              {/* Scrollable team list, responsive height */}
               <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-                {teams.length === 0 ? (
+                {displayedTeams.length === 0 ? (
                   <div className="text-zinc-500 italic text-center py-8">No teams yet. Create one!</div>
                 ) : (
-                  [...teams].sort((a, b) => a.name.localeCompare(b.name)).map((team) => (
+                  displayedTeams.map((team) => (
                     <button
                       key={team.id}
                       className={
@@ -255,7 +254,28 @@ export default function TeamsPage() {
                     </button>
                   ))
                 )}
+                {filteredTeams.length > MAX_TEAMS && (
+                  <div
+                    className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                    onClick={() => setShowAllTeams(!showAllTeams)}
+                    title={showAllTeams ? "Show less" : "Show more"}
+                  >
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                    <svg className={`w-5 h-5 transition-transform ${showAllTeams ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                  </div>
+                )}
               </div>
+              {/* Search bar at the bottom - only show when chevron is needed */}
+              {filteredTeams.length > MAX_TEAMS && (
+                <input
+                  type="text"
+                  placeholder="Search teams..."
+                  value={teamSearch}
+                  onChange={e => setTeamSearch(e.target.value)}
+                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                />
+              )}
             </div>
           </div>
           {/* Center: Team Profile + Roster */}

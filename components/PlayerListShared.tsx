@@ -123,14 +123,16 @@ const PlayerListShared: React.FC<PlayerListSharedProps> = ({
           </div>
         )}
       </div>
-      {/* Search bar at the bottom */}
-      <input
-        type="text"
-        placeholder="Search players..."
-        value={playerSearch}
-        onChange={(e) => setPlayerSearch(e.target.value)}
-        className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-      />
+      {/* Search bar at the bottom - only show when chevron is needed */}
+      {filteredPlayers.length > MAX_PLAYERS && (
+        <input
+          type="text"
+          placeholder="Search players..."
+          value={playerSearch}
+          onChange={(e) => setPlayerSearch(e.target.value)}
+          className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+        />
+      )}
     </div>
   );
 };

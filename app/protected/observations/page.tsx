@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
+import { format } from "date-fns";
 
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import EntityListPane from "@/components/EntityListPane";
@@ -43,6 +44,7 @@ interface Pdp {
   content: string | null;
   archived_at: string | null;
   start_date: string;
+  created_at: string;
 }
 
 export default function ObservationsPage() {
@@ -57,6 +59,10 @@ export default function ObservationsPage() {
   const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
   const [teams, setTeams] = useState<{ id: string | null; name: string }[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [observationRange, setObservationRange] = useState('all');
+  const [observationSearch, setObservationSearch] = useState('');
+  const [showAllObservations, setShowAllObservations] = useState(false);
+  const MAX_OBSERVATIONS = 10;
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -84,9 +90,12 @@ export default function ObservationsPage() {
     const supabase = createClient();
     const { data: pdpsData } = await supabase
       .from("pdp")
-      .select("id, player_id, content, archived_at, start_date")
+      .select("id, player_id, content, archived_at, start_date, created_at")
       .is("archived_at", null);
-    setAllPdps(pdpsData || []);
+    setAllPdps((pdpsData || []).map((pdp: any) => ({
+      ...pdp,
+      created_at: pdp.created_at || ""
+    })));
   };
 
   useEffect(() => {
@@ -260,6 +269,34 @@ export default function ObservationsPage() {
   console.log('DEBUG playerIdsWithPDP:', Array.from(playerIdsWithPDP));
   console.log('DEBUG players:', players);
 
+  function filterObservationsByRange(observations: Observation[], range: string): Observation[] {
+    if (range === 'all') return observations;
+    const now = new Date();
+    if (range === 'week') {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      return observations.filter((obs: Observation) => new Date(obs.observation_date) >= weekAgo);
+    }
+    if (range === 'month') {
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(now.getMonth() - 1);
+      return observations.filter((obs: Observation) => new Date(obs.observation_date) >= monthAgo);
+    }
+    return observations;
+  }
+  function filterObservationsBySearch(observations: Observation[], keyword: string): Observation[] {
+    if (!keyword.trim()) return observations;
+    const lower = keyword.toLowerCase();
+    return observations.filter(obs =>
+      obs.content.toLowerCase().includes(lower) ||
+      obs.observation_date.toLowerCase().includes(lower)
+    );
+  }
+  const filteredByRange = filterObservationsByRange(observations, observationRange);
+  const filteredObservations = filterObservationsBySearch(filteredByRange, observationSearch);
+  const sortedObservations = [...filteredObservations].sort((a, b) => a.content.localeCompare(b.content));
+  const displayedObservations = showAllObservations ? sortedObservations : sortedObservations.slice(0, MAX_OBSERVATIONS);
+
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
@@ -317,30 +354,11 @@ export default function ObservationsPage() {
             ) : (
               <EmptyCard title="Select a Player to View Their Profile" titleClassName="font-bold text-center" />
             )}
-            <SectionLabel>Recent Observations</SectionLabel>
-            {selectedPlayer ? (
-              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-                {observations.length === 0 ? (
-                  <div className="text-zinc-500 italic">No observations for this player.</div>
-                ) : (
-                  <div className="flex flex-col gap-3 w-full">
-                    {observations.map((obs: any) => (
-                      <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                        <div className="text-xs text-zinc-400 mb-1">{obs.observation_date}</div>
-                        <div className="text-base text-zinc-100">{obs.content}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <EmptyCard title="Select a Player to View Their Observations" titleClassName="font-bold text-center" />
-            )}
             <SectionLabel>Development Plan</SectionLabel>
             {selectedPlayer ? (
               <EntityMetadataCard
                 fields={[
-                  { label: "Started", value: currentPdp?.start_date ? currentPdp.start_date : "—" },
+                  { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
                   { label: "Plan", value: currentPdp?.content || "No active plan." }
                 ]}
                 actions={null}
@@ -349,6 +367,88 @@ export default function ObservationsPage() {
             ) : (
               <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
             )}
+            <SectionLabel>Observations</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              {/* Header: Range selector */}
+              {selectedPlayer ? (
+                <div className="flex items-center gap-2 mb-2">
+                  <select
+                    value={observationRange}
+                    onChange={e => setObservationRange(e.target.value)}
+                    className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                    style={{ minWidth: 120 }}
+                  >
+                    <option value="week">This week</option>
+                    <option value="month">This month</option>
+                    <option value="all">All</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center mb-2 w-full">
+                  <span className="w-full text-center text-zinc-400">Select a Player to View Observations</span>
+                </div>
+              )}
+              {/* Scrollable observation list, responsive height */}
+              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                {!selectedPlayer ? (
+                  <div className="flex items-center justify-center w-full overflow-x-hidden h-full">
+                    <div style={{
+                      position: 'relative',
+                      width: '100%',
+                      maxWidth: '220px',
+                      height: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}>
+                      <img
+                        src={require('@/public/maxsM.png')}
+                        alt="MP Shield"
+                        style={{
+                          objectFit: 'contain',
+                          width: '100%',
+                          height: '100%',
+                          filter: 'drop-shadow(0 2px 12px #2226)',
+                          opacity: 0.75,
+                          transform: 'scale(3)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 w-full">
+                    {displayedObservations.map(obs => (
+                      <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                        <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
+                        <div className="text-base text-zinc-100">{obs.content}</div>
+                      </div>
+                    ))}
+                    {filteredObservations.length > MAX_OBSERVATIONS && (
+                      <div
+                        className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                        onClick={() => setShowAllObservations(!showAllObservations)}
+                        title={showAllObservations ? "Show less" : "Show more"}
+                      >
+                        <div className="flex-1 border-t border-zinc-700"></div>
+                        <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        <div className="flex-1 border-t border-zinc-700"></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* Search bar at the bottom - only show when chevron is needed */}
+              {filteredObservations.length > MAX_OBSERVATIONS && (
+                <input
+                  type="text"
+                  placeholder="Search observations..."
+                  value={observationSearch}
+                  onChange={e => setObservationSearch(e.target.value)}
+                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                />
+              )}
+            </div>
           </div>
           {/* Right: Insights or additional info */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">

@@ -11,6 +11,7 @@ import EntityListPane from "@/components/EntityListPane";
 import EntityButton from '@/components/EntityButton';
 import DashboardPlayerListPane from '@/components/DashboardPlayerListPane';
 import PlayerListShared from "@/components/PlayerListShared";
+import SectionLabel from "@/components/SectionLabel";
 
 // Type Definitions
 interface Coach {
@@ -31,6 +32,7 @@ interface Observation {
   observation_date: string;
   created_at: string;
   player_name?: string;
+  player_id?: string;
 }
 
 interface Player {
@@ -62,6 +64,17 @@ export default function CoachesPage() {
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const hasSetDefaultCoach = useRef(false);
+  const [observationRange, setObservationRange] = useState('all');
+  const [observationSearch, setObservationSearch] = useState('');
+  const [showAllObservations, setShowAllObservations] = useState(false);
+  const MAX_OBSERVATIONS = 5;
+  const [showAllPlayers, setShowAllPlayers] = useState(false);
+  const MAX_PLAYERS = 10;
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [selectedPlayerForObservations, setSelectedPlayerForObservations] = useState<string | null>(null);
+  const [coachSearch, setCoachSearch] = useState("");
+  const [showAllCoaches, setShowAllCoaches] = useState(false);
+  const MAX_COACHES = 5;
 
   // Get current user's coach ID and set as default
   const getCurrentUserCoachId = useCallback(async () => {
@@ -414,27 +427,105 @@ export default function CoachesPage() {
     allPdps.filter((pdp) => !pdp.archived_at).map((pdp) => pdp.player_id)
   );
 
+  function filterObservationsByRange(observations: Observation[], range: string): Observation[] {
+    if (range === 'all') return observations;
+    const now = new Date();
+    if (range === 'week') {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      return observations.filter((obs: Observation) => new Date(obs.observation_date) >= weekAgo);
+    }
+    if (range === 'month') {
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(now.getMonth() - 1);
+      return observations.filter((obs: Observation) => new Date(obs.observation_date) >= monthAgo);
+    }
+    return observations;
+  }
+  function filterObservationsBySearch(observations: Observation[], keyword: string): Observation[] {
+    if (!keyword.trim()) return observations;
+    const lower = keyword.toLowerCase();
+    return observations.filter(obs =>
+      obs.content.toLowerCase().includes(lower) ||
+      obs.observation_date.toLowerCase().includes(lower)
+    );
+  }
+  const filteredObservations = filterObservationsBySearch(
+    filterObservationsByRange(
+      selectedPlayerForObservations
+        ? observations.filter(obs => obs.player_id === selectedPlayerForObservations)
+        : observations,
+      observationRange
+    ),
+    observationSearch
+  );
+  const sortedObservations = [...filteredObservations].sort((a, b) => a.content.localeCompare(b.content));
+  const displayedObservations = showAllObservations ? sortedObservations : sortedObservations.slice(0, MAX_OBSERVATIONS);
+
+  const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
+  const filteredPlayers = (selectedTeamId
+    ? sortedPlayers.filter(p => p.team_id === selectedTeamId)
+    : sortedPlayers
+  ).filter(p =>
+    p.name.toLowerCase().includes(playerSearch.toLowerCase())
+  );
+  const displayedPlayers = showAllPlayers ? filteredPlayers : filteredPlayers.slice(0, MAX_PLAYERS);
+
+  const sortedCoaches = [...coaches].sort((a, b) => (a.last_name + a.first_name).localeCompare(b.last_name + b.first_name));
+  const filteredCoaches = sortedCoaches.filter(c => `${c.first_name} ${c.last_name}`.toLowerCase().includes(coachSearch.toLowerCase()));
+  const displayedCoaches = showAllCoaches ? filteredCoaches : filteredCoaches.slice(0, MAX_COACHES);
+
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="mt-2 px-6 flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Coaches list */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <EntityListPane
-              title="Coaches"
-              items={coaches.map(coach => ({
-                id: coach.id,
-                name: `${coach.first_name} ${coach.last_name}`
-              }))}
-              selectedId={selectedCoachId || undefined}
-              onSelect={handleCoachSelect}
-              actions={
-                <EntityButton color="gold" onClick={openCreateModal}>
-                  Add Coach
-                </EntityButton>
-              }
-              searchPlaceholder="Search coaches..."
-            />
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
+            <SectionLabel>Coaches</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 h-96 flex flex-col">
+              {/* Scrollable coach list, responsive height */}
+              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                {displayedCoaches.length === 0 ? (
+                  <div className="text-zinc-500 italic text-center py-8">No coaches yet. Create one!</div>
+                ) : (
+                  displayedCoaches.map(coach => (
+                    <button
+                      key={coach.id}
+                      className={
+                        "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
+                        (selectedCoachId === coach.id
+                          ? "bg-[#C2B56B] text-black border-[#C2B56B]"
+                          : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
+                      }
+                      onClick={() => handleCoachSelect(coach.id)}
+                    >
+                      {coach.first_name} {coach.last_name}
+                    </button>
+                  ))
+                )}
+                {filteredCoaches.length > MAX_COACHES && (
+                  <div
+                    className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                    onClick={() => setShowAllCoaches(!showAllCoaches)}
+                    title={showAllCoaches ? "Show less" : "Show more"}
+                  >
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                    <svg className={`w-5 h-5 transition-transform ${showAllCoaches ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                  </div>
+                )}
+              </div>
+              {/* Search bar at the bottom - only show when chevron is needed */}
+              {filteredCoaches.length > MAX_COACHES && (
+                <input
+                  type="text"
+                  placeholder="Search coaches..."
+                  value={coachSearch}
+                  onChange={e => setCoachSearch(e.target.value)}
+                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                />
+              )}
+            </div>
           </div>
           {/* Center: Coach Profile and Observations */}
           <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
@@ -452,34 +543,148 @@ export default function CoachesPage() {
               </div>
             ) : selectedCoach ? (
               <>
+                <SectionLabel>Coach Profile</SectionLabel>
                 <CoachProfilePane coach={selectedCoach} />
-                {/* Development Plan card would go here if you have it, e.g. <DevelopmentPlanCard ... /> */}
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Recent Observations</h3>
-                  <CoachObservationsPane
-                    coach={selectedCoach}
-                    observations={observations}
-                  />
+                <SectionLabel>Observations</SectionLabel>
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+                  {/* Header: Range selector */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <select
+                      value={observationRange}
+                      onChange={e => setObservationRange(e.target.value)}
+                      className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                      style={{ minWidth: 120 }}
+                    >
+                      <option value="week">This week</option>
+                      <option value="month">This month</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                  {/* Scrollable observation list, responsive height */}
+                  <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                    {observations.length === 0 ? (
+                      <div className="flex items-center justify-center w-full overflow-x-hidden h-full">
+                        <div style={{
+                          position: 'relative',
+                          width: '100%',
+                          maxWidth: '220px',
+                          height: '120px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          overflow: 'hidden',
+                        }}>
+                          <img
+                            src={require('@/public/maxsM.png')}
+                            alt="MP Shield"
+                            style={{
+                              objectFit: 'contain',
+                              width: '100%',
+                              height: '100%',
+                              filter: 'drop-shadow(0 2px 12px #2226)',
+                              opacity: 0.75,
+                              transform: 'scale(3)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3 w-full">
+                        {displayedObservations.map(obs => (
+                          <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                            <div className="text-xs text-zinc-400 mb-1">{obs.player_name ? `${obs.player_name} — ` : ''}{obs.observation_date ? new Date(obs.observation_date).toLocaleDateString() : ''}</div>
+                            <div className="text-base text-zinc-100">{obs.content}</div>
+                          </div>
+                        ))}
+                        {filteredObservations.length > MAX_OBSERVATIONS && (
+                          <div
+                            className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                            onClick={() => setShowAllObservations(!showAllObservations)}
+                            title={showAllObservations ? "Show less" : "Show more"}
+                          >
+                            <div className="flex-1 border-t border-zinc-700"></div>
+                            <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            <div className="flex-1 border-t border-zinc-700"></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* Search bar at the bottom - only show when chevron is needed */}
+                  {filteredObservations.length > MAX_OBSERVATIONS && (
+                    <input
+                      type="text"
+                      placeholder="Search observations..."
+                      value={observationSearch}
+                      onChange={e => setObservationSearch(e.target.value)}
+                      className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                    />
+                  )}
                 </div>
               </>
             ) : (
               <div className="flex flex-col gap-4 h-full">
                 <EmptyCard title="Coach Profile" />
-                <EmptyCard title="Recent Observations" />
+                <EmptyCard title="Observations" />
               </div>
             )}
           </div>
           {/* Right: Players list */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <PlayerListShared
-              players={players}
-              teams={teams}
-              selectedPlayerId={null}
-              setSelectedPlayerId={() => {}}
-              selectedTeamId={selectedTeamId}
-              setSelectedTeamId={(id: string | null) => setSelectedTeamId(id ?? "")}
-              playerIdsWithPDP={playerIdsWithPDP}
-            />
+            <SectionLabel>Players</SectionLabel>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              {/* Team filter dropdown */}
+              <div className="flex items-center gap-2 mb-2">
+                <select
+                  value={selectedTeamId || ''}
+                  onChange={e => setSelectedTeamId(e.target.value || "")}
+                  className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                  style={{ minWidth: 120 }}
+                >
+                  <option value="">All Teams</option>
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Scrollable player list, responsive height */}
+              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                {displayedPlayers.map(player => (
+                  <button
+                    key={player.id}
+                    className={`w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2 text-center
+                      ${selectedPlayerForObservations === player.id
+                        ? 'bg-[#C2B56B] text-black border-[#C2B56B]'
+                        : 'bg-zinc-900 text-[#C2B56B] border-[#C2B56B]'}
+                    `}
+                    onClick={() => setSelectedPlayerForObservations(selectedPlayerForObservations === player.id ? null : player.id)}
+                  >
+                    {player.name}
+                  </button>
+                ))}
+                {filteredPlayers.length > MAX_PLAYERS && (
+                  <div
+                    className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                    onClick={() => setShowAllPlayers(!showAllPlayers)}
+                    title={showAllPlayers ? "Show less" : "Show more"}
+                  >
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                    <svg className={`w-5 h-5 transition-transform ${showAllPlayers ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                  </div>
+                )}
+              </div>
+              {/* Search bar at the bottom - only show when chevron is needed */}
+              {filteredPlayers.length > MAX_PLAYERS && (
+                <input
+                  type="text"
+                  placeholder="Search players..."
+                  value={playerSearch}
+                  onChange={e => setPlayerSearch(e.target.value)}
+                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
