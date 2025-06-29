@@ -221,6 +221,7 @@ export function NoArchivedPDPsEmptyState() {
       title="No Archived Plans"
       description="Archived development plans will appear here once you create and archive PDPs."
       icon={Archive}
+      className="py-12 text-lg font-semibold text-zinc-300"
     />
   );
 }

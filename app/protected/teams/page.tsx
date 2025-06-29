@@ -11,6 +11,7 @@ import ComingSoonCard from '@/components/ComingSoonCard';
 import { useSearchParams } from 'next/navigation';
 import { useCurrentCoach } from '@/hooks/useCurrentCoach';
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
+import Link from "next/link";
 
 interface Team {
   id: string;
@@ -306,13 +307,13 @@ export default function TeamsPage() {
                         classes += " text-zinc-300 hover:bg-[#C2B56B]/10";
                       }
                       return (
-                        <button
+                        <Link
                           key={player.id}
-                          onClick={() => window.location.href = `/protected/players?id=${player.id}`}
+                          href={`/protected/players?id=${player.id}&teamId=${player.team_id}`}
                           className={classes}
                         >
                           {player.first_name} {player.last_name}
-                        </button>
+                        </Link>
                       );
                     })}
                   </div>

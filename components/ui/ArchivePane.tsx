@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import PaneTitle from "@/components/PaneTitle";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatDate } from "@/lib/ui-utils";
-import { NoArchivedPDPsEmptyState } from "./EmptyState";
+import EmptyCard from "@/components/EmptyCard";
 
 interface ArchiveItem {
   id: string;
@@ -121,6 +121,13 @@ export default function ArchivePane({
     }
   });
 
+  if (sortedItems.length === 0) {
+    return emptyStateMessage ? (
+      <EmptyCard title={emptyStateMessage} titleClassName="font-bold text-center" />
+    ) : (
+      <EmptyCard title="No archived plans found." titleClassName="font-bold text-center" />
+    );
+  }
   return (
     <div className={`bg-zinc-900 p-4 rounded-md shadow-sm ${className}`}>
       <div className="flex justify-between items-center mb-4">
@@ -134,95 +141,76 @@ export default function ArchivePane({
           </button>
         )}
       </div>
-      
       <div className="space-y-3">
-        {sortedItems.length === 0 ? (
-          emptyStateMessage ? (
-            <div className="text-zinc-500 text-sm text-center py-4">
-              {emptyStateMessage}
+        {sortedItems.map((item) => (
+          <div key={item.id} className="bg-zinc-800 p-3 rounded text-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <p className="text-[#C2B56B] font-semibold">{item.title}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {showActions && onRestore && (
+                  <button
+                    onClick={() => onRestore(item.id)}
+                    className="text-xs px-2 py-1 border border-gold text-gold rounded hover:bg-gold/10 transition-colors"
+                  >
+                    Restore
+                  </button>
+                )}
+                {showActions && onDelete && (
+                  <button
+                    onClick={() => onDelete(item.id)}
+                    className="text-xs px-2 py-1 border border-red-500 text-red-400 rounded hover:bg-red-500/10 transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
+                {(renderItemContent || item.children) && (
+                  <button
+                    onClick={() => toggleItemExpansion(item.id)}
+                    className="text-zinc-400 hover:text-zinc-200"
+                  >
+                    {expandedItems.has(item.id) ? (
+                      <ChevronDown size={16} />
+                    ) : (
+                      <ChevronRight size={16} />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
-          ) : (
-            <NoArchivedPDPsEmptyState />
-          )
-        ) : (
-          sortedItems.map((item) => (
-            <div key={item.id} className="bg-zinc-800 p-3 rounded text-sm">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <p className="text-[#C2B56B] font-semibold">{item.title}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {showActions && onRestore && (
-                    <button
-                      onClick={() => onRestore(item.id)}
-                      className="text-xs px-2 py-1 border border-gold text-gold rounded hover:bg-gold/10 transition-colors"
-                    >
-                      Restore
-                    </button>
-                  )}
-                  {showActions && onDelete && (
-                    <button
-                      onClick={() => onDelete(item.id)}
-                      className="text-xs px-2 py-1 border border-red-500 text-red-400 rounded hover:bg-red-500/10 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  )}
-                  {(renderItemContent || item.children) && (
-                    <button
-                      onClick={() => toggleItemExpansion(item.id)}
-                      className="text-zinc-400 hover:text-zinc-200"
-                    >
-                      {expandedItems.has(item.id) ? (
-                        <ChevronDown size={16} />
-                      ) : (
-                        <ChevronRight size={16} />
-                      )}
-                    </button>
-                  )}
-                </div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-zinc-300 text-xs">{item.summary}</p>
+              <p className="text-zinc-500 text-xs">
+                {formatDate(item.archivedAt)}
+              </p>
+            </div>
+            {expandedItems.has(item.id) && renderItemContent && (
+              <div className="mt-2">
+                {renderItemContent(item)}
               </div>
-              
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-zinc-300 text-xs">{item.summary}</p>
-                <p className="text-zinc-500 text-xs">
-                  {formatDate(item.archivedAt)}
-                </p>
-              </div>
-
-              {/* Custom metadata */}
-              {renderItemMetadata && renderItemMetadata(item)}
-
-              {/* Expandable content */}
-              {expandedItems.has(item.id) && (
-                <div className="mt-3 pt-3 border-t border-zinc-700">
-                  {renderItemContent ? (
-                    renderItemContent(item)
-                  ) : item.children && item.children.length > 0 ? (
-                    <div>
-                      <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
-                        Related Items ({item.children.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {item.children.map((child) => (
-                          <div key={child.id} className="bg-zinc-900 p-2 rounded text-xs">
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="text-zinc-400 font-medium">{child.title}</span>
-                              <span className="text-zinc-500">
-                                {formatDate(child.archivedAt)}
-                              </span>
-                            </div>
-                            <p className="text-zinc-300">{child.summary}</p>
-                          </div>
-                        ))}
-                      </div>
+            )}
+            {expandedItems.has(item.id) && item.children && item.children.length > 0 && (
+              <div className="mt-2">
+                {item.children.map(child => (
+                  <div key={child.id} className="bg-zinc-900 p-2 rounded text-xs mb-2">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-zinc-400">
+                        {formatDate(child.archivedAt)}
+                      </span>
                     </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
-          ))
-        )}
+                    <p className="text-zinc-300">{child.summary}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {renderItemMetadata && (
+              <div className="mt-2">
+                {renderItemMetadata(item)}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
