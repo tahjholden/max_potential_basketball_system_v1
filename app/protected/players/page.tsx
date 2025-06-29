@@ -347,6 +347,7 @@ export default function TestPlayersPage() {
         <div className="flex gap-6">
           {/* Player list panel */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <div className="mb-1 text-lg font-bold text-white">Players</div>
             <PlayerListShared
               players={players}
               teams={teams}
@@ -369,8 +370,8 @@ export default function TestPlayersPage() {
                 />
               ) : selectedPlayer ? (
                 <>
+                  <div className="mb-1 text-lg font-bold text-white">Player Profile</div>
                   <EntityMetadataCard
-                    title=""
                     fields={[
                       {
                         label: "Name",
@@ -396,46 +397,43 @@ export default function TestPlayersPage() {
                     actions={null}
                     cardClassName="mt-0"
                   />
+                  <div className="mb-1 text-lg font-bold text-white">Development Plan</div>
                   <EntityMetadataCard
-                    title="Development Plan"
-                    fields={[
-                      { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
-                      { label: "Plan", value: currentPdp?.content || "No active plan." }
-                    ]}
+                    fields={currentPdp ? [
+                      {
+                        label: "Started",
+                        value: currentPdp.start_date ? format(new Date(currentPdp.start_date), "MMMM do, yyyy") : "N/A"
+                      },
+                      {
+                        label: "Plan",
+                        value: currentPdp.content || "No plan available"
+                      }
+                    ] : []}
                     actions={null}
                     cardClassName="mt-0"
                   />
-                  <BulkDeleteObservationsPane
-                    observations={observations}
-                    showCheckboxes={false}
-                  />
-                  <div className="flex gap-1">
-                    <EntityButton color="gold" onClick={handleEdit}>
-                      Edit Player
-                    </EntityButton>
-                    <EntityButton color="danger" onClick={handleDelete}>
-                      Delete Player
-                    </EntityButton>
-                  </div>
+                  <div className="mb-1 text-lg font-bold text-white">Recent Observations</div>
+                  {observations.length > 0 ? (
+                    <BulkDeleteObservationsPane
+                      observations={observations}
+                      showCheckboxes={false}
+                    />
+                  ) : (
+                    <EmptyCard title="Recent Observations" />
+                  )}
                 </>
               ) : (
-                <EmptyCard title="Welcome to Players" titleClassName="font-bold text-center" />
+                <EmptyCard title="Player Profile" />
               )}
             </div>
           </div>
-          {/* Right: Archived PDPs */}
-          <div className="flex-1 min-w-0">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mt-0">
-              {players.length === 0 ? (
-                <NoArchivedPDPsEmptyState />
-              ) : (
-                <PDPArchivePane
-                  pdps={archivedPdps}
-                  onSortOrderChange={setSortOrder}
-                  sortOrder={sortOrder}
-                />
-              )}
-            </div>
+          {/* Right: PDP Archive */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <PDPArchivePane
+              pdps={archivedPdps}
+              onSortOrderChange={setSortOrder}
+              sortOrder={sortOrder}
+            />
           </div>
         </div>
       </div>
