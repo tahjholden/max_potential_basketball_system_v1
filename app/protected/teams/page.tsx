@@ -326,16 +326,25 @@ export default function TeamsPage() {
           {/* Right: Coming Soon */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Coming Soon</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-              <ComingSoonCard
-                features={[
-                  { label: "Practice & game schedule", description: "(calendar integration)" },
-                  { label: "Team attendance & participation heatmap" },
-                  { label: "Announcements & team messaging" }
-                ]}
-                note="These features are on our roadmap and will be launching soon for all teams!"
-              />
-            </div>
+            <EntityMetadataCard
+              fields={[{
+                label: "Upcoming Features",
+                value: (
+                  <div className="flex flex-col items-center justify-center py-6 text-center w-full">
+                    <ul className="mb-4 text-zinc-400 text-sm space-y-1 text-left mx-auto" style={{maxWidth: 260}}>
+                      <li><span className="font-semibold text-[#C2B56B]">Practice & game schedule</span> <span className="text-zinc-400">(calendar integration)</span></li>
+                      <li><span className="font-semibold text-[#C2B56B]">Team attendance & participation heatmap</span></li>
+                      <li><span className="font-semibold text-[#C2B56B]">Announcements & team messaging</span></li>
+                    </ul>
+                    <span className="text-zinc-600 italic text-xs block mt-2">
+                      These features are on our roadmap and will be launching soon for all teams!
+                    </span>
+                  </div>
+                ),
+                highlight: true
+              }]}
+              cardClassName="w-full h-full flex flex-col justify-center"
+            />
           </div>
           <CreateTeamModal
             open={modalOpen}

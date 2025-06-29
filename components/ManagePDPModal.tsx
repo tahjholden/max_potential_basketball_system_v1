@@ -16,17 +16,19 @@ export default function ManagePDPModal({
   playerId,
   playerName,
   onSuccess,
+  buttonClassName,
 }: {
   playerId: string;
   playerName: string;
   onSuccess?: () => void;
+  buttonClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className={actionButtonClass}>
+        <button className={buttonClassName || actionButtonClass}>
           Manage PDP
         </button>
       </DialogTrigger>

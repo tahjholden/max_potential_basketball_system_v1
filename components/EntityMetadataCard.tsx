@@ -34,7 +34,9 @@ const EntityMetadataCard: React.FC<EntityMetadataCardProps> = ({
     <div className={`text-sm flex flex-col items-start gap-1 ${innerClassName}`}>
       {fields.map(({ label, value, highlight }, idx) => (
         <div key={idx} className="mb-1 last:mb-0">
-          <span className="text-zinc-500">{label}:</span>{" "}
+          {label !== "" && (
+            <span className="text-zinc-500">{label}:</span>
+          )}
           <span
             className={
               highlight

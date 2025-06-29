@@ -18,6 +18,8 @@ import PaneTitle from "@/components/PaneTitle";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import maxsM from "@/public/maxsM.png";
+import AddObservationButton from "@/components/AddObservationButton";
+import DevelopmentPlanCard from "@/components/cards/DevelopmentPlanCard";
 
 // Type Definitions
 interface Player {
@@ -223,8 +225,8 @@ export default function TestPlayersPage() {
 
     if(archivedData) {
       const processedArchived = archivedData.map((pdp: any) => {
-        const startDate = format(new Date(pdp.start_date), "MMM d, yyyy");
-        const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMM d, yyyy") : "Present";
+        const startDate = format(new Date(pdp.start_date), "MMMM do, yyyy");
+        const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMMM do, yyyy") : "Present";
         // Attach observations for this PDP
         const pdpObservations = (archivedObsData || []).filter((obs: any) => obs.pdp_id === pdp.id && obs.archived === true);
         return {
@@ -444,56 +446,61 @@ export default function TestPlayersPage() {
               )}
               <SectionLabel>Development Plan</SectionLabel>
               {selectedPlayer ? (
-                <EntityMetadataCard
-                  fields={[
-                    { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
-                    { label: "Plan", value: currentPdp?.content || "No active plan." }
-                  ]}
-                  actions={null}
-                  cardClassName="mt-0"
+                <DevelopmentPlanCard
+                  pdp={currentPdp}
+                  playerId={selectedPlayer?.id}
+                  playerName={selectedPlayer?.name}
                 />
               ) : (
                 <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
               )}
               <SectionLabel>Observations</SectionLabel>
               {selectedPlayer ? (
-                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-                  {/* Header: Range selector */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <select
-                      value={observationRange}
-                      onChange={e => setObservationRange(e.target.value)}
-                      className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                      style={{ minWidth: 120 }}
-                    >
-                      <option value="week">This week</option>
-                      <option value="month">This month</option>
-                      <option value="all">All</option>
-                    </select>
-                  </div>
-                  {/* Scrollable observation list, responsive height */}
-                  <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-                    <div className="flex flex-col gap-3 w-full">
-                      {displayedObservations.map(obs => (
-                        <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                          <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
-                          <div className="text-base text-zinc-100">{obs.content}</div>
-                        </div>
-                      ))}
-                      {filteredObservations.length > MAX_OBSERVATIONS && (
-                        <div
-                          className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                          onClick={() => setShowAllObservations(!showAllObservations)}
-                          title={showAllObservations ? "Show less" : "Show more"}
-                        >
-                          <div className="flex-1 border-t border-zinc-700"></div>
-                          <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                          <div className="flex-1 border-t border-zinc-700"></div>
-                        </div>
-                      )}
+                displayedObservations.length === 0 ? (
+                  <EmptyCard
+                    title="No Observations Yet"
+                    message="Get started by adding your first observation for this player."
+                    action={<AddObservationButton player={selectedPlayer} />}
+                  />
+                ) : (
+                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+                    {/* Header: Range selector */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <select
+                        value={observationRange}
+                        onChange={e => setObservationRange(e.target.value)}
+                        className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                        style={{ minWidth: 120 }}
+                      >
+                        <option value="week">This week</option>
+                        <option value="month">This month</option>
+                        <option value="all">All</option>
+                      </select>
+                    </div>
+                    {/* Scrollable observation list, responsive height */}
+                    <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                      <div className="flex flex-col gap-3 w-full">
+                        {displayedObservations.map(obs => (
+                          <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                            <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
+                            <div className="text-base text-zinc-100">{obs.content}</div>
+                          </div>
+                        ))}
+                        {filteredObservations.length > MAX_OBSERVATIONS && (
+                          <div
+                            className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                            onClick={() => setShowAllObservations(!showAllObservations)}
+                            title={showAllObservations ? "Show less" : "Show more"}
+                          >
+                            <div className="flex-1 border-t border-zinc-700"></div>
+                            <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            <div className="flex-1 border-t border-zinc-700"></div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )
               ) : (
                 <EmptyCard title="Select a Player to View Observations" titleClassName="font-bold text-center" />
               )}

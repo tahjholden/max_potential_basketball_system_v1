@@ -453,9 +453,16 @@ export default function ObservationsPage() {
           {/* Right: Insights or additional info */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Insights</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-              {/* Add insights or summary info here if needed */}
-            </div>
+            <ObservationInsightsPane 
+              total={observations.filter(o => {
+                const obsDate = new Date(o.observation_date);
+                const now = new Date();
+                const weekAgo = new Date(now);
+                weekAgo.setDate(now.getDate() - 7);
+                return obsDate >= weekAgo;
+              }).length}
+              playerTotal={selectedPlayer ? observations.filter(o => o.player_id === selectedPlayer.id).length : 0}
+            />
           </div>
         </div>
       </div>
