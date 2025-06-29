@@ -312,9 +312,19 @@ export default function CoachesPage() {
 
   const fetchAllData = useCallback(async () => {
     const supabase = createClient();
-    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    let isAdmin = false;
+    if (user) {
+      const { data: coachData } = await supabase
+        .from('coaches')
+        .select('is_admin')
+        .eq('auth_uid', user.id)
+        .single();
+      isAdmin = coachData?.is_admin;
+    }
     // Fetch coaches
-    const { data: coachesData, error: coachesError } = await supabase
+    let coachesQuery = supabase
       .from("coaches")
       .select(`
         id,
@@ -325,11 +335,14 @@ export default function CoachesPage() {
         active,
         created_at
       `)
-      .eq("active", true)
       .order("last_name", { ascending: true });
-
+    if (!isAdmin) {
+      coachesQuery = coachesQuery.eq("active", true);
+    }
+    const { data: coachesData, error: coachesError } = await coachesQuery;
     if (coachesError) {
       console.error("Error fetching coaches:", coachesError);
+      setCoaches([]);
       return;
     }
 

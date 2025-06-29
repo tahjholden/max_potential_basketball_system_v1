@@ -13,6 +13,8 @@ import EntityButton from '@/components/EntityButton';
 import { NoPlayersEmptyState, NoArchivedPDPsEmptyState } from '@/components/ui/EmptyState';
 import { ErrorBadge } from '@/components/StatusBadge';
 import PlayerListShared from "@/components/PlayerListShared";
+import SectionLabel from "@/components/ui/SectionLabel";
+import PaneTitle from "@/components/PaneTitle";
 
 // Type Definitions
 interface Player {
@@ -347,7 +349,7 @@ export default function TestPlayersPage() {
         <div className="flex gap-6">
           {/* Player list panel */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <div className="mb-1 text-lg font-bold text-white">Players</div>
+            <PaneTitle className="mt-0">Players</PaneTitle>
             <PlayerListShared
               players={players}
               teams={teams}
@@ -361,74 +363,68 @@ export default function TestPlayersPage() {
           {/* Center: Player Profile + Development Plan (wider column) */}
           <div className="flex-[2] min-w-0">
             <div className="flex flex-col gap-4 mt-0">
-              {players.length === 0 ? (
-                <NoPlayersEmptyState 
-                  onAddPlayer={() => {
-                    console.log('Add player');
-                    fetchAllData();
-                  }}
+              <PaneTitle className="mt-0">Player Profile</PaneTitle>
+              {selectedPlayer ? (
+                <EntityMetadataCard
+                  fields={[
+                    {
+                      label: "Name",
+                      value: selectedPlayer.name,
+                      highlight: true
+                    },
+                    {
+                      label: "Joined",
+                      value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy")
+                    },
+                    ...(selectedPlayer.team_name ? [{
+                      label: "Team",
+                      value: (
+                        <Link 
+                          href={`/protected/teams?playerId=${selectedPlayer.id}`}
+                          className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
+                        >
+                          {selectedPlayer.team_name}
+                        </Link>
+                      )
+                    }] : [])
+                  ]}
+                  actions={null}
                 />
-              ) : selectedPlayer ? (
-                <>
-                  <div className="mb-1 text-lg font-bold text-white">Player Profile</div>
-                  <EntityMetadataCard
-                    fields={[
-                      {
-                        label: "Name",
-                        value: selectedPlayer.name,
-                        highlight: true
-                      },
-                      {
-                        label: "Joined",
-                        value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy")
-                      },
-                      ...(selectedPlayer.team_name ? [{
-                        label: "Team",
-                        value: (
-                          <Link 
-                            href={`/protected/teams?playerId=${selectedPlayer.id}`}
-                            className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
-                          >
-                            {selectedPlayer.team_name}
-                          </Link>
-                        )
-                      }] : [])
-                    ]}
-                    actions={null}
-                    cardClassName="mt-0"
-                  />
-                  <div className="mb-1 text-lg font-bold text-white">Development Plan</div>
-                  <EntityMetadataCard
-                    fields={currentPdp ? [
-                      {
-                        label: "Started",
-                        value: currentPdp.start_date ? format(new Date(currentPdp.start_date), "MMMM do, yyyy") : "N/A"
-                      },
-                      {
-                        label: "Plan",
-                        value: currentPdp.content || "No plan available"
-                      }
-                    ] : []}
-                    actions={null}
-                    cardClassName="mt-0"
-                  />
-                  <div className="mb-1 text-lg font-bold text-white">Recent Observations</div>
-                  {observations.length > 0 ? (
-                    <BulkDeleteObservationsPane
-                      observations={observations}
-                      showCheckboxes={false}
-                    />
-                  ) : (
-                    <EmptyCard title="Recent Observations" />
-                  )}
-                </>
               ) : (
-                <EmptyCard title="Player Profile" />
+                <EmptyCard title="Select a Player to View Their Profile" />
+              )}
+              <PaneTitle className="mt-0">Development Plan</PaneTitle>
+              {selectedPlayer ? (
+                <EntityMetadataCard
+                  fields={currentPdp ? [
+                    {
+                      label: "Started",
+                      value: currentPdp.start_date ? format(new Date(currentPdp.start_date), "MMMM do, yyyy") : "N/A"
+                    },
+                    {
+                      label: "Plan",
+                      value: currentPdp.content || "No plan available"
+                    }
+                  ] : []}
+                  actions={null}
+                />
+              ) : (
+                <EmptyCard title="Select a Player to View Their Development Plan" />
+              )}
+              <PaneTitle className="mt-0">Recent Observations</PaneTitle>
+              {selectedPlayer && observations.length > 0 ? (
+                <BulkDeleteObservationsPane
+                  observations={observations}
+                  showCheckboxes={false}
+                />
+              ) : (
+                <EmptyCard title="No observations yet." />
               )}
             </div>
           </div>
           {/* Right: PDP Archive */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+            <PaneTitle className="mt-0">PDP Archive</PaneTitle>
             <PDPArchivePane
               pdps={archivedPdps}
               onSortOrderChange={setSortOrder}

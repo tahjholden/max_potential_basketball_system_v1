@@ -32,21 +32,21 @@ export function useCurrentCoach() {
           return;
         }
 
-        const { data: coachData, error: coachError } = await supabase
+        const { data, error: coachError } = await supabase
           .from("coaches")
-          .select("*")
+          .select("id, first_name, last_name, email, is_admin, auth_uid, created_at, updated_at")
           .eq("auth_uid", user.id)
-          .maybeSingle();
+          .single();
 
         if (coachError) {
           console.error("Error fetching coach:", coachError);
           setError("Failed to fetch coach data");
           setCoach(null);
-        } else if (!coachData) {
+        } else if (!data) {
           setError("Coach record not found");
           setCoach(null);
         } else {
-          setCoach(coachData);
+          setCoach(data as Coach);
         }
       } catch (err) {
         console.error("Unexpected error in useCurrentCoach:", err);
