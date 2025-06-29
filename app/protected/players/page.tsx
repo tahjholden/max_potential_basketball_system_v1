@@ -13,7 +13,7 @@ import EntityButton from '@/components/EntityButton';
 import { NoPlayersEmptyState, NoArchivedPDPsEmptyState } from '@/components/ui/EmptyState';
 import { ErrorBadge } from '@/components/StatusBadge';
 import PlayerListShared from "@/components/PlayerListShared";
-import SectionLabel from "@/components/ui/SectionLabel";
+import SectionLabel from "@/components/SectionLabel";
 import PaneTitle from "@/components/PaneTitle";
 
 // Type Definitions
@@ -349,7 +349,7 @@ export default function TestPlayersPage() {
         <div className="flex gap-6">
           {/* Player list panel */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <PaneTitle className="mt-0">Players</PaneTitle>
+            <SectionLabel>Players</SectionLabel>
             <PlayerListShared
               players={players}
               teams={teams}
@@ -363,7 +363,7 @@ export default function TestPlayersPage() {
           {/* Center: Player Profile + Development Plan (wider column) */}
           <div className="flex-[2] min-w-0">
             <div className="flex flex-col gap-4 mt-0">
-              <PaneTitle className="mt-0">Player Profile</PaneTitle>
+              <SectionLabel>Player Profile</SectionLabel>
               {selectedPlayer ? (
                 <EntityMetadataCard
                   fields={[
@@ -393,25 +393,19 @@ export default function TestPlayersPage() {
               ) : (
                 <EmptyCard title="Select a Player to View Their Profile" />
               )}
-              <PaneTitle className="mt-0">Development Plan</PaneTitle>
+              <SectionLabel>Development Plan</SectionLabel>
               {selectedPlayer ? (
                 <EntityMetadataCard
-                  fields={currentPdp ? [
-                    {
-                      label: "Started",
-                      value: currentPdp.start_date ? format(new Date(currentPdp.start_date), "MMMM do, yyyy") : "N/A"
-                    },
-                    {
-                      label: "Plan",
-                      value: currentPdp.content || "No plan available"
-                    }
-                  ] : []}
+                  fields={[
+                    { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
+                    { label: "Plan", value: currentPdp?.content || "No active plan." }
+                  ]}
                   actions={null}
+                  cardClassName="mt-0"
                 />
               ) : (
-                <EmptyCard title="Select a Player to View Their Development Plan" />
+                <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
               )}
-              <PaneTitle className="mt-0">Recent Observations</PaneTitle>
               {selectedPlayer && observations.length > 0 ? (
                 <BulkDeleteObservationsPane
                   observations={observations}
@@ -424,7 +418,7 @@ export default function TestPlayersPage() {
           </div>
           {/* Right: PDP Archive */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <PaneTitle className="mt-0">PDP Archive</PaneTitle>
+            <SectionLabel>PDP Archive</SectionLabel>
             <PDPArchivePane
               pdps={archivedPdps}
               onSortOrderChange={setSortOrder}
