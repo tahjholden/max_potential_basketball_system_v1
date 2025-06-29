@@ -98,7 +98,7 @@ export default function DashboardPage() {
   }
   const filteredByRange = filterObservationsByRange(observations, observationRange);
   const filteredObservations = filterObservationsBySearch(filteredByRange, observationSearch);
-  const MAX_OBSERVATIONS = 10;
+  const MAX_OBSERVATIONS = 5;
   // Sort observations alphabetically by content (or by date if you prefer)
   const sortedObservations = [...filteredObservations].sort((a, b) => a.content.localeCompare(b.content));
   const displayedObservations = showAllObservations ? sortedObservations : sortedObservations.slice(0, MAX_OBSERVATIONS);
@@ -520,9 +520,9 @@ export default function DashboardPage() {
             )}
           </div>
           {/* Right: Observations Card */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
             <SectionLabel>Observations</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex flex-col">
               {/* Header: Range selector */}
               {selectedPlayer ? (
                 <div className="flex items-center gap-2 mb-2">
@@ -542,9 +542,9 @@ export default function DashboardPage() {
                   <PaneTitle className="w-full text-center">Select a Player to View Observations</PaneTitle>
                 </div>
               )}
-              {/* Scrollable observation list, responsive height */}
-              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-                {!selectedPlayer ? (
+              {/* Observation list, see more chevron for overflow */}
+              <div className="flex flex-col gap-3 w-full mb-2" style={{overflow: 'visible'}}>
+                {!selectedPlayer || sortedObservations.length === 0 ? (
                   <div className="flex items-center justify-center w-full overflow-x-hidden h-full">
                     <div style={{
                       position: 'relative',
@@ -572,14 +572,17 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3 w-full">
-                    {displayedObservations.map(obs => (
+                  <>
+                    {(showAllObservations || sortedObservations.length <= 5
+                      ? sortedObservations
+                      : sortedObservations.slice(0, 5)
+                    ).map(obs => (
                       <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
                         <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
                         <div className="text-base text-zinc-100">{obs.content}</div>
                       </div>
                     ))}
-                    {filteredObservations.length > MAX_OBSERVATIONS && (
+                    {sortedObservations.length > 5 && (
                       <div
                         className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
                         onClick={() => setShowAllObservations(!showAllObservations)}
@@ -590,19 +593,9 @@ export default function DashboardPage() {
                         <div className="flex-1 border-t border-zinc-700"></div>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
-              {/* Search bar at the bottom - only show when chevron is needed */}
-              {filteredObservations.length > MAX_OBSERVATIONS && (
-                <input
-                  type="text"
-                  placeholder="Search observations..."
-                  value={observationSearch}
-                  onChange={e => setObservationSearch(e.target.value)}
-                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-                />
-              )}
             </div>
           </div>
         </div>
