@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { OutlineButton } from "@/components/ui/gold-outline-button";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
@@ -93,21 +93,23 @@ export default function AddCoachModal({ open, onClose, onCoachAdded }: { open: b
           </div>
         </div>
         <DialogFooter className="flex gap-3 pt-4">
-          <Button
-            variant="outline"
+          <OutlineButton
+            type="button"
+            color="zinc"
             onClick={onClose}
-            className="flex-1 border-[#d8cc97]/30 text-[#d8cc97] hover:bg-[#d8cc97]/10"
+            className="flex-1 px-6 py-2"
             disabled={loading}
           >
             Cancel
-          </Button>
-          <Button
+          </OutlineButton>
+          <OutlineButton
+            color="gold"
             onClick={handleAddCoach}
             disabled={loading || !coachForm.firstName.trim() || !coachForm.lastName.trim() || !coachForm.email.trim()}
-            className="flex-1 bg-[#d8cc97] text-black hover:bg-[#d8cc97]/80 disabled:opacity-50"
+            className="flex-1 px-6 py-2"
           >
             {loading ? "Adding..." : "Add Coach"}
-          </Button>
+          </OutlineButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
