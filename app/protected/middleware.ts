@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+console.log("🔍 [middleware] Running protected middleware");
+
 export async function middleware(req: NextRequest) {
   // Only run for protected routes (not /get-started itself)
   if (req.nextUrl.pathname.startsWith("/protected/get-started")) {
@@ -48,8 +50,11 @@ export async function middleware(req: NextRequest) {
     .select("id")
     .eq("org_id", coach.org_id);
 
+  console.log("🔍 [middleware] Teams data:", teams);
+
   // If no teams, redirect to onboarding
   if (!teams || teams.length === 0) {
+    console.log("🔍 [middleware] No teams found, redirecting to /protected/get-started");
     const url = req.nextUrl.clone();
     url.pathname = "/protected/get-started";
     return NextResponse.redirect(url);

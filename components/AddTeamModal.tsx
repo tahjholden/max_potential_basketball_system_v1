@@ -61,7 +61,13 @@ export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boo
         setLoading(false);
         return;
       }
-      // For now, just show a success message since team creation might require more logic
+      if (!coach?.id || !orgId) {
+        console.error("Missing coach.id or orgId", { coachId: coach?.id, orgId });
+        toast.error("Coach or organization information missing. Please contact support.");
+        setLoading(false);
+        return;
+      }
+      console.log("Creating team with:", { name: teamName.trim(), coach_id: coach?.id, org_id: orgId });
       const { data, error } = await supabase.from("teams").insert({
         name: teamName.trim(),
         coach_id: coach?.id,

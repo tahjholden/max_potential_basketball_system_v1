@@ -13,6 +13,7 @@ import { useCurrentCoach } from '@/hooks/useCurrentCoach';
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
 import Link from "next/link";
 import type { Organization } from '@/types/entities';
+import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 
 interface Team {
   id: string;
@@ -112,6 +113,13 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
         }
         orgId = selectedOrgId;
       }
+      if (!coachData.id || !orgId) {
+        console.error("Missing coachData.id or orgId", { coachId: coachData.id, orgId });
+        setError("Coach or organization information missing. Please contact support.");
+        setLoading(false);
+        return;
+      }
+      console.log("Creating team with:", { name: name.trim(), coach_id: coachData.id, org_id: orgId });
       const { error: insertError } = await supabase.from("teams").insert({
         name: name.trim(),
         coach_id: coachData.id,
@@ -336,7 +344,7 @@ export default function TeamsPage() {
           {/* Scrollable team list, responsive height */}
           <div className="flex-1 min-h-0 overflow-y-auto mb-2">
             {displayedTeams.length === 0 ? (
-              <div className="text-zinc-500 italic text-center py-8">No teams yet. Create one!</div>
+              <NoTeamsEmptyState onAddTeam={openCreateModal} />
             ) : (
               displayedTeams.map((team) => (
                 <button

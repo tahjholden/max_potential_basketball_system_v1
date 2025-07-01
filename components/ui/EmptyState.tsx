@@ -172,15 +172,31 @@ export function NoTeamsEmptyState({ onAddTeam }: { onAddTeam: () => void }) {
   return (
     <EmptyState
       variant="no-data"
-      title="No Teams Found"
+      title={undefined}
       description="There are no teams in your organization yet. Add your first team to get started."
-      icon={Users}
+      showIcon={false}
       action={{
         label: "Add Team",
         onClick: onAddTeam,
         color: "gold"
       }}
-    />
+    >
+      <Image
+        src={maxsM}
+        alt="MP Shield"
+        priority
+        style={{
+          objectFit: "contain",
+          maxWidth: "220px",
+          maxHeight: "120px",
+          display: "block",
+          margin: "0 auto",
+          filter: "drop-shadow(0 2px 12px #2226)",
+          opacity: 0.75,
+        }}
+      />
+      <div className="text-zinc-300 font-semibold text-lg mt-4 mb-2 text-center">Add Your First Team</div>
+    </EmptyState>
   );
 }
 

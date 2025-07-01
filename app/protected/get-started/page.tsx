@@ -49,6 +49,15 @@ export default function GetStartedPage() {
       setLoading(false);
       return;
     }
+    // Guard: Ensure coach, coach.id, and coach.org_id are present
+    if (!coach || !coach.id || !coach.org_id) {
+      console.error("Coach info missing:", coach);
+      setError("Coach information missing. Please contact support.");
+      setLoading(false);
+      return;
+    }
+    // Debug log
+    console.log("Creating team with:", { name: teamName.trim(), org_id: coach.org_id, coach_id: coach.id });
     const { data, error } = await supabase.from("teams").insert([
       { name: teamName.trim(), org_id: coach.org_id, coach_id: coach.id }
     ]).select("id").single();

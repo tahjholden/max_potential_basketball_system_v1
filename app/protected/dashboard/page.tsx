@@ -15,6 +15,9 @@ import { format } from "date-fns";
 import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import PaneTitle from '@/components/PaneTitle';
+import { NoPlayersEmptyState } from "@/components/ui/EmptyState";
+import PlayerListPane from '@/components/PlayerListPane';
+import ThreePaneLayout from '@/components/ThreePaneLayout';
 
 interface Player {
   id: string;
@@ -498,32 +501,13 @@ export default function DashboardPage() {
           {/* Center: Player Profile + Development Plan (wider column) */}
           <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Player Profile</SectionLabel>
-            {selectedPlayer ? (
-              <EntityMetadataCard
-                fields={[
-                  { label: "Name", value: selectedPlayer.name, highlight: true },
-                  { label: "Joined", value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy") },
-                  ...(selectedPlayer.team_name ? [{ label: "Team", value: <span className="text-[#C2B56B]">{selectedPlayer.team_name}</span> }] : [])
-                ]}
-                actions={null}
-                cardClassName="mt-0"
-              />
+            {players.length === 0 ? (
+              <NoPlayersEmptyState onAddPlayer={() => setCreateModalOpen(true)} />
             ) : (
-              <EmptyCard title="Select a Player to View Their Profile" titleClassName="font-bold text-center" />
-            )}
-
-            <SectionLabel>Development Plan</SectionLabel>
-            {selectedPlayer ? (
-              <EntityMetadataCard
-                fields={[
-                  { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
-                  { label: "Plan", value: currentPdp?.content || "No active plan." }
-                ]}
-                actions={null}
-                cardClassName="mt-0"
-              />
-            ) : (
-              <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
+              <div className="flex flex-col gap-4 h-full">
+                <EmptyCard title="Player Profile" titleClassName="font-bold text-center" />
+                <EmptyCard title="Development Plan" titleClassName="font-bold text-center" />
+              </div>
             )}
           </div>
           {/* Right: Observations Card */}
