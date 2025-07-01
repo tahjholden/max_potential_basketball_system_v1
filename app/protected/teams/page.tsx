@@ -48,13 +48,14 @@ export default function TeamsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const searchParams = useSearchParams();
   const { coach: currentCoach } = useCurrentCoach();
-  const { playerId } = useSelectedPlayer();
+  const { playerId, setPlayerId } = useSelectedPlayer();
   const [teamSearch, setTeamSearch] = useState("");
   const [showAllTeams, setShowAllTeams] = useState(false);
   const MAX_TEAMS = 5;
   const sortedTeams = [...teams].sort((a, b) => a.name.localeCompare(b.name));
   const filteredTeams = sortedTeams.filter(t => t.name.toLowerCase().includes(teamSearch.toLowerCase()));
   const displayedTeams = showAllTeams ? filteredTeams : filteredTeams.slice(0, MAX_TEAMS);
+  const [playerPDPs, setPlayerPDPs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,6 +162,35 @@ export default function TeamsPage() {
       fetchPlayerTeam();
     }
   }, [currentCoach, teams, selectedTeam, searchParams, playerId]);
+
+  // Reset selected player on team or page change
+  useEffect(() => {
+    setPlayerId("");
+  }, [selectedTeam]);
+
+  // Fetch PDPs for team players
+  useEffect(() => {
+    async function fetchPlayerPDPs() {
+      if (!selectedTeam || teamPlayers.length === 0) {
+        setPlayerPDPs({});
+        return;
+      }
+      const supabase = createClient();
+      const playerIds = teamPlayers.map(p => p.id);
+      const { data: pdps } = await supabase
+        .from('pdp')
+        .select('player_id, archived_at')
+        .in('player_id', playerIds)
+        .is('archived_at', null);
+      // Map player_id to true if they have an active PDP
+      const pdpMap: Record<string, boolean> = {};
+      playerIds.forEach(id => {
+        pdpMap[id] = !!(pdps && pdps.find(p => p.player_id === id));
+      });
+      setPlayerPDPs(pdpMap);
+    }
+    fetchPlayerPDPs();
+  }, [selectedTeam, teamPlayers]);
 
   const openCreateModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
@@ -276,10 +306,16 @@ export default function TeamsPage() {
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 {teamPlayers.map(player => {
                   const isSelected = playerId === player.id;
-                  let classes = "w-full flex items-center justify-center px-4 py-2 rounded font-medium border border-[#C2B56B] bg-zinc-900 transition-colors";
+                  const hasPDP = playerPDPs[player.id];
+                  let classes = "w-full flex items-center justify-center px-4 py-2 rounded font-medium border transition-colors ";
+                  if (!hasPDP) {
+                    classes += "bg-[#A22828] text-white border-[#A22828] ";
+                  } else {
+                    classes += "border-[#C2B56B] bg-zinc-900 ";
+                  }
                   if (isSelected) {
                     classes += " bg-[#C2B56B] text-black";
-                  } else {
+                  } else if (hasPDP) {
                     classes += " text-zinc-300 hover:bg-[#C2B56B]/10";
                   }
                   return (
