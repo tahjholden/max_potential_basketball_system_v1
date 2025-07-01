@@ -526,6 +526,20 @@ export default function DashboardPage() {
             ) : (
               <EmptyStateCard message="Select a Player to View Their Profile" />
             )}
+            {/* Duplicated Development Plan card and title from observations page */}
+            <SectionLabel>Development Plan</SectionLabel>
+            {selectedPlayer ? (
+              <EntityMetadataCard
+                fields={[
+                  { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
+                  { label: "Plan", value: currentPdp?.content || "No active plan." }
+                ]}
+                actions={null}
+                cardClassName="mt-0"
+              />
+            ) : (
+              <EmptyStateCard message="Select a Player to View Their Development Plan" />
+            )}
           </div>
           {/* Right: Observations Card */}
           <div className="flex-1 min-w-0 flex flex-col gap-4">
