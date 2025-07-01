@@ -9,6 +9,7 @@ import {
 import { GoldButton } from "./ui/gold-button";
 import { Button } from "./ui/button";
 import { createClient } from "@/lib/supabase/client";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function EditPDPModal({
   open,
@@ -69,7 +70,22 @@ export default function EditPDPModal({
   };
 
   if (!player || !currentPdp) {
-    return null;
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white">
+          <EmptyState 
+            variant="error" 
+            title="Missing Information" 
+            description="Player or PDP information is missing."
+            action={{
+              label: "Close",
+              onClick: onClose,
+              color: "gray"
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (

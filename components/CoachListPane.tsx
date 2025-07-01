@@ -14,6 +14,7 @@ interface Coach {
   created_at: string;
   team_id?: string;
   team_name?: string;
+  is_superadmin: boolean;
 }
 
 interface CoachListPaneProps {
@@ -80,11 +81,16 @@ export default function CoachListPane({
         ) : (
           filteredCoaches.map((coach) => {
             const isSelected = selectedCoachId === coach.id;
+            const isSuperadmin = coach.is_superadmin;
             const isAdmin = coach.is_admin;
 
             let classes = "w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2";
 
-            if (isAdmin) {
+            if (isSuperadmin) {
+              classes += isSelected
+                ? " bg-purple-600 text-white border-purple-400"
+                : " bg-zinc-900 text-purple-300 border-purple-400";
+            } else if (isAdmin) {
               classes += isSelected
                 ? " bg-gold text-black border-gold"
                 : " bg-zinc-900 text-gold border-gold";
@@ -102,10 +108,11 @@ export default function CoachListPane({
               >
                 <div className="flex items-center justify-between">
                   <span>{coach.first_name} {coach.last_name}</span>
-                  {isAdmin && (
-                    <span className="text-xs bg-gold text-black px-2 py-1 rounded">
-                      ADMIN
-                    </span>
+                  {isSuperadmin && (
+                    <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded">SUPERADMIN</span>
+                  )}
+                  {!isSuperadmin && isAdmin && (
+                    <span className="text-xs bg-gold text-black px-2 py-1 rounded">ADMIN</span>
                   )}
                 </div>
               </button>

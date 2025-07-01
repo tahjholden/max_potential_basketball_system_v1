@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import { useCurrentCoach } from '@/hooks/useCurrentCoach';
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
 import Link from "next/link";
+import type { Organization } from '@/types/entities';
 
 interface Team {
   id: string;
@@ -45,6 +46,40 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
+  const { coach } = useCurrentCoach();
+  const isSuperadmin = coach?.is_superadmin;
+
+  // Fetch orgs for superadmin
+  useEffect(() => {
+    if (open && isSuperadmin) {
+      setLoadingOrgs(true);
+      createClient()
+        .from("orgs")
+        .select("id, name, created_at")
+        .order("name")
+        .then(({ data, error }) => {
+          setLoadingOrgs(false);
+          if (error) {
+            setOrganizations([]);
+            return;
+          }
+          setOrganizations((data || []).map((org: any) => ({
+            id: org.id,
+            name: org.name,
+            created_at: org.created_at || ""
+          })));
+          if (data && data.length > 0) {
+            setSelectedOrgId(data[0].id);
+          }
+        });
+    }
+    if (!open) {
+      setSelectedOrgId("");
+    }
+  }, [open, isSuperadmin]);
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -55,20 +90,32 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         setError("User not authenticated.");
+        setLoading(false);
         return;
       }
       const { data: coachData, error: coachError } = await supabase
         .from('coaches')
-        .select('id')
+        .select('id, org_id, is_superadmin')
         .eq('auth_uid', user.id)
         .single();
       if (coachError || !coachData) {
         setError("Coach record not found.");
+        setLoading(false);
         return;
+      }
+      let orgId = coachData.org_id;
+      if (coachData.is_superadmin) {
+        if (!selectedOrgId) {
+          setError("Please select an organization");
+          setLoading(false);
+          return;
+        }
+        orgId = selectedOrgId;
       }
       const { error: insertError } = await supabase.from("teams").insert({
         name: name.trim(),
         coach_id: coachData.id,
+        org_id: orgId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -103,10 +150,28 @@ function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white focus:outline-none focus:ring focus:border-gold"
             />
           </div>
+          {isSuperadmin && (
+            <div>
+              <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+                Organization
+              </label>
+              <select
+                id="org_select"
+                value={selectedOrgId}
+                onChange={e => setSelectedOrgId(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
+                disabled={loadingOrgs}
+              >
+                {organizations.map(org => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <GoldButton onClick={handleCreate} disabled={!name.trim() || loading}>
+            <GoldButton onClick={handleCreate} disabled={!name.trim() || loading || (isSuperadmin && !selectedOrgId)}>
               {loading ? "Creating..." : "Create Team"}
             </GoldButton>
           </div>
@@ -137,11 +202,46 @@ export default function TeamsPage() {
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
-      const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
+      
+      // Get current user's role and org
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: currentCoachData } = await supabase
+        .from('coaches')
+        .select('is_admin, is_superadmin, org_id')
+        .eq('auth_uid', user.id)
+        .single();
+      
+      const isSuperadmin = currentCoachData?.is_superadmin;
+      const isAdmin = currentCoachData?.is_admin;
+      const orgId = currentCoachData?.org_id;
+      
+      // Fetch teams with role-based filtering
+      let teamsQuery = supabase.from("teams").select("*").order("created_at", { ascending: false });
+      if (!isSuperadmin) {
+        teamsQuery = teamsQuery.eq("org_id", orgId);
+      }
+      const { data: teamData } = await teamsQuery;
       setTeams(teamData || []);
-      const { data: coachData } = await supabase.from("coaches").select("*");
-      setCoaches(coachData || []);
-      const { data: playerData } = await supabase.from("players").select("*");
+      
+      // Fetch coaches with role-based filtering
+      let coachesQuery = supabase.from("coaches").select("*");
+      if (!isSuperadmin) {
+        coachesQuery = coachesQuery.eq("org_id", orgId);
+      }
+      if (!isAdmin && !isSuperadmin) {
+        coachesQuery = coachesQuery.eq("active", true);
+      }
+      const { data: coachesData } = await coachesQuery;
+      setCoaches(coachesData || []);
+      
+      // Fetch players with role-based filtering
+      let playersQuery = supabase.from("players").select("*");
+      if (!isSuperadmin) {
+        playersQuery = playersQuery.eq("org_id", orgId);
+      }
+      const { data: playerData } = await playersQuery;
       setPlayers(playerData || []);
     };
     fetchData();

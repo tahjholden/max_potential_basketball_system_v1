@@ -12,3 +12,9 @@ export const hasEnvVars =
 
 // Shared button styling for consistency - matches ArchiveAndReplaceButton with standard sizing
 export const actionButtonClass = "border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50";
+
+// Helper function to format coach names
+export const getCoachName = (coach: any) => {
+  if (!coach) return "Unknown Coach";
+  return `${coach.first_name || ""} ${coach.last_name || ""}`.trim() || "Unknown Coach";
+};

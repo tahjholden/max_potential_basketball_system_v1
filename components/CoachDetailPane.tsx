@@ -15,6 +15,7 @@ interface Coach {
   created_at: string;
   team_id?: string;
   team_name?: string;
+  is_superadmin: boolean;
 }
 
 interface CoachDetailPaneProps {
@@ -142,7 +143,18 @@ export default function CoachDetailPane({ coach, onCoachUpdate }: CoachDetailPan
 
       {/* Action Buttons */}
       <div className="mt-6 pt-6 border-t border-zinc-800 space-y-3">
-        {coach.is_admin && (
+        {coach.is_superadmin && (
+          <button
+            onClick={() => {
+              // TODO: Implement superadmin actions
+              console.log("Superadmin actions for:", coach.id);
+            }}
+            className="w-full border border-purple-400 text-sm px-4 py-2 rounded font-semibold text-purple-300 hover:bg-purple-600/10 transition"
+          >
+            Superadmin Actions
+          </button>
+        )}
+        {!coach.is_superadmin && coach.is_admin && (
           <button
             onClick={() => {
               // TODO: Implement admin actions
@@ -153,7 +165,6 @@ export default function CoachDetailPane({ coach, onCoachUpdate }: CoachDetailPan
             Admin Actions
           </button>
         )}
-        
         <button
           onClick={() => {
             // TODO: Implement deactivate/reactivate

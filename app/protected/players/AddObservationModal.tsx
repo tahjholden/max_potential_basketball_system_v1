@@ -1,9 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { useCoach } from "@/hooks/useCoach";
+import type { Organization } from "@/types/entities";
 
 interface AddObservationModalProps {
   open: boolean;
@@ -22,10 +24,48 @@ export default function AddObservationModal({
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
+
+  const { coach, isSuperadmin } = useCoach();
+
+  // Fetch orgs for superadmin
+  useEffect(() => {
+    if (open && isSuperadmin) {
+      setLoadingOrgs(true);
+      createClient()
+        .from("orgs")
+        .select("id, name, created_at")
+        .order("name")
+        .then(({ data, error }) => {
+          setLoadingOrgs(false);
+          if (error) {
+            setOrganizations([]);
+            return;
+          }
+          setOrganizations((data || []).map((org: any) => ({
+            id: org.id,
+            name: org.name,
+            created_at: org.created_at || ""
+          })));
+          if (data && data.length > 0) {
+            setSelectedOrgId(data[0].id);
+          }
+        });
+    }
+    if (!open) {
+      setSelectedOrgId("");
+    }
+  }, [open, isSuperadmin]);
 
   const handleSubmit = async () => {
     if (!content.trim() || !date) {
       setError("Observation and date required");
+      return;
+    }
+    if (isSuperadmin && !selectedOrgId) {
+      setError("Please select an organization");
       return;
     }
     setLoading(true);
@@ -55,6 +95,7 @@ export default function AddObservationModal({
         content: content.trim(),
         observation_date: date,
         archived: false,
+        org_id: isSuperadmin ? selectedOrgId : coach?.org_id,
       });
       setContent("");
       setDate("");
@@ -87,6 +128,24 @@ export default function AddObservationModal({
             onChange={(e) => setContent(e.target.value)}
             disabled={loading}
           />
+          {isSuperadmin && (
+            <div>
+              <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+                Organization
+              </label>
+              <select
+                id="org_select"
+                value={selectedOrgId}
+                onChange={e => setSelectedOrgId(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
+                disabled={loadingOrgs}
+              >
+                {organizations.map(org => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {error && <div className="text-red-500">{error}</div>}
         </div>
         <DialogFooter>

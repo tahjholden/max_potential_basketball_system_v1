@@ -12,10 +12,10 @@ export default function ThreePaneLayout({
   rightPane,
 }: ThreePaneLayoutProps) {
   return (
-    <div className="flex w-full px-6 gap-4 items-start">
-      <div className="w-[180px] shrink-0">{leftPane}</div>
-      <div className="flex-1 flex flex-col h-full">{centerPane}</div>
-      <div className="w-[180px] shrink-0">{rightPane}</div>
+    <div className="flex gap-6 min-h-0 w-full">
+      <div className="flex-1 min-w-0 flex flex-col">{leftPane}</div>
+      <div className="flex-[2] min-w-0 flex flex-col">{centerPane}</div>
+      <div className="flex-1 min-w-0 flex flex-col">{rightPane}</div>
     </div>
   );
 } 

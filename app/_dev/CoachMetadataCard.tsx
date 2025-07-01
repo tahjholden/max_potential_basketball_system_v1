@@ -12,6 +12,7 @@ interface Coach {
   active: boolean;
   created_at: string;
   team_name?: string;
+  is_superadmin: boolean;
 }
 
 interface CoachMetadataCardProps {
@@ -40,7 +41,7 @@ const CoachMetadataCard: React.FC<CoachMetadataCardProps> = ({
         </div>
         <div>
           <span className="text-zinc-500">Role:</span>{" "}
-          <span className="font-medium text-zinc-300">{coach.is_admin ? "Administrator" : "Coach"}</span>
+          <span className="font-medium text-zinc-300">{coach.is_superadmin ? "Superadmin" : coach.is_admin ? "Administrator" : "Coach"}</span>
         </div>
         <div>
           <span className="text-zinc-500">Joined:</span>{" "}

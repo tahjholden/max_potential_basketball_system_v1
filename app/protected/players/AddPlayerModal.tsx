@@ -9,6 +9,10 @@ import { OutlineButton } from "@/components/ui/gold-outline-button";
 import { createClient } from "@/lib/supabase/client";
 import { useCoach, useCoachId } from "@/hooks/useCoach";
 import toast from "react-hot-toast";
+import { getUserRole } from "@/lib/role-utils";
+import type { Organization } from "@/types/entities";
+import { LoadingEmptyState } from "@/components/ui/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open: boolean; onClose: () => void; onPlayerAdded?: () => void }) {
   const [firstName, setFirstName] = useState("");
@@ -18,22 +22,69 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [noTeams, setNoTeams] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
 
-  // Use the coach context instead of user.user_metadata
   const { coach, loading: coachLoading, error: coachError } = useCoach();
   const coachId = useCoachId();
+  const userRole = getUserRole(coach);
+  const isSuperadmin = userRole === "superadmin";
 
+  // Timeout fallback for coach loading
   useEffect(() => {
-    if (open && coachId) {
+    if (coachLoading) {
+      const timeout = setTimeout(() => {
+        console.warn("Coach loading timeout - consider showing error state");
+      }, 10000); // 10 second timeout
+      return () => clearTimeout(timeout);
+    }
+  }, [coachLoading]);
+
+  // Fetch orgs for superadmin
+  useEffect(() => {
+    if (open && isSuperadmin) {
+      setLoadingOrgs(true);
+      createClient()
+        .from("orgs")
+        .select("id, name, created_at")
+        .order("name")
+        .then(({ data, error }) => {
+          setLoadingOrgs(false);
+          if (error) {
+            toast.error("Failed to fetch organizations");
+            setOrganizations([]);
+            return;
+          }
+          setOrganizations(data || []);
+          if (data && data.length > 0) {
+            setSelectedOrgId(data[0].id);
+          }
+        });
+    }
+    if (!open) {
+      setSelectedOrgId("");
+    }
+  }, [open, isSuperadmin]);
+
+  // Fetch teams for selected org (superadmin) or coach (regular)
+  useEffect(() => {
+    if (open && ((isSuperadmin && selectedOrgId) || (!isSuperadmin && coachId))) {
       const fetchTeams = async () => {
         const supabase = createClient();
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('id, name')
-          .eq('coach_id', coachId);
+        let query = supabase.from("teams").select("id, name");
+        if (isSuperadmin) {
+          query = query.eq("org_id", selectedOrgId);
+        } else {
+          query = query.eq("coach_id", coachId);
+        }
+        const { data: teamsData, error: teamsError } = await query;
         if (teamsError) {
           console.error("Error fetching teams:", teamsError);
           toast.error("Failed to fetch teams");
+          setTeams([]);
+          setNoTeams(true);
+          setSelectedTeamId("");
           return;
         }
         if (!teamsData || teamsData.length === 0) {
@@ -49,20 +100,22 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
       fetchTeams();
     }
     if (!open) {
-      setFirstName("");
-      setLastName("");
-      setInitialPDP("");
+      setTeams([]);
       setSelectedTeamId("");
     }
-  }, [open, coachId]);
+  }, [open, isSuperadmin, selectedOrgId, coachId]);
 
   const handleAdd = async () => {
     if (!firstName.trim() || !lastName.trim()) {
       toast.error("First and last name are required");
       return;
     }
-    if (!coachId) {
+    if (!isSuperadmin && !coachId) {
       toast.error("Coach information not available");
+      return;
+    }
+    if (isSuperadmin && !selectedOrgId) {
+      toast.error("Please select an organization");
       return;
     }
     setLoading(true);
@@ -74,7 +127,7 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
         const teamName = coach ? `${coach.first_name} ${coach.last_name}'s Team` : "Default Team";
         const { data: newTeam, error: teamError } = await supabase
           .from("teams")
-          .insert({ name: teamName, coach_id: coachId })
+          .insert({ name: teamName, coach_id: coachId, org_id: isSuperadmin ? selectedOrgId : coach?.org_id })
           .select()
           .single();
         if (teamError || !newTeam) {
@@ -88,6 +141,7 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         team_id: teamId,
+        org_id: isSuperadmin ? selectedOrgId : coach?.org_id,
       };
       const { data: player, error } = await supabase
         .from("players")
@@ -121,13 +175,33 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
     }
   };
 
-  // Show loading state if coach data is still loading
   if (coachLoading) {
-    return null;
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="bg-[#181818] border border-[#C2B56B]/30 rounded-2xl shadow-2xl px-8 py-7 w-full max-w-md animate-in fade-in-0 zoom-in-95 duration-200">
+          <LoadingEmptyState message="Loading coach information..." />
+        </DialogContent>
+      </Dialog>
+    );
   }
-  // Show error state if coach data failed to load
+  
   if (coachError) {
-    return null;
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="bg-[#181818] border border-[#C2B56B]/30 rounded-2xl shadow-2xl px-8 py-7 w-full max-w-md animate-in fade-in-0 zoom-in-95 duration-200">
+          <EmptyState 
+            variant="error" 
+            title="Error loading coach" 
+            description={coachError}
+            action={{
+              label: "Retry",
+              onClick: () => window.location.reload(),
+              color: "gold"
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (
@@ -165,27 +239,49 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
               required
             />
           </div>
-          {noTeams ? (
-            <div className="text-xs text-[#C2B56B] bg-[#23221c] rounded px-3 py-2 mb-2 border border-[#C2B56B]/30">
-              No teams found. A default team will be created for this player.
+          <div className="flex gap-2">
+            {isSuperadmin && (
+              <div className="flex-1">
+                <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+                  Organization
+                </label>
+                <select
+                  id="org_select"
+                  value={selectedOrgId}
+                  onChange={e => setSelectedOrgId(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
+                  disabled={loadingOrgs}
+                >
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>{org.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="flex-1">
+              {noTeams ? (
+                <div className="text-xs text-[#C2B56B] bg-[#23221c] rounded px-3 py-2 mb-2 border border-[#C2B56B]/30">
+                  No teams found. A default team will be created for this player.
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="team_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+                    Team
+                  </label>
+                  <select
+                    id="team_select"
+                    value={selectedTeamId}
+                    onChange={e => setSelectedTeamId(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
+                  >
+                    {teams.map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
-          ) : (
-            <div>
-              <label htmlFor="team_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
-                Team
-              </label>
-              <select
-                id="team_select"
-                value={selectedTeamId}
-                onChange={e => setSelectedTeamId(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
-              >
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>{team.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          </div>
           <div>
             <label htmlFor="initial_pdp" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
               Initial PDP (optional)
@@ -212,7 +308,7 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
           <OutlineButton
             color="gold"
             onClick={handleAdd}
-            disabled={loading || !firstName.trim() || !lastName.trim()}
+            disabled={loading || !firstName.trim() || !lastName.trim() || (isSuperadmin && !selectedOrgId)}
             className="flex-1 px-6 py-2"
           >
             {loading ? "Adding..." : "Add Player"}

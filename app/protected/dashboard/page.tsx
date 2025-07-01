@@ -108,80 +108,41 @@ export default function DashboardPage() {
     async function fetchTeams() {
       try {
         const supabase = createClient();
-        
-        // Get the current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
           setError("User not authenticated.");
           return;
         }
-
-        console.log('Current user:', user.email, 'User ID:', user.id);
-
         // Get coach record
         const { data: coachData, error: coachError } = await supabase
           .from('coaches')
-          .select('id, first_name, last_name, is_admin')
+          .select('id, first_name, last_name, is_admin, is_superadmin, org_id')
           .eq('auth_uid', user.id)
           .single();
-
         if (coachError || !coachData) {
-          console.error('Coach record not found for user:', user.email, 'Error:', coachError);
           setError("Coach record not found.");
           return;
         }
-
-        console.log('Coach data:', coachData);
-
         setIsAdmin(!!coachData.is_admin);
-
-        // Follow coaches page logic: admins see all teams, regular coaches see only their teams
-        if (coachData.is_admin) {
-          // Admin: fetch all teams
-          const { data: teamsData, error: teamsError } = await supabase
-            .from('teams')
-            .select('id, name, coach_id')
-            .order('name', { ascending: true });
-
-          console.log('Admin teams query result:', { teamsData, teamsError });
-
-          if (teamsError) {
-            console.error('Error fetching teams:', teamsError);
-            setError(`Error fetching teams: ${teamsError.message}`);
-            return;
-          }
-
-          setTeams(teamsData || []);
-          // Don't auto-select any team for admins - let them choose "All Teams" by default
-        } else {
-          // Regular coach: fetch only their teams
-          const { data: teamsData, error: teamsError } = await supabase
-            .from('teams')
-            .select('id, name, coach_id')
-            .eq('coach_id', coachData.id)
-            .order('name', { ascending: true });
-
-          console.log('Coach teams query result:', { teamsData, teamsError });
-
-          if (teamsError) {
-            console.error('Error fetching teams:', teamsError);
-            setError(`Error fetching teams: ${teamsError.message}`);
-            return;
-          }
-
-          setTeams(teamsData || []);
-          
-          // Auto-select the first team if available for regular coaches
-          if (teamsData && teamsData.length > 0) {
-            setSelectedTeamId(teamsData[0].id);
-          }
+        const isSuperadmin = !!coachData.is_superadmin;
+        const orgId = coachData.org_id;
+        let teamsQuery = supabase.from('teams').select('id, name, coach_id, org_id').order('name', { ascending: true });
+        if (!isSuperadmin) {
+          teamsQuery = teamsQuery.eq('org_id', orgId);
+        }
+        const { data: teamsData, error: teamsError } = await teamsQuery;
+        if (teamsError) {
+          setError(`Error fetching teams: ${teamsError.message}`);
+          return;
+        }
+        setTeams(teamsData || []);
+        if (!isSuperadmin && teamsData && teamsData.length > 0) {
+          setSelectedTeamId(teamsData[0].id);
         }
       } catch (err) {
-        console.error('Error fetching teams:', err);
         setError(err instanceof Error ? err.message : 'An error occurred while fetching teams');
       }
     }
-
     fetchTeams();
   }, []);
 
@@ -225,20 +186,41 @@ export default function DashboardPage() {
         
         if (playersError) throw new Error(`Error fetching players: ${playersError.message}`);
 
-        // Get all PDPs (active and archived)
-        const { data: allPdpsData } = await supabase
+        // Get current user's role and org for filtering
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const { data: currentCoachData } = await supabase
+          .from('coaches')
+          .select('is_admin, is_superadmin, org_id')
+          .eq('auth_uid', user.id)
+          .single();
+        
+        const isSuperadmin = currentCoachData?.is_superadmin;
+        const orgId = currentCoachData?.org_id;
+        
+        // Get all PDPs (active and archived) with org filtering
+        let allPdpsQuery = supabase
           .from("pdp")
           .select("id, player_id, content, start_date, created_at, archived_at")
           .order("created_at", { ascending: false });
+        if (!isSuperadmin) {
+          allPdpsQuery = allPdpsQuery.eq("org_id", orgId);
+        }
+        const { data: allPdpsData } = await allPdpsQuery;
         setAllPdps(allPdpsData || []);
 
-        // Get all active PDPs (not archived)
-        const { data: activePdps } = await supabase
+        // Get all active PDPs (not archived) with org filtering
+        let activePdpsQuery = supabase
           .from("pdp")
           .select("id, player_id")
           .is("archived_at", null)
           .order("created_at", { ascending: false })
           .range(0, 49);
+        if (!isSuperadmin) {
+          activePdpsQuery = activePdpsQuery.eq("org_id", orgId);
+        }
+        const { data: activePdps } = await activePdpsQuery;
 
         // Mark players with no active PDP
         const activePdpPlayerIds = new Set((activePdps ?? []).map((pdp) => pdp.player_id));
@@ -246,13 +228,17 @@ export default function DashboardPage() {
           (playersData ?? []).filter((p) => !activePdpPlayerIds.has(p.id)).map((p) => p.id)
         );
 
-        // Fetch observation counts for each player
-        const { data: observationsData, error: observationsError } = await supabase
+        // Fetch observation counts for each player with org filtering
+        let observationsQuery = supabase
           .from("observations")
           .select("id, content, observation_date, created_at, player_id")
           .eq("archived", false)
           .order("created_at", { ascending: false })
           .range(0, 49);
+        if (!isSuperadmin) {
+          observationsQuery = observationsQuery.eq("org_id", orgId);
+        }
+        const { data: observationsData, error: observationsError } = await observationsQuery;
 
         if (observationsError) throw new Error(`Error fetching observations: ${observationsError.message}`);
 
@@ -455,8 +441,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 bg-zinc-950" style={{ fontFamily: 'Satoshi-Regular, Satoshi, sans-serif' }}>
-      <div className="mt-2 px-6">
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="mt-2 px-6 flex-1 min-h-0 flex flex-col">
         {/* Canonical main content row: three columns, scrollable */}
         <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Player list */}

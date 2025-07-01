@@ -9,6 +9,7 @@ interface CoachContextType {
   error: string | null;
   coachName: string;
   isAdmin: boolean;
+  isSuperadmin: boolean;
 }
 
 const CoachContext = createContext<CoachContextType | undefined>(undefined);
@@ -25,6 +26,7 @@ export function CoachProvider({ children }: CoachProviderProps) {
     : "Loading...";
 
   const isAdmin = coach?.is_admin || false;
+  const isSuperadmin = coach?.is_superadmin || false;
 
   const value: CoachContextType = {
     coach,
@@ -32,6 +34,7 @@ export function CoachProvider({ children }: CoachProviderProps) {
     error,
     coachName,
     isAdmin,
+    isSuperadmin,
   };
 
   return (
@@ -58,6 +61,11 @@ export function useCoachName() {
 export function useIsAdmin() {
   const { isAdmin } = useCoach();
   return isAdmin;
+}
+
+export function useIsSuperadmin() {
+  const { isSuperadmin } = useCoach();
+  return isSuperadmin;
 }
 
 export function useCoachId() {

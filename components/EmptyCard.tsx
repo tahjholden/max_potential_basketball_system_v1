@@ -9,6 +9,7 @@ interface EmptyCardProps {
   icon?: React.ReactNode;
   titleClassName?: string;
   fixedHeight?: boolean;
+  bare?: boolean;
 }
 
 const EmptyCard = ({
@@ -18,8 +19,13 @@ const EmptyCard = ({
   icon,
   titleClassName,
   fixedHeight,
+  bare = false,
 }: EmptyCardProps) => (
-  <div className={`relative flex-1 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 p-4 min-h-[160px] ${fixedHeight ? 'h-96' : ''}`}>
+  <div className={
+    bare
+      ? `flex flex-col flex-1 items-center justify-center min-h-[160px] ${fixedHeight ? 'h-96' : ''}`
+      : `relative flex-1 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 p-4 min-h-[160px] ${fixedHeight ? 'h-96' : ''}`
+  }>
     <PaneTitle className={`relative z-10 text-center ${titleClassName || ''}`}>{title}</PaneTitle>
     {message && <div className="text-zinc-400 text-center mt-2 mb-4">{message}</div>}
     <div className="flex flex-col items-center justify-center">

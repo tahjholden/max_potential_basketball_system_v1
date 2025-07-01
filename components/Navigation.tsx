@@ -25,17 +25,18 @@ import {
   MessageCircle,
   Trophy,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 
 // Import modal components
-import AddPlayerModal from "@/app/protected/players/AddPlayerModal";
-import AddObservationModal from "@/app/protected/players/AddObservationModal";
-import CreatePDPModal from "@/components/CreatePDPModal";
+const AddPlayerModal = dynamic(() => import("@/app/protected/players/AddPlayerModal"), { ssr: false });
+const AddObservationModal = dynamic(() => import("@/app/protected/players/AddObservationModal"), { ssr: false });
+const CreatePDPModal = dynamic(() => import("@/components/CreatePDPModal"), { ssr: false });
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
-import AddTeamModal from "@/components/AddTeamModal";
+const AddTeamModal = dynamic(() => import("@/components/AddTeamModal"), { ssr: false });
 
 const mainNavLinks = [
   { href: "/protected/dashboard", label: "Dashboard", icon: BarChart2 },
@@ -371,7 +372,7 @@ export default function Navigation() {
       </Dialog>
 
       {/* Add Observation Modal */}
-      {selectedPlayer && (
+      {selectedPlayer && addObservationOpen && (
         <AddObservationModal
           open={addObservationOpen}
           onClose={() => setAddObservationOpen(false)}
@@ -381,7 +382,7 @@ export default function Navigation() {
       )}
 
       {/* Create PDP Modal */}
-      {selectedPlayer && (
+      {selectedPlayer && createPDPOpen && (
         <CreatePDPModal
           open={createPDPOpen}
           onClose={() => setCreatePDPOpen(false)}
@@ -392,15 +393,17 @@ export default function Navigation() {
       )}
 
       {/* Add Team Modal */}
-      <AddTeamModal
-        open={addTeamOpen}
-        onClose={() => setAddTeamOpen(false)}
-        onTeamAdded={() => {
-          setAddTeamOpen(false);
-          toast.success("Team added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
-          setTimeout(() => { router.refresh(); }, 1200);
-        }}
-      />
+      {addTeamOpen && (
+        <AddTeamModal
+          open={addTeamOpen}
+          onClose={() => setAddTeamOpen(false)}
+          onTeamAdded={() => {
+            setAddTeamOpen(false);
+            toast.success("Team added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
+            setTimeout(() => { router.refresh(); }, 1200);
+          }}
+        />
+      )}
     </div>
   );
 } 

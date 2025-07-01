@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
+
+const AddCoachModal = dynamic(() => import("@/components/AddCoachModal"), { ssr: false });
 
 interface AddCoachButtonProps {
   onCoachAdded?: () => void;
@@ -10,19 +13,19 @@ interface AddCoachButtonProps {
 export default function AddCoachButton({ onCoachAdded, className = "" }: AddCoachButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleAddCoach = () => {
-    // TODO: Implement add coach modal
-    console.log("Add coach functionality coming soon");
-    setIsOpen(false);
-    onCoachAdded?.();
-  };
-
   return (
-    <button
-      onClick={handleAddCoach}
-      className={`border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition ${className}`}
-    >
-      Add Coach
-    </button>
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className={`border border-gold text-gold font-bold rounded-lg px-4 py-2 shadow hover:bg-gold/10 transition-colors ${className}`}
+      >
+        Add Coach
+      </button>
+      <AddCoachModal
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        onCoachAdded={onCoachAdded}
+      />
+    </>
   );
 } 

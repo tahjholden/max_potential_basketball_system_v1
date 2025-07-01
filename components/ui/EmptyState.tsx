@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 import { LucideIcon, Users, FileText, Archive, Search, AlertCircle, Plus } from "lucide-react";
 import EntityButton from "../EntityButton";
+import Image from "next/image";
+import maxsM from "@/public/maxsM.png";
 
 type EmptyStateVariant = "default" | "search" | "no-data" | "welcome" | "error" | "loading";
 
@@ -202,15 +204,17 @@ export function NoPDPsEmptyState({ onCreatePDP }: { onCreatePDP: () => void }) {
   return (
     <EmptyState
       variant="no-data"
-      title="No Development Plans"
-      description="No development plans have been created yet. Create your first PDP to get started."
-      icon={FileText}
+      title="No Development Plan Yet"
+      description="Get started by adding a new development plan for this player."
+      showIcon={false}
       action={{
-        label: "Create PDP",
+        label: "Add PDP",
         onClick: onCreatePDP,
         color: "gold"
       }}
-    />
+    >
+      <Image src={maxsM} alt="No PDP" width={240} height={240} className="mx-auto opacity-80 mb-4" />
+    </EmptyState>
   );
 }
 

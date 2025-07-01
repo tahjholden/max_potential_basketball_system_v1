@@ -10,6 +10,7 @@ interface Coach {
   last_name: string;
   email: string;
   is_admin: boolean;
+  is_superadmin: boolean;
   active: boolean;
   created_at: string;
   team_id?: string;

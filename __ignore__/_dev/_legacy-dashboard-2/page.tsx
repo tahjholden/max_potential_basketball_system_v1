@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import ManagePDPModal from "@/components/ManagePDPModal";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
-import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
+import DevelopmentPlanCard from "@/components/cards/DevelopmentPlanCard";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { GoldButton } from "@/components/ui/gold-button";
@@ -32,6 +32,9 @@ interface Pdp {
   id: string;
   content: string | null;
   start_date: string;
+  created_at: string;
+  player_id: string;
+  archived_at: string | null;
 }
 
 export default function DashboardPage({ coachId }: { coachId: string }) {
@@ -54,7 +57,7 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
     const supabase = createClient();
     const { data, error } = await supabase
       .from("pdp")
-      .select("id, content, start_date")
+      .select("id, content, start_date, created_at, player_id, archived_at")
       .eq("player_id", selected)
       .is("archived_at", null)
       .maybeSingle();
@@ -80,7 +83,7 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
     const supabase = createClient();
     const { data, error } = await supabase
       .from("pdp")
-      .select("id, content, start_date")
+      .select("id, content, start_date, created_at, player_id, archived_at")
       .eq("player_id", selected)
       .is("archived_at", null)
       .maybeSingle();
@@ -278,9 +281,10 @@ export default function DashboardPage({ coachId }: { coachId: string }) {
                   </div>
                 </div>
                 <DevelopmentPlanCard 
-                  player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
-                  pdp={currentPdp ? { ...currentPdp, created_at: currentPdp.start_date } : null}
-                  showActions={false}
+                  pdp={currentPdp}
+                  playerId={selectedPlayer?.id || ""}
+                  playerName={selectedPlayer?.name || ""}
+                  onPdpUpdate={fetchPdpWithRetry}
                 />
               </div>
 

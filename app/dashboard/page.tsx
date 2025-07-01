@@ -7,7 +7,7 @@ import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerListPane from "@/components/PlayerListPane";
 import PlayerProfilePane from "@/components/PlayerProfilePane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
-import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
+import DevelopmentPlanCard from "@/components/cards/DevelopmentPlanCard";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
@@ -162,14 +162,13 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-4">
                 <PlayerMetadataCard 
                   player={{ name: selectedPlayer.name, joined: selectedPlayer.joined }} 
-                  observations={observations}
                   playerId={selectedPlayer.id}
                   showDeleteButton={false}
                 />
                 <DevelopmentPlanCard 
-                  player={selectedPlayer}
                   pdp={currentPdp}
-                  showActions={false}
+                  playerId={selectedPlayer.id}
+                  playerName={selectedPlayer.name}
                   onPdpUpdate={() => {
                     // Refresh PDP data by re-fetching
                     if (playerId) {

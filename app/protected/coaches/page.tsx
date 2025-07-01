@@ -329,13 +329,17 @@ export default function CoachesPage() {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     let isAdmin = false;
+    let isSuperadmin = false;
+    let orgId = null;
     if (user) {
       const { data: coachData } = await supabase
         .from('coaches')
-        .select('is_admin')
+        .select('is_admin, is_superadmin, org_id')
         .eq('auth_uid', user.id)
         .single();
-      isAdmin = coachData?.is_admin;
+      isAdmin = coachData?.is_admin || false;
+      isSuperadmin = coachData?.is_superadmin || false;
+      orgId = coachData?.org_id;
     }
     // Fetch coaches
     let coachesQuery = supabase
@@ -346,11 +350,16 @@ export default function CoachesPage() {
         last_name,
         email,
         is_admin,
+        is_superadmin,
         active,
-        created_at
+        created_at,
+        org_id
       `)
       .order("last_name", { ascending: true });
-    if (!isAdmin) {
+    if (!isSuperadmin && orgId) {
+      coachesQuery = coachesQuery.eq("org_id", orgId);
+    }
+    if (!isAdmin && !isSuperadmin) {
       coachesQuery = coachesQuery.eq("active", true);
     }
     const { data: coachesData, error: coachesError } = await coachesQuery;
@@ -361,9 +370,11 @@ export default function CoachesPage() {
     }
 
     // Fetch team information separately (teams have coach_id)
-    const { data: teamsData } = await supabase
-      .from("teams")
-      .select("id, name, coach_id");
+    let teamsQuery = supabase.from("teams").select("id, name, coach_id, org_id");
+    if (!isSuperadmin && orgId) {
+      teamsQuery = teamsQuery.eq("org_id", orgId);
+    }
+    const { data: teamsData } = await teamsQuery;
 
     // Create a map of coach_id to team_name
     const coachTeamMap = new Map();
@@ -379,14 +390,19 @@ export default function CoachesPage() {
     }));
     setCoaches(transformedCoaches);
 
-    // Fetch all active PDPs for the PlayerListPane
-    const { data: pdpsData } = await supabase
+    // Fetch all active PDPs for the PlayerListPane with org filtering
+    let pdpsQuery = supabase
       .from("pdp")
       .select("id, player_id, content, archived_at")
       .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(20);
     
+    if (!isSuperadmin && orgId) {
+      pdpsQuery = pdpsQuery.eq("org_id", orgId);
+    }
+    
+    const { data: pdpsData } = await pdpsQuery;
     setAllPdps(pdpsData || []);
 
     // Set default selected coach to current user (only once)

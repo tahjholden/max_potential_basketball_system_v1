@@ -4,6 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import PaneTitle from "@/components/PaneTitle";
 import EntityButton from "./EntityButton";
+import EmptyCard from "@/components/EmptyCard";
+import { OutlineButton } from "@/components/ui/gold-outline-button";
 
 interface Player {
   id: string;
@@ -129,9 +131,15 @@ export default function PlayerListPane({
       </div>
       <div className="space-y-2 max-h-96 overflow-y-auto pr-3">
         {filteredPlayers.length === 0 ? (
-          <div className="text-zinc-500 text-sm text-center py-4">
-            {searchTerm ? "No players found." : "No players available."}
-          </div>
+          <EmptyCard
+            title={searchTerm ? "No players found." : "No players available."}
+            titleClassName="font-bold text-center"
+            action={onPlayerAdded ? (
+              <OutlineButton color="gold" onClick={onPlayerAdded}>
+                Add Player
+              </OutlineButton>
+            ) : null}
+          />
         ) : (
           filteredPlayers
             .sort((a, b) => a.name.localeCompare(b.name))
