@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import PageTitle from "@/components/PageTitle";
-import EmptyCard from "@/components/EmptyCard";
 import CoachListPane from "@/components/CoachListPane";
 import CoachProfilePane from "@/components/CoachProfilePane";
 import CoachObservationsPane from "@/components/CoachObservationsPane";
@@ -12,6 +11,7 @@ import EntityButton from '@/components/EntityButton';
 import DashboardPlayerListPane from '@/components/DashboardPlayerListPane';
 import PlayerListShared from "@/components/PlayerListShared";
 import SectionLabel from "@/components/SectionLabel";
+import EmptyStateCard from "@/components/ui/EmptyStateCard";
 
 // Type Definitions
 interface Coach {
@@ -591,50 +591,41 @@ export default function CoachesPage() {
                 <SectionLabel>Coach Profile</SectionLabel>
                 <CoachProfilePane coach={selectedCoach} />
                 <SectionLabel>Observations</SectionLabel>
-                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-                  {/* Header: Range selector */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <select
-                      value={observationRange}
-                      onChange={e => setObservationRange(e.target.value)}
-                      className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                      style={{ minWidth: 120 }}
-                    >
-                      <option value="week">This week</option>
-                      <option value="month">This month</option>
-                      <option value="all">All</option>
-                    </select>
-                  </div>
-                  {/* Scrollable observation list, responsive height */}
-                  <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col relative overflow-hidden">
+                  {/* Floating Range selector */}
+                  <select
+                    value={observationRange}
+                    onChange={e => setObservationRange(e.target.value)}
+                    className="absolute left-4 top-4 z-10 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm shadow-lg"
+                    style={{ minWidth: 120 }}
+                  >
+                    <option value="week">This week</option>
+                    <option value="month">This month</option>
+                    <option value="all">All</option>
+                  </select>
+                  {/* Card content (background) */}
+                  <div className="flex-1 min-h-0 flex flex-col justify-center items-center">
                     {observations.length === 0 ? (
-                      <div className="flex items-center justify-center w-full overflow-x-hidden h-full">
-                        <div style={{
-                          position: 'relative',
-                          width: '100%',
-                          maxWidth: '220px',
-                          height: '120px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          overflow: 'hidden',
-                        }}>
-                          <img
-                            src={require('@/public/maxsM.png')}
-                            alt="MP Shield"
-                            style={{
-                              objectFit: 'contain',
-                              width: '100%',
-                              height: '100%',
-                              filter: 'drop-shadow(0 2px 12px #2226)',
-                              opacity: 0.75,
-                              transform: 'scale(3)',
-                            }}
-                          />
-                        </div>
+                      <div className="flex flex-col items-center justify-center w-full h-full py-8">
+                        <img
+                          src="/maxsM.png"
+                          alt="MP Shield"
+                          width={120}
+                          height={120}
+                          style={{
+                            objectFit: "contain",
+                            maxWidth: "120px",
+                            maxHeight: "120px",
+                            margin: "0 auto",
+                            filter: "drop-shadow(0 2px 12px #2226)",
+                            opacity: 0.75,
+                            transform: "scale(2.2)",
+                          }}
+                        />
+                        <div className="text-zinc-400 text-center font-semibold mt-4">No Observations Yet</div>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-3 w-full">
+                      <div className="flex flex-col gap-3 w-full mt-10">
                         {displayedObservations.map(obs => (
                           <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
                             <div className="text-xs text-zinc-400 mb-1">{obs.player_name ? `${obs.player_name} — ` : ''}{obs.observation_date ? new Date(obs.observation_date).toLocaleDateString() : ''}</div>
@@ -662,15 +653,51 @@ export default function CoachesPage() {
                       placeholder="Search observations..."
                       value={observationSearch}
                       onChange={e => setObservationSearch(e.target.value)}
-                      className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                      className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm mt-2"
                     />
                   )}
                 </div>
               </>
             ) : (
               <div className="flex flex-col gap-4 h-full">
-                <EmptyCard title="Coach Profile" />
-                <EmptyCard title="Observations" />
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+                  <img
+                    src="/maxsM.png"
+                    alt="MP Shield"
+                    style={{
+                      objectFit: 'contain',
+                      width: '100%',
+                      height: '100%',
+                      maxWidth: '220px',
+                      maxHeight: '120px',
+                      display: 'block',
+                      margin: '0 auto',
+                      filter: 'drop-shadow(0 2px 12px #2226)',
+                      opacity: 0.75,
+                      transform: 'scale(3)',
+                    }}
+                  />
+                  <div className="text-zinc-400 text-center font-semibold mt-4">Coach Profile</div>
+                </div>
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+                  <img
+                    src="/maxsM.png"
+                    alt="MP Shield"
+                    style={{
+                      objectFit: 'contain',
+                      width: '100%',
+                      height: '100%',
+                      maxWidth: '220px',
+                      maxHeight: '120px',
+                      display: 'block',
+                      margin: '0 auto',
+                      filter: 'drop-shadow(0 2px 12px #2226)',
+                      opacity: 0.75,
+                      transform: 'scale(3)',
+                    }}
+                  />
+                  <div className="text-zinc-400 text-center font-semibold mt-4">Observations</div>
+                </div>
               </div>
             )}
           </div>

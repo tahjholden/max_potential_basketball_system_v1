@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import { OutlineButton } from "@/components/ui/gold-outline-button";
 import Image from "next/image";
-import maxsM from "@/public/maxsM.png";
+
 import EntityButton from "@/components/EntityButton";
 import EmptyState, { NoPDPsEmptyState } from "@/components/ui/EmptyState";
 const CreatePDPModal = dynamic(() => import("@/components/CreatePDPModal"), { ssr: false });

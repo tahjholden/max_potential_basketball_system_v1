@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import PaneTitle from "@/components/PaneTitle";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatDate } from "@/lib/ui-utils";
-import EmptyCard from "@/components/EmptyCard";
 
 interface ArchiveItem {
   id: string;
@@ -123,9 +122,45 @@ export default function ArchivePane({
 
   if (sortedItems.length === 0) {
     return emptyStateMessage ? (
-      <EmptyCard title={emptyStateMessage} titleClassName="font-bold text-center" />
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+        <img
+          src="/maxsM.png"
+          alt="MP Shield"
+          style={{
+            objectFit: 'contain',
+            width: '100%',
+            height: '100%',
+            maxWidth: '220px',
+            maxHeight: '120px',
+            display: 'block',
+            margin: '0 auto',
+            filter: 'drop-shadow(0 2px 12px #2226)',
+            opacity: 0.75,
+            transform: 'scale(3)',
+          }}
+        />
+        <div className="text-zinc-400 text-center font-semibold mt-4">{emptyStateMessage}</div>
+      </div>
     ) : (
-      <EmptyCard title="No archived plans found." titleClassName="font-bold text-center" />
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+        <img
+          src="/maxsM.png"
+          alt="MP Shield"
+          style={{
+            objectFit: 'contain',
+            width: '100%',
+            height: '100%',
+            maxWidth: '220px',
+            maxHeight: '120px',
+            display: 'block',
+            margin: '0 auto',
+            filter: 'drop-shadow(0 2px 12px #2226)',
+            opacity: 0.75,
+            transform: 'scale(3)',
+          }}
+        />
+        <div className="text-zinc-400 text-center font-semibold mt-4">No archived plans found.</div>
+      </div>
     );
   }
   return (

@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import PaneTitle from "@/components/PaneTitle";
 import EntityButton from "./EntityButton";
-import EmptyCard from "@/components/EmptyCard";
+import EmptyCard from "@/components/ui/EmptyCard";
 import { OutlineButton } from "@/components/ui/gold-outline-button";
+import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 
 interface Player {
   id: string;
@@ -130,16 +131,22 @@ export default function PlayerListPane({
         />
       </div>
       <div className="space-y-2 max-h-96 overflow-y-auto pr-3">
-        {filteredPlayers.length === 0 ? (
-          <EmptyCard
-            title={searchTerm ? "No players found." : "No players available."}
-            titleClassName="font-bold text-center"
-            action={onPlayerAdded ? (
-              <OutlineButton color="gold" onClick={onPlayerAdded}>
-                Add Player
-              </OutlineButton>
-            ) : null}
-          />
+        {teams.length === 0 ? (
+          <NoTeamsEmptyState onAddTeam={() => {}} />
+        ) : filteredPlayers.length === 0 ? (
+          <div className="space-y-4">
+            <EmptyCard
+              title={searchTerm ? "No players found." : "No players available."}
+              titleClassName="font-bold text-center"
+            />
+            {onPlayerAdded && (
+              <div className="flex justify-center">
+                <OutlineButton color="gold" onClick={onPlayerAdded}>
+                  Add Player
+                </OutlineButton>
+              </div>
+            )}
+          </div>
         ) : (
           filteredPlayers
             .sort((a, b) => a.name.localeCompare(b.name))

@@ -26,14 +26,14 @@ export default function ObservationInsightsPane({ total, playerTotal }: { total:
             </div>
             {/* Coming Soon Features */}
             <div className="flex flex-col items-center text-center w-full">
-              <ul className="mb-4 text-zinc-400 text-sm space-y-1 text-left w-full">
+              <ul className="mb-4 text-[#C2B56B] text-sm space-y-1 text-left w-full">
                 <li>• Player growth metrics</li>
                 <li>• Automated progress reports</li>
                 <li>• AI-powered feedback</li>
                 <li>• Tag trends & heatmaps</li>
                 <li>• Development plan tracking</li>
               </ul>
-              <span className="text-zinc-600 italic text-xs block mt-2 w-full">
+              <span className="text-white italic text-xs block mt-2 w-full">
                 These insights are coming soon. Stay tuned for advanced analytics!
               </span>
             </div>

@@ -7,9 +7,6 @@ import EntityListPane from "@/components/EntityListPane";
 import EntityMetadataCard from "@/components/EntityMetadataCard";
 import BulkDeleteObservationsPane from "@/components/BulkDeleteObservationsPane";
 import PDPArchivePane from "@/components/PDPArchivePane";
-import EmptyCard from "@/components/EmptyCard";
-import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
-import EntityButton from '@/components/EntityButton';
 import { NoPlayersEmptyState, NoArchivedPDPsEmptyState } from '@/components/ui/EmptyState';
 import { ErrorBadge } from '@/components/StatusBadge';
 import PlayerListShared from "@/components/PlayerListShared";
@@ -17,9 +14,11 @@ import SectionLabel from "@/components/SectionLabel";
 import PaneTitle from "@/components/PaneTitle";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import maxsM from "@/public/maxsM.png";
+
 import AddObservationButton from "@/components/AddObservationButton";
 import DevelopmentPlanCard from "@/components/cards/DevelopmentPlanCard";
+import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
+import EmptyStateCard from "@/components/ui/EmptyStateCard";
 
 // Type Definitions
 interface Player {
@@ -422,31 +421,21 @@ export default function TestPlayersPage() {
               {selectedPlayer ? (
                 <EntityMetadataCard
                   fields={[
-                    {
-                      label: "Name",
-                      value: selectedPlayer.name,
-                      highlight: true
-                    },
-                    {
-                      label: "Joined",
-                      value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy")
-                    },
-                    ...(selectedPlayer.team_name ? [{
-                      label: "Team",
-                      value: (
-                        <Link 
-                          href={`/protected/teams?teamId=${selectedPlayer.team_id}`}
-                          className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
-                        >
-                          {selectedPlayer.team_name}
-                        </Link>
-                      )
-                    }] : [])
+                    { label: "Name", value: selectedPlayer.name, highlight: true },
+                    { label: "Joined", value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy") },
+                    ...(selectedPlayer.team_name ? [{ label: "Team", value: (
+                      <Link 
+                        href={`/protected/teams?teamId=${selectedPlayer.team_id}`}
+                        className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
+                      >
+                        {selectedPlayer.team_name}
+                      </Link>
+                    ) }] : [])
                   ]}
                   actions={null}
                 />
               ) : (
-                <EmptyCard title="Select a Player to View Their Profile" />
+                <EmptyStateCard message="Select a Player to View Their Profile" />
               )}
               <SectionLabel>Development Plan</SectionLabel>
               {selectedPlayer ? (
@@ -456,16 +445,55 @@ export default function TestPlayersPage() {
                   playerName={selectedPlayer?.name}
                 />
               ) : (
-                <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+                  <Image
+                    src="/maxsM.png"
+                    alt="MP Shield"
+                    width={220}
+                    height={120}
+                    priority
+                    style={{
+                      objectFit: 'contain',
+                      width: '100%',
+                      height: '100%',
+                      maxWidth: '220px',
+                      maxHeight: '120px',
+                      display: 'block',
+                      margin: '0 auto',
+                      filter: 'drop-shadow(0 2px 12px #2226)',
+                      opacity: 0.75,
+                      transform: 'scale(3)',
+                    }}
+                  />
+                  <div className="text-zinc-400 text-center font-semibold mt-4">Select a Player to View Their Development Plan</div>
+                </div>
               )}
               <SectionLabel>Observations</SectionLabel>
               {selectedPlayer ? (
                 displayedObservations.length === 0 ? (
-                  <EmptyCard
-                    title="No Observations Yet"
-                    message="Get started by adding your first observation for this player."
-                    action={<AddObservationButton player={selectedPlayer} />}
-                  />
+                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+                    <Image
+                      src="/maxsM.png"
+                      alt="MP Shield"
+                      width={220}
+                      height={120}
+                      priority
+                      style={{
+                        objectFit: 'contain',
+                        width: '100%',
+                        height: '100%',
+                        maxWidth: '220px',
+                        maxHeight: '120px',
+                        display: 'block',
+                        margin: '0 auto',
+                        filter: 'drop-shadow(0 2px 12px #2226)',
+                        opacity: 0.75,
+                        transform: 'scale(3)',
+                      }}
+                    />
+                    <div className="text-zinc-400 text-center font-semibold mt-4">No Observations Yet</div>
+                    <div className="mt-6"><AddObservationButton player={selectedPlayer} /></div>
+                  </div>
                 ) : (
                   <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
                     {/* Header: Range selector */}
@@ -506,7 +534,28 @@ export default function TestPlayersPage() {
                   </div>
                 )
               ) : (
-                <EmptyCard title="Select a Player to View Observations" titleClassName="font-bold text-center" />
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+                  <Image
+                    src="/maxsM.png"
+                    alt="MP Shield"
+                    width={220}
+                    height={120}
+                    priority
+                    style={{
+                      objectFit: 'contain',
+                      width: '100%',
+                      height: '100%',
+                      maxWidth: '220px',
+                      maxHeight: '120px',
+                      display: 'block',
+                      margin: '0 auto',
+                      filter: 'drop-shadow(0 2px 12px #2226)',
+                      opacity: 0.75,
+                      transform: 'scale(3)',
+                    }}
+                  />
+                  <div className="text-zinc-400 text-center font-semibold mt-4">Select a Player to View Observations</div>
+                </div>
               )}
             </div>
           </div>
@@ -529,8 +578,10 @@ export default function TestPlayersPage() {
                     margin: '0 auto',
                   }}>
                     <Image
-                      src={maxsM}
+                      src="/maxsM.png"
                       alt="MP Shield"
+                      width={220}
+                      height={120}
                       priority
                       style={{
                         objectFit: 'contain',

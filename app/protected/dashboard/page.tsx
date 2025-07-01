@@ -9,15 +9,15 @@ import EditPDPModal from "@/components/EditPDPModal";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import { ErrorBadge } from '@/components/StatusBadge';
 import EntityMetadataCard from "@/components/EntityMetadataCard";
-import EmptyCard from "@/components/EmptyCard";
 import SectionLabel from "@/components/SectionLabel";
 import { format } from "date-fns";
 import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import PaneTitle from '@/components/PaneTitle';
-import { NoPlayersEmptyState } from "@/components/ui/EmptyState";
+import { NoPlayersEmptyState, NoTeamsEmptyState } from "@/components/ui/EmptyState";
 import PlayerListPane from '@/components/PlayerListPane';
 import ThreePaneLayout from '@/components/ThreePaneLayout';
+import EmptyStateCard from "@/components/ui/EmptyStateCard";
 
 interface Player {
   id: string;
@@ -70,7 +70,13 @@ export default function DashboardPage() {
   const [observationRange, setObservationRange] = useState('all');
   const [observationSearch, setObservationSearch] = useState('');
   const [showAllPlayers, setShowAllPlayers] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const MAX_PLAYERS = 10;
+
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -391,7 +397,7 @@ export default function DashboardPage() {
     );
   };
 
-  // Team filter for player list
+  // Team filter for player list - define this before early returns to prevent hydration issues
   const teamOptions = [
     { id: null, name: 'All Teams' },
     ...teams.map(t => ({ id: t.id, name: t.name }))
@@ -404,7 +410,8 @@ export default function DashboardPage() {
     : sortedPlayers;
   const displayedPlayers = showAllPlayers ? filteredPlayers : filteredPlayers.slice(0, MAX_PLAYERS);
 
-  if (loading) {
+  // Show loading state until hydrated to prevent hydration mismatch
+  if (loading || !isHydrated) {
     return (
       <div className="h-screen w-screen bg-zinc-950 flex items-center justify-center">
         <div className="flex flex-col items-center justify-center w-full">
@@ -452,62 +459,72 @@ export default function DashboardPage() {
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Players</SectionLabel>
             <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-              {/* Header: Team select and Add Player */}
-              <div className="flex items-center gap-2 mb-2">
-                <select
-                  value={selectedTeamId || ''}
-                  onChange={e => setSelectedTeamId(e.target.value || null)}
-                  className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                  style={{ minWidth: 120 }}
-                >
-                  {teamOptions.map(opt => (
-                    <option key={opt.id || 'all'} value={opt.id || ''}>{opt.name}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => setCreateModalOpen(true)}
-                  className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
-                >
-                  + Add Player
-                </button>
-              </div>
-              {/* Scrollable player list, responsive height */}
-              <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-                {displayedPlayers.map(player => renderPlayerItem(player, playerId === player.id))}
-                {filteredPlayers.length > MAX_PLAYERS && (
-                  <div
-                    className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                    onClick={() => setShowAllPlayers(!showAllPlayers)}
-                    title={showAllPlayers ? "Show less" : "Show more"}
-                  >
-                    <div className="flex-1 border-t border-zinc-700"></div>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${showAllPlayers ? 'rotate-180' : ''}`} />
-                    <div className="flex-1 border-t border-zinc-700"></div>
+              {(teams.length === 0 || players.length === 0) ? (
+                <NoTeamsEmptyState onAddTeam={() => {}} />
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <select
+                      value={selectedTeamId || ''}
+                      onChange={e => setSelectedTeamId(e.target.value || null)}
+                      className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                      style={{ minWidth: 120 }}
+                    >
+                      {teamOptions.map(opt => (
+                        <option key={opt.id || 'all'} value={opt.id || ''}>{opt.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setCreateModalOpen(true)}
+                      className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                    >
+                      + Add Player
+                    </button>
                   </div>
-                )}
-              </div>
-              {/* Search bar at the bottom - only show when chevron is needed */}
-              {filteredPlayers.length > MAX_PLAYERS && (
-                <input
-                  type="text"
-                  placeholder="Search players..."
-                  value={playerSearch}
-                  onChange={e => setPlayerSearch(e.target.value)}
-                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-                />
+                  {/* Scrollable player list, responsive height */}
+                  <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                    {displayedPlayers.map(player => renderPlayerItem(player, playerId === player.id))}
+                    {filteredPlayers.length > MAX_PLAYERS && (
+                      <div
+                        className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                        onClick={() => setShowAllPlayers(!showAllPlayers)}
+                        title={showAllPlayers ? "Show less" : "Show more"}
+                      >
+                        <div className="flex-1 border-t border-zinc-700"></div>
+                        <ChevronDown className={`w-5 h-5 transition-transform ${showAllPlayers ? 'rotate-180' : ''}`} />
+                        <div className="flex-1 border-t border-zinc-700"></div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Search bar at the bottom - only show when chevron is needed */}
+                  {filteredPlayers.length > MAX_PLAYERS && (
+                    <input
+                      type="text"
+                      placeholder="Search players..."
+                      value={playerSearch}
+                      onChange={e => setPlayerSearch(e.target.value)}
+                      className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                    />
+                  )}
+                </>
               )}
             </div>
           </div>
           {/* Center: Player Profile + Development Plan (wider column) */}
           <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Player Profile</SectionLabel>
-            {players.length === 0 ? (
-              <NoPlayersEmptyState onAddPlayer={() => setCreateModalOpen(true)} />
+            {selectedPlayer ? (
+              <EntityMetadataCard
+                fields={[
+                  { label: "Name", value: selectedPlayer.name, highlight: true },
+                  { label: "Joined", value: selectedPlayer.joined },
+                  ...(selectedPlayer.team_name ? [{ label: "Team", value: selectedPlayer.team_name }] : [])
+                ]}
+                actions={null}
+                cardClassName="mt-0"
+              />
             ) : (
-              <div className="flex flex-col gap-4 h-full">
-                <EmptyCard title="Player Profile" titleClassName="font-bold text-center" />
-                <EmptyCard title="Development Plan" titleClassName="font-bold text-center" />
-              </div>
+              <EmptyStateCard message="Select a Player to View Their Profile" />
             )}
           </div>
           {/* Right: Observations Card */}
@@ -548,8 +565,10 @@ export default function DashboardPage() {
                       overflow: 'hidden',
                     }}>
                       <Image
-                        src={require('@/public/maxsM.png')}
+                        src="/maxsM.png"
                         alt="MP Shield"
+                        width={220}
+                        height={120}
                         priority
                         style={{
                           objectFit: 'contain',

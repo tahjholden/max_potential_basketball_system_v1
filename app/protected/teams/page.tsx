@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { GoldButton } from '@/components/ui/gold-button';
 import EntityMetadataCard from '@/components/EntityMetadataCard';
-import EmptyCard from '@/components/EmptyCard';
 import SectionLabel from '@/components/SectionLabel';
 import ComingSoonCard from '@/components/ComingSoonCard';
 import { useSearchParams } from 'next/navigation';
@@ -14,6 +13,8 @@ import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
 import Link from "next/link";
 import type { Organization } from '@/types/entities';
 import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
+import AddTeamModal from "@/components/AddTeamModal";
+import Image from "next/image";
 
 interface Team {
   id: string;
@@ -35,158 +36,6 @@ interface Coach {
   id: string;
   first_name: string;
   last_name: string;
-}
-
-interface CreateTeamModalProps {
-  open: boolean;
-  onClose: () => void;
-  onCreated: () => void;
-}
-
-function CreateTeamModal({ open, onClose, onCreated }: CreateTeamModalProps) {
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
-  const [loadingOrgs, setLoadingOrgs] = useState(false);
-  const { coach } = useCurrentCoach();
-  const isSuperadmin = coach?.is_superadmin;
-
-  // Fetch orgs for superadmin
-  useEffect(() => {
-    if (open && isSuperadmin) {
-      setLoadingOrgs(true);
-      createClient()
-        .from("orgs")
-        .select("id, name, created_at")
-        .order("name")
-        .then(({ data, error }) => {
-          setLoadingOrgs(false);
-          if (error) {
-            setOrganizations([]);
-            return;
-          }
-          setOrganizations((data || []).map((org: any) => ({
-            id: org.id,
-            name: org.name,
-            created_at: org.created_at || ""
-          })));
-          if (data && data.length > 0) {
-            setSelectedOrgId(data[0].id);
-          }
-        });
-    }
-    if (!open) {
-      setSelectedOrgId("");
-    }
-  }, [open, isSuperadmin]);
-
-  const handleCreate = async () => {
-    if (!name.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const supabase = createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        setError("User not authenticated.");
-        setLoading(false);
-        return;
-      }
-      const { data: coachData, error: coachError } = await supabase
-        .from('coaches')
-        .select('id, org_id, is_superadmin')
-        .eq('auth_uid', user.id)
-        .single();
-      if (coachError || !coachData) {
-        setError("Coach record not found.");
-        setLoading(false);
-        return;
-      }
-      let orgId = coachData.org_id;
-      if (coachData.is_superadmin) {
-        if (!selectedOrgId) {
-          setError("Please select an organization");
-          setLoading(false);
-          return;
-        }
-        orgId = selectedOrgId;
-      }
-      if (!coachData.id || !orgId) {
-        console.error("Missing coachData.id or orgId", { coachId: coachData.id, orgId });
-        setError("Coach or organization information missing. Please contact support.");
-        setLoading(false);
-        return;
-      }
-      console.log("Creating team with:", { name: name.trim(), coach_id: coachData.id, org_id: orgId });
-      const { error: insertError } = await supabase.from("teams").insert({
-        name: name.trim(),
-        coach_id: coachData.id,
-        org_id: orgId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      if (insertError) {
-        setError(`Failed to create team: ${insertError.message}`);
-      } else {
-        setName('');
-        onCreated();
-        onClose();
-      }
-    } catch (err) {
-      setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold text-white mb-4">Create New Team</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
-              Team Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter team name..."
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white focus:outline-none focus:ring focus:border-gold"
-            />
-          </div>
-          {isSuperadmin && (
-            <div>
-              <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
-                Organization
-              </label>
-              <select
-                id="org_select"
-                value={selectedOrgId}
-                onChange={e => setSelectedOrgId(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
-                disabled={loadingOrgs}
-              >
-                {organizations.map(org => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <GoldButton onClick={handleCreate} disabled={!name.trim() || loading || (isSuperadmin && !selectedOrgId)}>
-              {loading ? "Creating..." : "Create Team"}
-            </GoldButton>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function TeamsPage() {
@@ -395,7 +244,28 @@ export default function TeamsPage() {
             cardClassName="mt-0"
           />
         ) : (
-          <EmptyCard title="Select a Team to View Their Profile" titleClassName="font-bold text-center" />
+          <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+            <Image
+              src="/maxsM.png"
+              alt="MP Shield"
+              width={220}
+              height={120}
+              priority
+              style={{
+                objectFit: 'contain',
+                width: '100%',
+                height: '100%',
+                maxWidth: '220px',
+                maxHeight: '120px',
+                display: 'block',
+                margin: '0 auto',
+                filter: 'drop-shadow(0 2px 12px #2226)',
+                opacity: 0.75,
+                transform: 'scale(3)',
+              }}
+            />
+            <div className="text-zinc-400 text-center font-semibold mt-4">Select a Team to View Their Profile</div>
+          </div>
         )}
         <SectionLabel>Roster</SectionLabel>
         {selectedTeam ? (
@@ -426,7 +296,28 @@ export default function TeamsPage() {
             )}
           </div>
         ) : (
-          <EmptyCard title="Select a Team to View Their Roster" titleClassName="font-bold text-center" />
+          <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
+            <Image
+              src="/maxsM.png"
+              alt="MP Shield"
+              width={220}
+              height={120}
+              priority
+              style={{
+                objectFit: 'contain',
+                width: '100%',
+                height: '100%',
+                maxWidth: '220px',
+                maxHeight: '120px',
+                display: 'block',
+                margin: '0 auto',
+                filter: 'drop-shadow(0 2px 12px #2226)',
+                opacity: 0.75,
+                transform: 'scale(3)',
+              }}
+            />
+            <div className="text-zinc-400 text-center font-semibold mt-4">Select a Team to View Their Roster</div>
+          </div>
         )}
       </div>
       {/* Right: Planned Features */}
@@ -452,10 +343,10 @@ export default function TeamsPage() {
           cardClassName="w-full h-full flex flex-col justify-start"
         />
       </div>
-      <CreateTeamModal
+      <AddTeamModal
         open={modalOpen}
         onClose={closeModal}
-        onCreated={() => {
+        onTeamAdded={() => {
           const fetchData = async () => {
             const supabase = createClient();
             const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });

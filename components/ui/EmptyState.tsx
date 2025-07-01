@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { LucideIcon, Users, FileText, Archive, Search, AlertCircle, Plus } from "lucide-react";
 import EntityButton from "../EntityButton";
 import Image from "next/image";
-import maxsM from "@/public/maxsM.png";
 
 type EmptyStateVariant = "default" | "search" | "no-data" | "welcome" | "error" | "loading";
 
@@ -170,33 +169,30 @@ export function NoCoachesEmptyState({ onAddCoach }: { onAddCoach: () => void }) 
 
 export function NoTeamsEmptyState({ onAddTeam }: { onAddTeam: () => void }) {
   return (
-    <EmptyState
-      variant="no-data"
-      title={undefined}
-      description="There are no teams in your organization yet. Add your first team to get started."
-      showIcon={false}
-      action={{
-        label: "Add Team",
-        onClick: onAddTeam,
-        color: "gold"
-      }}
-    >
-      <Image
-        src={maxsM}
+    <div className="px-4 py-8 flex flex-col items-center justify-center min-h-[120px] bg-transparent border-none shadow-none overflow-hidden">
+      <img
+        src="/maxsM.png"
         alt="MP Shield"
-        priority
+        width={220}
+        height={120}
         style={{
           objectFit: "contain",
+          width: "100%",
+          height: "100%",
           maxWidth: "220px",
           maxHeight: "120px",
           display: "block",
           margin: "0 auto",
           filter: "drop-shadow(0 2px 12px #2226)",
           opacity: 0.75,
+          transform: "scale(3)",
         }}
       />
-      <div className="text-zinc-300 font-semibold text-lg mt-4 mb-2 text-center">Add Your First Team</div>
-    </EmptyState>
+      <div className="text-zinc-400 text-center font-semibold mt-4 mb-4">Add Your First Team</div>
+      <div className="text-zinc-500 text-center text-base mt-2">
+        To add a team, use the <span className="font-semibold text-[#C2B56B]">Add Team</span> button in the navigation bar.
+      </div>
+    </div>
   );
 }
 
@@ -229,7 +225,7 @@ export function NoPDPsEmptyState({ onCreatePDP }: { onCreatePDP: () => void }) {
         color: "gold"
       }}
     >
-      <Image src={maxsM} alt="No PDP" width={240} height={240} className="mx-auto opacity-80 mb-4" />
+      <Image src="/maxsM.png" alt="No PDP" width={240} height={240} className="mx-auto opacity-80 mb-4" />
     </EmptyState>
   );
 }

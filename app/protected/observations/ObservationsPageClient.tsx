@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 
 interface Player {
   id: string;
@@ -100,22 +101,26 @@ export default function ObservationsPageClient({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full mb-4 p-2 rounded bg-zinc-800 text-sm placeholder-gray-400"
         />
-        {filteredPlayers.map((player) => (
-          <div
-            key={player.id}
-            onClick={() => handlePlayerSelect(player)}
-            className={`p-2 mb-2 rounded cursor-pointer ${
-              selectedPlayer?.id === player.id
-                ? "bg-[#d8cc97] text-black font-semibold"
-                : "bg-zinc-800 hover:bg-zinc-700"
-            }`}
-          >
-            <p className="font-medium">{player.name}</p>
-            <p className="text-xs text-gray-400">
-              {observations.filter((obs) => obs.playerId === player.id).length} observations
-            </p>
-          </div>
-        ))}
+        {players.length === 0 ? (
+          <NoTeamsEmptyState onAddTeam={() => {}} />
+        ) : (
+          filteredPlayers.map((player) => (
+            <div
+              key={player.id}
+              onClick={() => handlePlayerSelect(player)}
+              className={`p-2 mb-2 rounded cursor-pointer ${
+                selectedPlayer?.id === player.id
+                  ? "bg-[#d8cc97] text-black font-semibold"
+                  : "bg-zinc-800 hover:bg-zinc-700"
+              }`}
+            >
+              <p className="font-medium">{player.name}</p>
+              <p className="text-xs text-gray-400">
+                {observations.filter((obs) => obs.playerId === player.id).length} observations
+              </p>
+            </div>
+          ))
+        )}
       </div>
 
       {/* CENTER PANE: Player's Observations */}

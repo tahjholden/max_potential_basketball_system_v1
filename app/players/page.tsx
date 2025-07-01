@@ -11,6 +11,9 @@ import EmptyCard from "@/components/EmptyCard";
 import PDPArchivePane from "@/components/PDPArchivePane";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import ObservationFeedPane from "@/components/ObservationFeedPane";
+import PlayerListShared from "@/components/PlayerListShared";
+import SectionLabel from "@/components/SectionLabel";
+import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 
 interface Player {
   id: string;
@@ -182,13 +185,23 @@ export default function PlayersPage() {
         <PageTitle>Players</PageTitle>
         <ThreePaneLayout
           leftPane={
-            <PlayerListPane
-              players={players}
-              pdps={allPdps}
-              onSelect={() => {
-                // Player selection is now handled by the global store
-              }}
-            />
+            <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+              <SectionLabel>Players</SectionLabel>
+              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+                {players.length === 0 ? (
+                  <NoTeamsEmptyState onAddTeam={() => {}} />
+                ) : (
+                  <PlayerListShared
+                    players={players}
+                    teams={[]}
+                    selectedPlayerId={playerId}
+                    setSelectedPlayerId={() => {}}
+                    selectedTeamId={null}
+                    setSelectedTeamId={() => {}}
+                  />
+                )}
+              </div>
+            </div>
           }
           centerPane={
             selectedPlayer ? (

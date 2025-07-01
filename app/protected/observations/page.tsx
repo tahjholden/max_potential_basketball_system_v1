@@ -10,13 +10,14 @@ import ThreePaneLayout from "@/components/ThreePaneLayout";
 import EntityListPane from "@/components/EntityListPane";
 import MiddlePane from "@/components/MiddlePane";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
-import EmptyCard from "@/components/EmptyCard";
 import PageTitle from "@/components/PageTitle";
 import EntityButton from '@/components/EntityButton';
 import { ErrorBadge } from '@/components/StatusBadge';
 import SectionLabel from "@/components/SectionLabel";
 import EntityMetadataCard from "@/components/EntityMetadataCard";
 import PlayerListShared from "@/components/PlayerListShared";
+import EmptyStateCard from "@/components/ui/EmptyStateCard";
+import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 
 // Type definitions - matching dashboard exactly
 interface Player {
@@ -365,40 +366,21 @@ export default function ObservationsPage() {
           {/* Left: Player list */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Players</SectionLabel>
-            {players.length > 0 && playerIdsWithPDP.size > 0 ? (
-              <PlayerListShared
-                players={players}
-                teams={teams}
-                selectedPlayerId={playerId}
-                setSelectedPlayerId={setPlayerId}
-                selectedTeamId={selectedTeamId}
-                setSelectedTeamId={setSelectedTeamId}
-                playerIdsWithPDP={playerIdsWithPDP}
-              />
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 min-h-0">
-                <span className="text-zinc-400 text-lg font-semibold mb-4">Loading players...</span>
-                <Image
-                  src="/maxsM.png"
-                  alt="MP Shield"
-                  width={220}
-                  height={120}
-                  priority
-                  style={{
-                    objectFit: "contain",
-                    width: "100%",
-                    height: "100%",
-                    maxWidth: "220px",
-                    maxHeight: "120px",
-                    display: "block",
-                    margin: "0 auto",
-                    filter: "drop-shadow(0 2px 12px #2226)",
-                    opacity: 0.75,
-                    transform: "scale(3)",
-                  }}
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+              {(teams.length === 0 || players.length === 0) ? (
+                <NoTeamsEmptyState onAddTeam={() => {}} />
+              ) : (
+                <PlayerListShared
+                  players={players}
+                  teams={teams}
+                  selectedPlayerId={playerId}
+                  setSelectedPlayerId={setPlayerId}
+                  selectedTeamId={selectedTeamId}
+                  setSelectedTeamId={setSelectedTeamId}
+                  playerIdsWithPDP={playerIdsWithPDP}
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
           {/* Center: Player Profile + Development Plan */}
           <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
@@ -414,7 +396,7 @@ export default function ObservationsPage() {
                 cardClassName="mt-0"
               />
             ) : (
-              <EmptyCard title="Select a Player to View Their Profile" titleClassName="font-bold text-center" />
+              <EmptyStateCard message="Select a Player to View Their Profile" />
             )}
             <SectionLabel>Development Plan</SectionLabel>
             {selectedPlayer ? (
@@ -427,11 +409,11 @@ export default function ObservationsPage() {
                 cardClassName="mt-0"
               />
             ) : (
-              <EmptyCard title="Select a Player to View Their Development Plan" titleClassName="font-bold text-center" />
+              <EmptyStateCard message="Select a Player to View Their Development Plan" />
             )}
             <SectionLabel>Observations</SectionLabel>
             {!selectedPlayer ? (
-              <EmptyCard title="Select a Player to View Observations" titleClassName="font-bold text-center" />
+              <EmptyStateCard message="Select a Player to View Observations" />
             ) : (
               <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
                 {/* Header: Range selector */}
@@ -450,7 +432,7 @@ export default function ObservationsPage() {
                 {/* Scrollable observation list, responsive height */}
                 <div className="flex-1 min-h-0 overflow-y-auto mb-2">
                   {displayedObservations.length === 0 ? (
-                    <EmptyCard title="No observations found." titleClassName="font-bold text-center" />
+                    <EmptyStateCard message="No observations found." />
                   ) : (
                     <div className="flex flex-col gap-3 w-full">
                       {displayedObservations.map(obs => (
@@ -504,4 +486,4 @@ export default function ObservationsPage() {
       </div>
     </div>
   );
-} 
+}

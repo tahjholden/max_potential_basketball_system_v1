@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
+import EmptyStateCard from "@/components/ui/EmptyStateCard";
 
 interface Player {
   id: string;
@@ -89,49 +91,55 @@ const PlayerListShared: React.FC<PlayerListSharedProps> = ({
 
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-      {/* Header: Team select */}
-      <div className="flex items-center gap-2 mb-2">
-        <select
-          value={selectedTeamId || ""}
-          onChange={(e) => setSelectedTeamId(e.target.value || null)}
-          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-          style={{ minWidth: 120 }}
-        >
-          {teamOptions.map((opt) => (
-            <option key={opt.id || "all"} value={opt.id || ""}>
-              {opt.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      {/* Scrollable player list, responsive height */}
-      <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-        {displayedPlayers.map((player) =>
-          renderPlayerItem(player, selectedPlayerId === player.id)
-        )}
-        {filteredPlayers.length > MAX_PLAYERS && (
-          <div
-            className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-            onClick={() => setShowAllPlayers(!showAllPlayers)}
-            title={showAllPlayers ? "Show less" : "Show more"}
-          >
-            <div className="flex-1 border-t border-zinc-700"></div>
-            <ChevronDown
-              className={`w-5 h-5 transition-transform ${showAllPlayers ? "rotate-180" : ""}`}
-            />
-            <div className="flex-1 border-t border-zinc-700"></div>
+      {(teams.length === 0 || players.length === 0) ? (
+        <NoTeamsEmptyState onAddTeam={() => {}} />
+      ) : (
+        <>
+          {/* Header: Team select */}
+          <div className="flex items-center gap-2 mb-2">
+            <select
+              value={selectedTeamId || ""}
+              onChange={(e) => setSelectedTeamId(e.target.value || null)}
+              className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+              style={{ minWidth: 120 }}
+            >
+              {teamOptions.map((opt) => (
+                <option key={opt.id || "all"} value={opt.id || ""}>
+                  {opt.name}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
-      </div>
-      {/* Search bar at the bottom - only show when chevron is needed */}
-      {filteredPlayers.length > MAX_PLAYERS && (
-        <input
-          type="text"
-          placeholder="Search players..."
-          value={playerSearch}
-          onChange={(e) => setPlayerSearch(e.target.value)}
-          className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-        />
+          {/* Scrollable player list, responsive height */}
+          <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+            {displayedPlayers.map((player) =>
+              renderPlayerItem(player, selectedPlayerId === player.id)
+            )}
+            {teams.length > 0 && filteredPlayers.length > MAX_PLAYERS && (
+              <div
+                className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                onClick={() => setShowAllPlayers(!showAllPlayers)}
+                title={showAllPlayers ? "Show less" : "Show more"}
+              >
+                <div className="flex-1 border-t border-zinc-700"></div>
+                <ChevronDown
+                  className={`w-5 h-5 transition-transform ${showAllPlayers ? "rotate-180" : ""}`}
+                />
+                <div className="flex-1 border-t border-zinc-700"></div>
+              </div>
+            )}
+          </div>
+          {/* Search bar at the bottom - only show when chevron is needed and there are players */}
+          {teams.length > 0 && displayedPlayers.length > 0 && filteredPlayers.length > MAX_PLAYERS && (
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={playerSearch}
+              onChange={(e) => setPlayerSearch(e.target.value)}
+              className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+            />
+          )}
+        </>
       )}
     </div>
   );
