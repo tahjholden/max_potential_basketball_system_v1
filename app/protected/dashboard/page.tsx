@@ -269,7 +269,7 @@ export default function DashboardPage() {
             first_name: player.first_name,
             last_name: player.last_name,
             observations: observationCounts.get(player.id) || 0,
-            joined: new Date(player.created_at).toLocaleDateString(),
+            joined: player.created_at ? format(new Date(player.created_at), "MMMM do, yyyy") : "—",
             team_id: player.team_id,
             team_name: player.teams?.name || undefined,
           };
