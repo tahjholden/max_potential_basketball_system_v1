@@ -80,20 +80,20 @@ const SharedPlayerList: React.FC<SharedPlayerListProps> = ({
         {/* Player list */}
         <div className="flex-1 min-h-0 mb-0">
           {displayedPlayers.map(player => {
-            const hasNoPlan = playerIdsWithPDP.size > 0 && !playerIdsWithPDP.has(player.id);
+            const hasPlan = playerIdsWithPDP.has(player.id);
             return (
               <button
                 key={player.id}
                 onClick={() => onSelectPlayer(player.id)}
                 className={
                   "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
-                  (hasNoPlan
+                  (hasPlan
                     ? (player.id === selectedPlayerId
-                        ? "bg-[#A22828] text-white border-[#A22828]"
-                        : "bg-zinc-900 text-[#A22828] border-[#A22828] hover:bg-[#A22828]/10")
-                    : (player.id === selectedPlayerId
                         ? "bg-[#C2B56B] text-black border-[#C2B56B]"
                         : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
+                    : (player.id === selectedPlayerId
+                        ? "bg-[#A22828] text-white border-[#A22828]"
+                        : "bg-zinc-900 text-[#A22828] border-[#A22828] hover:bg-[#A22828]/10")
                   )
                 }
               >

@@ -18,6 +18,7 @@ import EntityMetadataCard from "@/components/EntityMetadataCard";
 import SharedPlayerList from "@/components/SharedPlayerList";
 import EmptyStateCard from "@/components/ui/EmptyStateCard";
 import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
+import AddObservationModal from "@/app/protected/dashboard/AddObservationModal";
 
 // Type definitions - matching dashboard exactly
 interface Player {
@@ -64,6 +65,7 @@ export default function ObservationsPage() {
   const [observationRange, setObservationRange] = useState('all');
   const [observationSearch, setObservationSearch] = useState('');
   const [showAllObservations, setShowAllObservations] = useState(false);
+  const [addObservationOpen, setAddObservationOpen] = useState(false);
   const MAX_OBSERVATIONS = 10;
 
   const selectedPlayer = players.find((p) => p.id === playerId);
@@ -320,6 +322,32 @@ export default function ObservationsPage() {
   const sortedObservations = [...filteredObservations].sort((a, b) => a.content.localeCompare(b.content));
   const displayedObservations = showAllObservations ? sortedObservations : sortedObservations.slice(0, MAX_OBSERVATIONS);
 
+  // AddObservationModal submit handler
+  const handleAddObservation = async (content: string) => {
+    if (!selectedPlayer || !currentPdp) return;
+    const supabase = createClient();
+    await supabase.from("observations").insert([
+      {
+        player_id: selectedPlayer.id,
+        pdp_id: currentPdp.id,
+        content,
+        observation_date: new Date().toISOString().slice(0, 10),
+        archived: false,
+      },
+    ]);
+    setAddObservationOpen(false);
+    // Refetch observations
+    const { data } = await supabase
+      .from("observations")
+      .select("id, content, observation_date, created_at, player_id")
+      .eq("player_id", selectedPlayer.id)
+      .eq("pdp_id", currentPdp.id)
+      .eq("archived", false)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setObservations((data || []).map((obs: any) => ({ ...obs, archived: false })));
+  };
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-zinc-950 flex items-center justify-center">
@@ -410,25 +438,34 @@ export default function ObservationsPage() {
             {!selectedPlayer ? (
               <EmptyStateCard message="Select a Player to View Observations" />
             ) : (
-              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-                {/* Header: Range selector */}
-                <div className="flex items-center gap-2 mb-2">
-                  <select
-                    value={observationRange}
-                    onChange={e => setObservationRange(e.target.value)}
-                    className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                    style={{ minWidth: 120 }}
-                  >
-                    <option value="week">This week</option>
-                    <option value="month">This month</option>
-                    <option value="all">All</option>
-                  </select>
-                </div>
-                {/* Scrollable observation list, responsive height */}
-                <div className="flex-1 min-h-0 mb-2">
-                  {displayedObservations.length === 0 ? (
-                    <EmptyStateCard message="No observations found." />
-                  ) : (
+              displayedObservations.length === 0 ? (
+                <EmptyStateCard message="No observations found." />
+              ) : (
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+                  {/* Header: Add Observation button and Range selector */}
+                  <div className="flex items-center gap-2 mb-2 justify-between">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={observationRange}
+                        onChange={e => setObservationRange(e.target.value)}
+                        className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                        style={{ minWidth: 120 }}
+                      >
+                        <option value="week">This week</option>
+                        <option value="month">This month</option>
+                        <option value="all">All</option>
+                      </select>
+                    </div>
+                    <button
+                      className="bg-[#C2B56B] text-black font-bold rounded px-4 py-2 text-sm hover:bg-[#b3a04e] transition-colors"
+                      onClick={() => setAddObservationOpen(true)}
+                      disabled={!selectedPlayer || !currentPdp}
+                    >
+                      + Add Observation
+                    </button>
+                  </div>
+                  {/* Scrollable observation list, responsive height */}
+                  <div className="flex-1 min-h-0 mb-2">
                     <div className="flex flex-col gap-3 w-full">
                       {displayedObservations.map(obs => (
                         <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
@@ -448,19 +485,27 @@ export default function ObservationsPage() {
                         </div>
                       )}
                     </div>
+                  </div>
+                  {/* Search bar at the bottom - only show when chevron is needed */}
+                  {filteredObservations.length > MAX_OBSERVATIONS && (
+                    <input
+                      type="text"
+                      placeholder="Search observations..."
+                      value={observationSearch}
+                      onChange={e => setObservationSearch(e.target.value)}
+                      className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                    />
                   )}
-                </div>
-                {/* Search bar at the bottom - only show when chevron is needed */}
-                {filteredObservations.length > MAX_OBSERVATIONS && (
-                  <input
-                    type="text"
-                    placeholder="Search observations..."
-                    value={observationSearch}
-                    onChange={e => setObservationSearch(e.target.value)}
-                    className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                  {/* Add Observation Modal */}
+                  <AddObservationModal
+                    open={addObservationOpen}
+                    onClose={() => setAddObservationOpen(false)}
+                    onSubmit={handleAddObservation}
+                    playerId={selectedPlayer ? selectedPlayer.id : ""}
+                    pdpId={currentPdp ? currentPdp.id : ""}
                   />
-                )}
-              </div>
+                </div>
+              )
             )}
           </div>
           {/* Right: Insights or additional info */}
