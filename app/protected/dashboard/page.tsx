@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import EntityListPane from "@/components/EntityListPane";
-import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import { createClient } from "@/lib/supabase/client";
 import CreatePDPModal from "@/components/CreatePDPModal";
 import EditPDPModal from "@/components/EditPDPModal";
@@ -15,11 +14,12 @@ import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import PaneTitle from '@/components/PaneTitle';
 import { NoPlayersEmptyState, NoTeamsEmptyState } from "@/components/ui/EmptyState";
-import PlayerListPane from '@/components/PlayerListPane';
 import ThreePaneLayout from '@/components/ThreePaneLayout';
-import EmptyStateCard from "@/components/ui/EmptyStateCard";
+import EmptyState from "@/components/ui/EmptyState";
 import { GoldButton } from "@/components/ui/gold-button";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Users } from "lucide-react";
 
 interface Player {
   id: string;
@@ -458,11 +458,17 @@ export default function DashboardPage() {
         {/* Canonical main content row: three columns, scrollable */}
         <div className="flex-1 min-h-0 flex gap-6">
           {/* Left: Player list */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
+          <div className="flex-1 min-w-0 flex flex-col gap-6 min-h-0">
             <SectionLabel>Players</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
+            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
               {(teams.length === 0 || players.length === 0) ? (
-                <NoTeamsEmptyState onAddTeam={() => {}} />
+                <EmptyState
+                  icon={Users}
+                  title={teams.length === 0 ? "No Teams Found" : "No Players Found"}
+                  description={teams.length === 0 ? "Add your first team to get started." : "Add your first player to get started."}
+                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                  action={teams.length === 0 ? undefined : { label: "+ Add Player", onClick: () => setCreateModalOpen(true), color: "gold" }}
+                />
               ) : (
                 <>
                   <div className="flex items-center gap-2 mb-2">
@@ -476,12 +482,6 @@ export default function DashboardPage() {
                         <option key={opt.id || 'all'} value={opt.id || ''}>{opt.name}</option>
                       ))}
                     </select>
-                    <button
-                      onClick={() => setCreateModalOpen(true)}
-                      className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
-                    >
-                      + Add Player
-                    </button>
                   </div>
                   {/* Scrollable player list, responsive height */}
                   <div className="flex-1 min-h-0 mb-2">
@@ -510,102 +510,70 @@ export default function DashboardPage() {
                   )}
                 </>
               )}
-            </div>
+            </Card>
           </div>
           {/* Center: Player Profile + Development Plan (wider column) */}
-          <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
+          <div className="flex-[2] min-w-0 flex flex-col gap-6 min-h-0">
             <SectionLabel>Player Profile</SectionLabel>
-            {selectedPlayer ? (
-              <EntityMetadataCard
-                fields={[
-                  { label: "Name", value: selectedPlayer.name, highlight: true },
-                  { label: "Joined", value: selectedPlayer.joined },
-                  ...(selectedPlayer.team_name ? [{ label: "Team", value: selectedPlayer.team_name }] : [])
-                ]}
-                actions={
-                  <div className="flex gap-2 justify-end">
-                    <GoldButton onClick={() => alert('Edit Player')}>Edit</GoldButton>
-                    <Button variant="destructive" onClick={() => alert('Delete Player')}>Delete</Button>
-                  </div>
-                }
-                cardClassName="mt-0"
-              />
-            ) : (
-              <EmptyStateCard message="Select a Player to View Their Profile" />
-            )}
-            {/* Duplicated Development Plan card and title from observations page */}
-            <SectionLabel>Development Plan</SectionLabel>
-            {selectedPlayer ? (
-              <EntityMetadataCard
-                fields={[
-                  { label: "Started", value: currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—" },
-                  { label: "Plan", value: currentPdp?.content || "No active plan." }
-                ]}
-                actions={null}
-                cardClassName="mt-0"
-              />
-            ) : (
-              <EmptyStateCard message="Select a Player to View Their Development Plan" />
-            )}
-          </div>
-          {/* Right: Observations Card */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <SectionLabel>Observations</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 min-h-[120px] max-h-[220px] w-full flex flex-col items-center justify-center">
-              {/* Header: Range selector */}
+            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
               {selectedPlayer ? (
-                <div className="flex items-center gap-2 mb-2">
-                  <select
-                    value={observationRange}
-                    onChange={e => setObservationRange(e.target.value)}
-                    className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                    style={{ minWidth: 120 }}
-                  >
-                    <option value="week">This week</option>
-                    <option value="month">This month</option>
-                    <option value="all">All</option>
-                  </select>
+                <div>
+                  <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedPlayer.name}</div>
+                  <div className="text-sm text-zinc-400 font-medium mb-1">Joined: {selectedPlayer.joined}</div>
+                  {selectedPlayer.team_name && <div className="text-sm text-zinc-400 font-medium mb-1">Team: {selectedPlayer.team_name}</div>}
                 </div>
               ) : (
-                <div className="mb-2" />
+                <EmptyState
+                  icon={Users}
+                  title="Select a Player to View Their Profile"
+                  description="Pick a player from the list to see their details."
+                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                />
               )}
-              {/* Observation list, see more chevron for overflow */}
-              <div className="flex flex-col gap-3 w-full mb-2" style={{overflow: 'visible'}}>
-                {!selectedPlayer || sortedObservations.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center w-full">
-                    <div style={{
-                      position: 'relative',
-                      width: '100%',
-                      maxWidth: '220px',
-                      height: '120px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      margin: '0 auto',
-                    }}>
-                      <Image
-                        src="/maxsM.png"
-                        alt="MP Shield"
-                        width={220}
-                        height={120}
-                        priority
-                        style={{
-                          objectFit: 'contain',
-                          width: '100%',
-                          height: '100%',
-                          filter: 'drop-shadow(0 2px 12px #2226)',
-                          opacity: 0.75,
-                          transform: 'scale(3)',
-                        }}
-                      />
-                    </div>
-                    <div className="text-zinc-400 text-center font-semibold mt-4">
-                      {selectedPlayer ? 'No Observations Yet' : 'Select a Player to View Observations'}
-                    </div>
+            </Card>
+            <SectionLabel>Development Plan</SectionLabel>
+            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+              {selectedPlayer ? (
+                <div>
+                  <div className="text-sm text-zinc-400 font-medium mb-1">Started: {currentPdp?.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—"}</div>
+                  <div className="text-base text-zinc-300 mb-2">{currentPdp?.content || "No active plan."}</div>
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Users}
+                  title="Select a Player to View Their Development Plan"
+                  description="Pick a player from the list to see their development plan."
+                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                />
+              )}
+            </Card>
+          </div>
+          {/* Right: Observations Card */}
+          <div className="flex-1 min-w-0 flex flex-col gap-6 min-h-0">
+            <SectionLabel>Observations</SectionLabel>
+            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+              {(!selectedPlayer || sortedObservations.length === 0) ? (
+                <EmptyState
+                  icon={Users}
+                  title={selectedPlayer ? "No Observations Yet" : "Select a Player to View Observations"}
+                  description={selectedPlayer ? "Add your first observation for this player." : "Pick a player from the list to see their observations."}
+                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                />
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <select
+                      value={observationRange}
+                      onChange={e => setObservationRange(e.target.value)}
+                      className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                      style={{ minWidth: 120 }}
+                    >
+                      <option value="week">This week</option>
+                      <option value="month">This month</option>
+                      <option value="all">All</option>
+                    </select>
                   </div>
-                ) : (
-                  <>
+                  <div className="flex flex-col gap-3 w-full mb-2" style={{overflow: 'visible'}}>
                     {(showAllObservations || sortedObservations.length <= 5
                       ? sortedObservations
                       : sortedObservations.slice(0, 5)
@@ -626,10 +594,10 @@ export default function DashboardPage() {
                         <div className="flex-1 border-t border-zinc-700"></div>
                       </div>
                     )}
-                  </>
-                )}
-              </div>
-            </div>
+                  </div>
+                </>
+              )}
+            </Card>
           </div>
         </div>
         {/* Modals */}

@@ -79,7 +79,7 @@ export default function EmptyState({
   const displayDescription = description || defaults.description;
 
   return (
-    <div className={`bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 text-center ${className}`}>
+    <div className={`flex flex-col items-center justify-center min-h-[160px] text-center ${className}`}>
       {showIcon && (
         <div className="flex justify-center mb-4">
           <IconComponent 

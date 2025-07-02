@@ -1,6 +1,6 @@
 import PlayerMetadataCard from "./PlayerMetadataCard";
 import BulkDeleteObservationsPane from "./BulkDeleteObservationsPane";
-import DevelopmentPlanCard from "./DevelopmentPlanCard";
+// import DevelopmentPlanCard from "./DevelopmentPlanCard";
 
 interface Player {
     id: string;
@@ -49,11 +49,11 @@ export default function MiddlePane({
         player={player}
         onObservationAdded={onObservationAdded}
       />
-      <DevelopmentPlanCard
+      {/* <DevelopmentPlanCard
         player={player}
         pdp={pdp}
         onPdpUpdate={onPdpUpdate}
-      />
+      /> */}
     </div>
   );
 } 

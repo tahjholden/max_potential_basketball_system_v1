@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import PaneTitle from "@/components/PaneTitle";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatDate } from "@/lib/ui-utils";
+import { Card } from "@/components/ui/card";
+import EmptyState from "@/components/ui/EmptyState";
+import { Archive } from "lucide-react";
 
 interface ArchiveItem {
   id: string;
@@ -265,61 +268,55 @@ export function PDPArchivePane({
   onRestore?: (pdpId: string) => void;
   onDelete?: (pdpId: string) => void;
 }) {
-  const formatPDPItems = (pdps: any[]): ArchiveItem[] => {
-    return pdps.map(pdp => ({
-      id: pdp.id,
-      title: pdp.dateRange,
-      summary: pdp.summary,
-      dateRange: pdp.dateRange,
-      archivedAt: pdp.archived_at || pdp.created_at,
-      status: "archived" as const,
-      children: pdp.observations?.map((obs: any) => ({
-        id: obs.id,
-        title: `Observation - ${formatDate(obs.observation_date)}`,
-        summary: obs.content,
-        dateRange: formatDate(obs.observation_date),
-        archivedAt: obs.created_at,
-        status: "archived" as const,
-      })) || []
-    }));
-  };
-
-  const renderPDPContent = (item: ArchiveItem) => {
-    if (item.children && item.children.length > 0) {
-      return (
-        <div>
-          <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
-            Observations ({item.children.length})
-          </h4>
-          <div className="space-y-2">
-            {item.children.map((obs) => (
-              <div key={obs.id} className="bg-zinc-900 p-2 rounded text-xs">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="text-zinc-400">
-                    {formatDate(obs.archivedAt)}
-                  </span>
-                </div>
-                <p className="text-zinc-300">{obs.summary}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
+  if (!pdps || pdps.length === 0) {
+    return (
+      <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg flex items-center justify-center min-h-[160px]">
+        <EmptyState
+          icon={Archive}
+          title="No Archived Plans"
+          description="There are no archived development plans to display."
+          className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+        />
+      </Card>
+    );
+  }
   return (
-    <ArchivePane
-      title=""
-      items={formatPDPItems(pdps)}
-      sortOrder={sortOrder}
-      onSortOrderChange={onSortOrderChange}
-      onRestore={onRestore}
-      onDelete={onDelete}
-      renderItemContent={renderPDPContent}
-      emptyStateMessage="No archived plans found."
-    />
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-lg font-bold text-[#C2B56B]">PDP Archive</span>
+        {onSortOrderChange && (
+          <button
+            onClick={() => onSortOrderChange(sortOrder === "desc" ? "asc" : "desc")}
+            className="text-xs px-3 py-1 border border-zinc-600 rounded text-zinc-300 hover:bg-zinc-800 transition-colors"
+          >
+            Sort: {sortOrder === "desc" ? "Newest First" : "Oldest First"}
+          </button>
+        )}
+      </div>
+      {pdps.map((pdp) => (
+        <Card key={pdp.id} className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 shadow flex flex-col gap-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[#C2B56B] font-semibold text-sm">{pdp.dateRange}</span>
+          </div>
+          <div className="text-zinc-300 text-xs mb-1">{pdp.summary.replace(/\s*\d{4,4}.*$/, "")}</div>
+          {pdp.observations && pdp.observations.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-zinc-400 mb-1 uppercase tracking-wide">Observations ({pdp.observations.length})</div>
+              <div className="flex flex-col gap-1">
+                {pdp.observations.map((obs: any) => (
+                  <div key={obs.id} className="bg-zinc-900 p-2 rounded text-xs">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-zinc-400">{formatDate(obs.observation_date)}</span>
+                    </div>
+                    <p className="text-zinc-300">{obs.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      ))}
+    </div>
   );
 }
 

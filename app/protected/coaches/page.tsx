@@ -5,6 +5,9 @@ import { format } from "date-fns";
 import CoachProfilePane from "@/components/CoachProfilePane";
 import EntityButton from '@/components/EntityButton';
 import SectionLabel from "@/components/SectionLabel";
+import EmptyState from "@/components/ui/EmptyState";
+import { Card } from "@/components/ui/card";
+import { Users, UserCheck, FileText } from "lucide-react";
 
 // Type Definitions
 interface Coach {
@@ -560,236 +563,243 @@ export default function CoachesPage() {
             {/* Left: Coaches list */}
             <div className="flex-1 min-w-0 flex flex-col gap-4">
               <SectionLabel>Coaches</SectionLabel>
-              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 h-96 flex flex-col">
-                {/* Scrollable coach list, responsive height */}
-                <div className="flex-1 min-h-0 mb-2">
-                  {displayedCoaches.length === 0 ? (
-                    <div className="text-zinc-500 italic text-center py-8">No coaches yet. Create one!</div>
-                  ) : (
-                    displayedCoaches.map(coach => (
-                      <button
-                        key={coach.id}
-                        className={
-                          "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
-                          (selectedCoachId === coach.id
-                            ? "bg-[#C2B56B] text-black border-[#C2B56B]"
-                            : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
-                        }
-                        onClick={() => handleCoachSelect(coach.id)}
-                      >
-                        {coach.first_name} {coach.last_name}
-                      </button>
-                    ))
-                  )}
-                  {filteredCoaches.length > MAX_COACHES && (
-                    <div
-                      className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                      onClick={() => setShowAllCoaches(!showAllCoaches)}
-                      title={showAllCoaches ? "Show less" : "Show more"}
-                    >
-                      <div className="flex-1 border-t border-zinc-700"></div>
-                      <svg className={`w-5 h-5 transition-transform ${showAllCoaches ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                      <div className="flex-1 border-t border-zinc-700"></div>
-                    </div>
-                  )}
-                </div>
-                {/* Search bar at the bottom - only show when chevron is needed */}
-                {filteredCoaches.length > MAX_COACHES && (
-                  <input
-                    type="text"
-                    placeholder="Search coaches..."
-                    value={coachSearch}
-                    onChange={e => setCoachSearch(e.target.value)}
-                    className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+              <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                {displayedCoaches.length === 0 ? (
+                  <EmptyState
+                    icon={UserCheck}
+                    title="No Coaches Found"
+                    description="Add your first coach to get started."
+                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                    action={{ label: "Add Coach", onClick: openCreateModal, color: "gold" }}
                   />
+                ) : (
+                  <>
+                    {/* Scrollable coach list, responsive height */}
+                    <div className="flex-1 min-h-0 mb-2">
+                      {displayedCoaches.map(coach => (
+                        <button
+                          key={coach.id}
+                          className={
+                            "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
+                            (selectedCoachId === coach.id
+                              ? "bg-[#C2B56B] text-black border-[#C2B56B]"
+                              : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
+                          }
+                          onClick={() => handleCoachSelect(coach.id)}
+                        >
+                          {coach.first_name} {coach.last_name}
+                        </button>
+                      ))}
+                      {filteredCoaches.length > MAX_COACHES && (
+                        <div
+                          className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                          onClick={() => setShowAllCoaches(!showAllCoaches)}
+                          title={showAllCoaches ? "Show less" : "Show more"}
+                        >
+                          <div className="flex-1 border-t border-zinc-700"></div>
+                          <svg className={`w-5 h-5 transition-transform ${showAllCoaches ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                          <div className="flex-1 border-t border-zinc-700"></div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Search bar at the bottom - only show when chevron is needed */}
+                    {filteredCoaches.length > MAX_COACHES && (
+                      <input
+                        type="text"
+                        placeholder="Search coaches..."
+                        value={coachSearch}
+                        onChange={e => setCoachSearch(e.target.value)}
+                        className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                      />
+                    )}
+                  </>
                 )}
-              </div>
+              </Card>
             </div>
             {/* Center: Coach Profile and Observations */}
             <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
               {coaches.length === 0 ? (
                 <div className="flex flex-col gap-4 h-full">
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Coaches Found</h3>
-                    <p className="text-zinc-400 mb-4">There are no coaches in your team yet. Add your first coach to get started.</p>
-                    <div className="flex gap-1">
-                      <EntityButton color="gold" onClick={openCreateModal}>
-                        Add Coach
-                      </EntityButton>
-                    </div>
-                  </div>
+                  <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                    <EmptyState
+                      icon={UserCheck}
+                      title="No Coaches Found"
+                      description="There are no coaches in your team yet. Add your first coach to get started."
+                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                      action={{ label: "Add Coach", onClick: openCreateModal, color: "gold" }}
+                    />
+                  </Card>
                 </div>
               ) : selectedCoach ? (
                 <>
                   <SectionLabel>Coach Profile</SectionLabel>
-                  <CoachProfilePane coach={selectedCoach} />
-                  <SectionLabel>Observations</SectionLabel>
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 min-h-[180px] flex flex-col relative">
-                    {/* Range selector in normal flow */}
-                    <select
-                      value={observationRange}
-                      onChange={e => setObservationRange(e.target.value)}
-                      className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm shadow-lg mb-2"
-                      style={{ minWidth: 120 }}
-                    >
-                      <option value="week">This week</option>
-                      <option value="month">This month</option>
-                      <option value="all">All</option>
-                    </select>
-                    {/* Card content (background) */}
-                    <div className="flex-1 min-h-0 flex flex-col justify-center items-center">
-                      {observations.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center w-full h-full py-8">
-                          <img
-                            src="/maxsM.png"
-                            alt="MP Shield"
-                            width={120}
-                            height={120}
-                            style={{
-                              objectFit: "contain",
-                              maxWidth: "120px",
-                              maxHeight: "120px",
-                              margin: "0 auto",
-                              filter: "drop-shadow(0 2px 12px #2226)",
-                              opacity: 0.75,
-                              transform: "scale(2.2)",
-                            }}
-                          />
-                          <div className="text-zinc-400 text-center font-semibold mt-4">No Observations Yet</div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-3 w-full mt-10">
-                          {displayedObservations.map(obs => (
-                            <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                              <div className="text-xs text-zinc-400 mb-1">{obs.player_name ? `${obs.player_name} — ` : ''}{obs.observation_date ? format(new Date(obs.observation_date), "MMMM do, yyyy") : ''}</div>
-                              <div className="text-base text-zinc-100">{obs.content}</div>
-                            </div>
-                          ))}
-                          {filteredObservations.length > MAX_OBSERVATIONS && (
-                            <div
-                              className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                              onClick={() => setShowAllObservations(!showAllObservations)}
-                              title={showAllObservations ? "Show less" : "Show more"}
-                            >
-                              <div className="flex-1 border-t border-zinc-700"></div>
-                              <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                              <div className="flex-1 border-t border-zinc-700"></div>
-                            </div>
-                          )}
-                        </div>
+                  <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                    <div>
+                      <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedCoach.first_name} {selectedCoach.last_name}</div>
+                      <div className="text-sm text-zinc-400 font-medium mb-1">Email: {selectedCoach.email}</div>
+                      {selectedCoach.team_name && (
+                        <div className="text-sm text-zinc-400 font-medium mb-1">Team: <span className="text-[#C2B56B]">{selectedCoach.team_name}</span></div>
                       )}
+                      <div className="text-sm text-zinc-400 font-medium mb-1">
+                        Status: <span className={selectedCoach.active ? "text-[#C2B56B] font-semibold" : "text-red-400 font-semibold"}>
+                          {selectedCoach.active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <div className="text-sm text-zinc-400 font-medium mb-1">
+                        Created: {selectedCoach.created_at ? format(new Date(selectedCoach.created_at), "MMMM do, yyyy") : "—"}
+                      </div>
+                      <div className="flex gap-2 justify-end mt-4">
+                        <EntityButton color="gold" onClick={handleEdit}>Edit Coach</EntityButton>
+                        <EntityButton color="danger" onClick={handleDelete}>Delete Coach</EntityButton>
+                      </div>
                     </div>
-                    {/* Search bar at the bottom - only show when chevron is needed */}
-                    {filteredObservations.length > MAX_OBSERVATIONS && (
-                      <input
-                        type="text"
-                        placeholder="Search observations..."
-                        value={observationSearch}
-                        onChange={e => setObservationSearch(e.target.value)}
-                        className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm mt-2"
+                  </Card>
+                  <SectionLabel>Observations</SectionLabel>
+                  <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                    {observations.length === 0 ? (
+                      <EmptyState
+                        icon={FileText}
+                        title="No Observations Yet"
+                        description="This coach hasn't made any observations yet."
+                        className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
                       />
+                    ) : (
+                      <>
+                        {/* Range selector in normal flow */}
+                        <select
+                          value={observationRange}
+                          onChange={e => setObservationRange(e.target.value)}
+                          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm shadow-lg mb-2"
+                          style={{ minWidth: 120 }}
+                        >
+                          <option value="week">This week</option>
+                          <option value="month">This month</option>
+                          <option value="all">All</option>
+                        </select>
+                        {/* Card content (background) */}
+                        <div className="flex-1 min-h-0 flex flex-col justify-center items-center">
+                          <div className="flex flex-col gap-3 w-full mt-10">
+                            {displayedObservations.map(obs => (
+                              <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                                <div className="text-xs text-zinc-400 mb-1">{obs.player_name ? `${obs.player_name} — ` : ''}{obs.observation_date ? format(new Date(obs.observation_date), "MMMM do, yyyy") : ''}</div>
+                                <div className="text-base text-zinc-100">{obs.content}</div>
+                              </div>
+                            ))}
+                            {filteredObservations.length > MAX_OBSERVATIONS && (
+                              <div
+                                className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                                onClick={() => setShowAllObservations(!showAllObservations)}
+                                title={showAllObservations ? "Show less" : "Show more"}
+                              >
+                                <div className="flex-1 border-t border-zinc-700"></div>
+                                <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                <div className="flex-1 border-t border-zinc-700"></div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {/* Search bar at the bottom - only show when chevron is needed */}
+                        {filteredObservations.length > MAX_OBSERVATIONS && (
+                          <input
+                            type="text"
+                            placeholder="Search observations..."
+                            value={observationSearch}
+                            onChange={e => setObservationSearch(e.target.value)}
+                            className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm mt-2"
+                          />
+                        )}
+                      </>
                     )}
-                  </div>
+                  </Card>
                 </>
               ) : (
                 <div className="flex flex-col gap-4 h-full">
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
-                    <img
-                      src="/maxsM.png"
-                      alt="MP Shield"
-                      style={{
-                        objectFit: 'contain',
-                        width: '100%',
-                        height: '100%',
-                        maxWidth: '220px',
-                        maxHeight: '120px',
-                        display: 'block',
-                        margin: '0 auto',
-                        filter: 'drop-shadow(0 2px 12px #2226)',
-                        opacity: 0.75,
-                        transform: 'scale(3)',
-                      }}
+                  <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                    <EmptyState
+                      icon={UserCheck}
+                      title="Select a Coach to View Their Profile"
+                      description="Pick a coach from the list to see their details."
+                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
                     />
-                    <div className="text-zinc-400 text-center font-semibold mt-4">Coach Profile</div>
-                  </div>
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
-                    <img
-                      src="/maxsM.png"
-                      alt="MP Shield"
-                      style={{
-                        objectFit: 'contain',
-                        width: '100%',
-                        height: '100%',
-                        maxWidth: '220px',
-                        maxHeight: '120px',
-                        display: 'block',
-                        margin: '0 auto',
-                        filter: 'drop-shadow(0 2px 12px #2226)',
-                        opacity: 0.75,
-                        transform: 'scale(3)',
-                      }}
+                  </Card>
+                  <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                    <EmptyState
+                      icon={FileText}
+                      title="Select a Coach to View Their Observations"
+                      description="Pick a coach from the list to see their observations."
+                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
                     />
-                    <div className="text-zinc-400 text-center font-semibold mt-4">Observations</div>
-                  </div>
+                  </Card>
                 </div>
               )}
             </div>
             {/* Right: Players list */}
             <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
               <SectionLabel>Players</SectionLabel>
-              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-                {/* Team filter dropdown */}
-                <div className="flex items-center gap-2 mb-2">
-                  <select
-                    value={selectedTeamId || ''}
-                    onChange={e => setSelectedTeamId(e.target.value || "")}
-                    className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                    style={{ minWidth: 120 }}
-                  >
-                    <option value="">All Teams</option>
-                    {teams.map(team => (
-                      <option key={team.id} value={team.id}>{team.name}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* Scrollable player list, responsive height */}
-                <div className="flex-1 min-h-0 mb-2">
-                  {displayedPlayers.map(player => (
-                    <button
-                      key={player.id}
-                      className={`w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2 text-center
-                        ${selectedPlayerForObservations === player.id
-                          ? 'bg-[#C2B56B] text-black border-[#C2B56B]'
-                          : 'bg-zinc-900 text-[#C2B56B] border-[#C2B56B]'}
-                      `}
-                      onClick={() => setSelectedPlayerForObservations(selectedPlayerForObservations === player.id ? null : player.id)}
-                    >
-                      {player.name}
-                    </button>
-                  ))}
-                  {filteredPlayers.length > MAX_PLAYERS && (
-                    <div
-                      className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                      onClick={() => setShowAllPlayers(!showAllPlayers)}
-                      title={showAllPlayers ? "Show less" : "Show more"}
-                    >
-                      <div className="flex-1 border-t border-zinc-700"></div>
-                      <svg className={`w-5 h-5 transition-transform ${showAllPlayers ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                      <div className="flex-1 border-t border-zinc-700"></div>
-                    </div>
-                  )}
-                </div>
-                {/* Search bar at the bottom - only show when chevron is needed */}
-                {filteredPlayers.length > MAX_PLAYERS && (
-                  <input
-                    type="text"
-                    placeholder="Search players..."
-                    value={playerSearch}
-                    onChange={e => setPlayerSearch(e.target.value)}
-                    className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+              <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                {displayedPlayers.length === 0 ? (
+                  <EmptyState
+                    icon={Users}
+                    title="No Players Found"
+                    description="There are no players to display."
+                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
                   />
+                ) : (
+                  <>
+                    {/* Team filter dropdown */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <select
+                        value={selectedTeamId || ''}
+                        onChange={e => setSelectedTeamId(e.target.value || "")}
+                        className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                        style={{ minWidth: 120 }}
+                      >
+                        <option value="">All Teams</option>
+                        {teams.map(team => (
+                          <option key={team.id} value={team.id}>{team.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Scrollable player list, responsive height */}
+                    <div className="flex-1 min-h-0 mb-2">
+                      {displayedPlayers.map(player => (
+                        <button
+                          key={player.id}
+                          className={`w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2 text-center
+                            ${selectedPlayerForObservations === player.id
+                              ? 'bg-[#C2B56B] text-black border-[#C2B56B]'
+                              : 'bg-zinc-900 text-[#C2B56B] border-[#C2B56B]'}
+                          `}
+                          onClick={() => setSelectedPlayerForObservations(selectedPlayerForObservations === player.id ? null : player.id)}
+                        >
+                          {player.name}
+                        </button>
+                      ))}
+                      {filteredPlayers.length > MAX_PLAYERS && (
+                        <div
+                          className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                          onClick={() => setShowAllPlayers(!showAllPlayers)}
+                          title={showAllPlayers ? "Show less" : "Show more"}
+                        >
+                          <div className="flex-1 border-t border-zinc-700"></div>
+                          <svg className={`w-5 h-5 transition-transform ${showAllPlayers ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                          <div className="flex-1 border-t border-zinc-700"></div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Search bar at the bottom - only show when chevron is needed */}
+                    {filteredPlayers.length > MAX_PLAYERS && (
+                      <input
+                        type="text"
+                        placeholder="Search players..."
+                        value={playerSearch}
+                        onChange={e => setPlayerSearch(e.target.value)}
+                        className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                      />
+                    )}
+                  </>
                 )}
-              </div>
+              </Card>
             </div>
           </div>
         )}

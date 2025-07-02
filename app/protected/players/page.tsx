@@ -15,10 +15,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 import AddObservationButton from "@/components/AddObservationButton";
-import DevelopmentPlanCard from "@/components/cards/DevelopmentPlanCard";
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
-import EmptyStateCard from "@/components/ui/EmptyStateCard";
 import SharedPlayerList from "@/components/SharedPlayerList";
+import EmptyState from "@/components/ui/EmptyState";
+import { Card } from "@/components/ui/card";
+import { Users, FileText, Archive, Target } from "lucide-react";
 
 // Type Definitions
 interface Player {
@@ -404,203 +405,183 @@ export default function TestPlayersPage() {
           {/* Player list panel */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Players</SectionLabel>
-            <SharedPlayerList
-              players={filteredPlayers}
-              selectedPlayerId={playerId}
-              onSelectPlayer={setPlayerId}
-              teamOptions={teams.map(t => ({ id: t.id, name: t.name }))}
-              selectedTeamId={selectedTeamId}
-              onSelectTeam={setSelectedTeamId}
-              playerIdsWithPDP={playerIdsWithPDP}
-              showAddPlayer={false}
-            />
+            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+              {filteredPlayers.length === 0 ? (
+                <EmptyState
+                  icon={Users}
+                  title="No Players Found"
+                  description="Add your first player to get started."
+                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                />
+              ) : (
+                <SharedPlayerList
+                  players={filteredPlayers}
+                  selectedPlayerId={playerId}
+                  onSelectPlayer={setPlayerId}
+                  teamOptions={teams.map(t => ({ id: t.id, name: t.name }))}
+                  selectedTeamId={selectedTeamId}
+                  onSelectTeam={setSelectedTeamId}
+                  playerIdsWithPDP={playerIdsWithPDP}
+                  showAddPlayer={false}
+                />
+              )}
+            </Card>
           </div>
           {/* Center: Player Profile + Development Plan (wider column) */}
           <div className="flex-[2] min-w-0">
             <div className="flex flex-col gap-4 mt-0">
               <SectionLabel>Player Profile</SectionLabel>
-              {selectedPlayer ? (
-                <EntityMetadataCard
-                  fields={[
-                    { label: "Name", value: selectedPlayer.name, highlight: true },
-                    { label: "Joined", value: format(new Date(selectedPlayer.joined), "MMMM do, yyyy") },
-                    ...(selectedPlayer.team_name ? [{ label: "Team", value: (
-                      <Link 
-                        href={`/protected/teams?teamId=${selectedPlayer.team_id}`}
-                        className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
-                      >
-                        {selectedPlayer.team_name}
-                      </Link>
-                    ) }] : [])
-                  ]}
-                  actions={null}
-                />
-              ) : (
-                <EmptyStateCard message="Select a Player to View Their Profile" />
-              )}
-              <SectionLabel>Development Plan</SectionLabel>
-              {selectedPlayer ? (
-                <DevelopmentPlanCard
-                  pdp={currentPdp}
-                  playerId={selectedPlayer?.id}
-                  playerName={selectedPlayer?.name}
-                />
-              ) : (
-                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
-                  <Image
-                    src="/maxsM.png"
-                    alt="MP Shield"
-                    width={220}
-                    height={120}
-                    priority
-                    style={{
-                      objectFit: 'contain',
-                      width: '100%',
-                      height: '100%',
-                      maxWidth: '220px',
-                      maxHeight: '120px',
-                      display: 'block',
-                      margin: '0 auto',
-                      filter: 'drop-shadow(0 2px 12px #2226)',
-                      opacity: 0.75,
-                      transform: 'scale(3)',
-                    }}
-                  />
-                  <div className="text-zinc-400 text-center font-semibold mt-4">Select a Player to View Their Development Plan</div>
-                </div>
-              )}
-              <SectionLabel>Observations</SectionLabel>
-              {selectedPlayer ? (
-                displayedObservations.length === 0 ? (
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
-                    <Image
-                      src="/maxsM.png"
-                      alt="MP Shield"
-                      width={220}
-                      height={120}
-                      priority
-                      style={{
-                        objectFit: 'contain',
-                        width: '100%',
-                        height: '100%',
-                        maxWidth: '220px',
-                        maxHeight: '120px',
-                        display: 'block',
-                        margin: '0 auto',
-                        filter: 'drop-shadow(0 2px 12px #2226)',
-                        opacity: 0.75,
-                        transform: 'scale(3)',
-                      }}
-                    />
-                    <div className="text-zinc-400 text-center font-semibold mt-4">No Observations Yet</div>
-                    <div className="mt-6"><AddObservationButton player={selectedPlayer} /></div>
+              <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                {selectedPlayer ? (
+                  <div>
+                    <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedPlayer.name}</div>
+                    <div className="text-sm text-zinc-400 font-medium mb-1">
+                      Joined: {format(new Date(selectedPlayer.joined), "MMMM do, yyyy")}
+                    </div>
+                    {selectedPlayer.team_name && (
+                      <div className="text-sm text-zinc-400 font-medium mb-1">
+                        Team: <Link 
+                          href={`/protected/teams?teamId=${selectedPlayer.team_id}`}
+                          className="text-[#C2B56B] hover:text-[#C2B56B]/80 underline transition-colors"
+                        >
+                          {selectedPlayer.team_name}
+                        </Link>
+                      </div>
+                    )}
+                    <div className="flex gap-2 justify-end mt-4">
+                      <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                        Edit Player
+                      </button>
+                      <button className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                        Delete Player
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-                    {/* Header: Range selector */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <select
-                        value={observationRange}
-                        onChange={e => setObservationRange(e.target.value)}
-                        className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                        style={{ minWidth: 120 }}
-                      >
-                        <option value="week">This week</option>
-                        <option value="month">This month</option>
-                        <option value="all">All</option>
-                      </select>
-                    </div>
-                    {/* Scrollable observation list, responsive height */}
-                    <div className="flex-1 min-h-0 mb-2">
-                      <div className="flex flex-col gap-3 w-full">
-                        {displayedObservations.map(obs => (
-                          <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                            <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
-                            <div className="text-base text-zinc-100">{obs.content}</div>
-                          </div>
-                        ))}
-                        {filteredObservations.length > MAX_OBSERVATIONS && (
-                          <div
-                            className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                            onClick={() => setShowAllObservations(!showAllObservations)}
-                            title={showAllObservations ? "Show less" : "Show more"}
-                          >
-                            <div className="flex-1 border-t border-zinc-700"></div>
-                            <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                            <div className="flex-1 border-t border-zinc-700"></div>
-                          </div>
-                        )}
+                  <EmptyState
+                    icon={Users}
+                    title="Select a Player to View Their Profile"
+                    description="Pick a player from the list to see their details."
+                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                  />
+                )}
+              </Card>
+              <SectionLabel>Development Plan</SectionLabel>
+              <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                {selectedPlayer ? (
+                  currentPdp ? (
+                    <div>
+                      <div className="text-sm text-zinc-400 font-medium mb-1">
+                        Started: {currentPdp.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—"}
+                      </div>
+                      <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No content available"}</div>
+                      <div className="flex gap-2 justify-end mt-4">
+                        <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                          Edit Plan
+                        </button>
+                        <button className="text-zinc-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                          Archive Plan
+                        </button>
                       </div>
                     </div>
-                  </div>
-                )
-              ) : (
-                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
-                  <Image
-                    src="/maxsM.png"
-                    alt="MP Shield"
-                    width={220}
-                    height={120}
-                    priority
-                    style={{
-                      objectFit: 'contain',
-                      width: '100%',
-                      height: '100%',
-                      maxWidth: '220px',
-                      maxHeight: '120px',
-                      display: 'block',
-                      margin: '0 auto',
-                      filter: 'drop-shadow(0 2px 12px #2226)',
-                      opacity: 0.75,
-                      transform: 'scale(3)',
-                    }}
+                  ) : (
+                    <EmptyState
+                      icon={Target}
+                      title="No Development Plan"
+                      description="This player doesn't have an active development plan yet."
+                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                      action={{ label: "Create Plan", onClick: () => {}, color: "gold" }}
+                    />
+                  )
+                ) : (
+                  <EmptyState
+                    icon={Target}
+                    title="Select a Player to View Their Development Plan"
+                    description="Pick a player from the list to see their development plan."
+                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
                   />
-                  <div className="text-zinc-400 text-center font-semibold mt-4">Select a Player to View Observations</div>
-                </div>
-              )}
+                )}
+              </Card>
+              <SectionLabel>Observations</SectionLabel>
+              <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+                {selectedPlayer ? (
+                  displayedObservations.length === 0 ? (
+                    <EmptyState
+                      icon={FileText}
+                      title="No Observations Yet"
+                      description="This player doesn't have any observations yet."
+                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                      action={{ label: "Add Observation", onClick: () => {}, color: "gold" }}
+                    />
+                  ) : (
+                    <>
+                      {/* Header: Range selector */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <select
+                          value={observationRange}
+                          onChange={e => setObservationRange(e.target.value)}
+                          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
+                          style={{ minWidth: 120 }}
+                        >
+                          <option value="week">This week</option>
+                          <option value="month">This month</option>
+                          <option value="all">All</option>
+                        </select>
+                      </div>
+                      {/* Scrollable observation list, responsive height */}
+                      <div className="flex-1 min-h-0 mb-2">
+                        <div className="flex flex-col gap-3 w-full">
+                          {displayedObservations.map(obs => (
+                            <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                              <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
+                              <div className="text-base text-zinc-100">{obs.content}</div>
+                            </div>
+                          ))}
+                          {filteredObservations.length > MAX_OBSERVATIONS && (
+                            <div
+                              className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                              onClick={() => setShowAllObservations(!showAllObservations)}
+                              title={showAllObservations ? "Show less" : "Show more"}
+                            >
+                              <div className="flex-1 border-t border-zinc-700"></div>
+                              <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                              <div className="flex-1 border-t border-zinc-700"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )
+                ) : (
+                  <EmptyState
+                    icon={FileText}
+                    title="Select a Player to View Observations"
+                    description="Pick a player from the list to see their observations."
+                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                  />
+                )}
+              </Card>
             </div>
           </div>
           {/* Right: PDP Archive */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>PDP Archive</SectionLabel>
-            {archivedPdps.length === 0 ? (
-              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex flex-col items-center justify-center min-h-[220px]">
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  maxWidth: '220px',
-                  height: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                  margin: '0 auto',
-                }}>
-                  <Image
-                    src="/maxsM.png"
-                    alt="MP Shield"
-                    width={220}
-                    height={120}
-                    priority
-                    style={{
-                      objectFit: 'contain',
-                      width: '100%',
-                      height: '100%',
-                      filter: 'drop-shadow(0 2px 12px #2226)',
-                      opacity: 0.75,
-                      transform: 'scale(3)',
-                    }}
-                  />
-                </div>
-                <div className="text-zinc-400 text-center font-semibold mt-4">No archived plans found</div>
-              </div>
-            ) : (
-              <PDPArchivePane
-                pdps={archivedPdps}
-                onSortOrderChange={setSortOrder}
-                sortOrder={sortOrder}
-              />
-            )}
+            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+              {archivedPdps.length === 0 ? (
+                <EmptyState
+                  icon={Archive}
+                  title="No Archived Plans"
+                  description="There are no archived development plans to display."
+                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                />
+              ) : (
+                <PDPArchivePane
+                  pdps={archivedPdps}
+                  onSortOrderChange={setSortOrder}
+                  sortOrder={sortOrder}
+                />
+              )}
+            </Card>
           </div>
         </div>
       </div>

@@ -13,9 +13,11 @@ import { useCurrentCoach } from '@/hooks/useCurrentCoach';
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
 import Link from "next/link";
 import type { Organization } from '@/types/entities';
-import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import AddTeamModal from "@/components/AddTeamModal";
-import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import { Users, Shield } from "lucide-react";
+import EntityButton from '@/components/EntityButton';
 
 interface Team {
   id: string;
@@ -198,116 +200,105 @@ export default function TeamsPage() {
   const handleEdit = () => {};
   const handleDelete = () => {};
 
-  const getTeamMetadataFields = () => {
-    if (!selectedTeam) return [];
-    return [
-      { label: "Name", value: selectedTeam.name, highlight: true },
-      { label: "Coach", value: teamCoach ? `${teamCoach.first_name} ${teamCoach.last_name}` : "No coach assigned" },
-      { label: "Players", value: `${teamPlayers.length} player${teamPlayers.length !== 1 ? 's' : ''}` },
-      { label: "Created", value: selectedTeam.created_at ? format(new Date(selectedTeam.created_at), "MMMM do, yyyy") : "—" },
-    ];
-  };
-  const getTeamActions = () => (
-    <div className="flex gap-1">
-      <GoldButton onClick={handleEdit} className="px-3 py-1 text-sm font-semibold">Edit Team</GoldButton>
-      <Button variant="destructive" onClick={handleDelete}>Delete Team</Button>
-    </div>
-  );
-
   // --- CANONICAL DASHBOARD LAYOUT STARTS HERE ---
   return (
     <div className="flex-1 min-h-0 flex gap-6">
       {/* Left: Teams list */}
       <div className="flex-1 min-w-0 flex flex-col gap-4">
         <SectionLabel>Teams</SectionLabel>
-        <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 h-96 flex flex-col">
-          {/* Scrollable team list, responsive height */}
-          <div className="flex-1 min-h-0 mb-2">
-            {displayedTeams.length === 0 ? (
-              <NoTeamsEmptyState onAddTeam={openCreateModal} />
-            ) : (
-              displayedTeams.map((team) => (
-                <button
-                  key={team.id}
-                  className={
-                    "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
-                    (team.id === selectedTeam?.id
-                      ? "bg-[#C2B56B] text-black border-[#C2B56B]"
-                      : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
-                  }
-                  onClick={() => setSelectedTeam(team)}
-                >
-                  {team.name}
-                </button>
-              ))
-            )}
-            {filteredTeams.length > MAX_TEAMS && (
-              <div
-                className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                onClick={() => setShowAllTeams(!showAllTeams)}
-                title={showAllTeams ? "Show less" : "Show more"}
-              >
-                <div className="flex-1 border-t border-zinc-700"></div>
-                <svg className={`w-5 h-5 transition-transform ${showAllTeams ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                <div className="flex-1 border-t border-zinc-700"></div>
-              </div>
-            )}
-          </div>
-          {/* Search bar at the bottom - only show when chevron is needed */}
-          {filteredTeams.length > MAX_TEAMS && (
-            <input
-              type="text"
-              placeholder="Search teams..."
-              value={teamSearch}
-              onChange={e => setTeamSearch(e.target.value)}
-              className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+        <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+          {displayedTeams.length === 0 ? (
+            <EmptyState
+              icon={Shield}
+              title="No Teams Found"
+              description="Add your first team to get started."
+              className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+              action={{ label: "Add Team", onClick: openCreateModal, color: "gold" }}
             />
+          ) : (
+            <>
+              {/* Scrollable team list, responsive height */}
+              <div className="flex-1 min-h-0 mb-2">
+                {displayedTeams.map((team) => (
+                  <button
+                    key={team.id}
+                    className={
+                      "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
+                      (team.id === selectedTeam?.id
+                        ? "bg-[#C2B56B] text-black border-[#C2B56B]"
+                        : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
+                    }
+                    onClick={() => setSelectedTeam(team)}
+                  >
+                    {team.name}
+                  </button>
+                ))}
+                {filteredTeams.length > MAX_TEAMS && (
+                  <div
+                    className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                    onClick={() => setShowAllTeams(!showAllTeams)}
+                    title={showAllTeams ? "Show less" : "Show more"}
+                  >
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                    <svg className={`w-5 h-5 transition-transform ${showAllTeams ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    <div className="flex-1 border-t border-zinc-700"></div>
+                  </div>
+                )}
+              </div>
+              {/* Search bar at the bottom - only show when chevron is needed */}
+              {filteredTeams.length > MAX_TEAMS && (
+                <input
+                  type="text"
+                  placeholder="Search teams..."
+                  value={teamSearch}
+                  onChange={e => setTeamSearch(e.target.value)}
+                  className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
+                />
+              )}
+            </>
           )}
-        </div>
+        </Card>
       </div>
       {/* Center: Team Profile + Roster */}
       <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
         <SectionLabel>Team Profile</SectionLabel>
-        {selectedTeam ? (
-          <EntityMetadataCard
-            fields={getTeamMetadataFields()}
-            cardClassName="mt-0"
-            actions={
-              <div className="flex gap-2 absolute bottom-3 right-4">
-                <GoldButton onClick={handleEdit} className="px-3 py-1 text-sm font-semibold">Edit Team</GoldButton>
-                <Button variant="destructive" size="sm" onClick={handleDelete} className="px-3 py-1 text-sm font-semibold">Delete Team</Button>
+        <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+          {selectedTeam ? (
+            <div>
+              <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedTeam.name}</div>
+              <div className="text-sm text-zinc-400 font-medium mb-1">
+                Coach: {teamCoach ? `${teamCoach.first_name} ${teamCoach.last_name}` : "No coach assigned"}
               </div>
-            }
-          />
-        ) : (
-          <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
-            <Image
-              src="/maxsM.png"
-              alt="MP Shield"
-              width={220}
-              height={120}
-              priority
-              style={{
-                objectFit: 'contain',
-                width: '100%',
-                height: '100%',
-                maxWidth: '220px',
-                maxHeight: '120px',
-                display: 'block',
-                margin: '0 auto',
-                filter: 'drop-shadow(0 2px 12px #2226)',
-                opacity: 0.75,
-                transform: 'scale(3)',
-              }}
+              <div className="text-sm text-zinc-400 font-medium mb-1">
+                Players: {teamPlayers.length} player{teamPlayers.length !== 1 ? 's' : ''}
+              </div>
+              <div className="text-sm text-zinc-400 font-medium mb-1">
+                Created: {selectedTeam.created_at ? format(new Date(selectedTeam.created_at), "MMMM do, yyyy") : "—"}
+              </div>
+              <div className="flex gap-2 justify-end mt-4">
+                <GoldButton onClick={handleEdit} className="px-3 py-1 text-sm font-semibold">Edit Team</GoldButton>
+                <EntityButton color="danger" onClick={handleDelete} className="px-3 py-1 text-sm font-semibold">Delete Team</EntityButton>
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              icon={Shield}
+              title="Select a Team to View Their Profile"
+              description="Pick a team from the list to see their details."
+              className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
             />
-            <div className="text-zinc-400 text-center font-semibold mt-4">Select a Team to View Their Profile</div>
-          </div>
-        )}
+          )}
+        </Card>
         <SectionLabel>Roster</SectionLabel>
-        {selectedTeam ? (
-          <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-            {teamPlayers.length === 0 ? (
-              <div className="text-zinc-500 italic">No players on this team.</div>
+        <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+          {selectedTeam ? (
+            teamPlayers.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title="No Players on This Team"
+                description="Add players to this team to see them in the roster."
+                className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+              />
             ) : (
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 {teamPlayers.map(player => {
@@ -335,55 +326,32 @@ export default function TeamsPage() {
                   );
                 })}
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
-            <Image
-              src="/maxsM.png"
-              alt="MP Shield"
-              width={220}
-              height={120}
-              priority
-              style={{
-                objectFit: 'contain',
-                width: '100%',
-                height: '100%',
-                maxWidth: '220px',
-                maxHeight: '120px',
-                display: 'block',
-                margin: '0 auto',
-                filter: 'drop-shadow(0 2px 12px #2226)',
-                opacity: 0.75,
-                transform: 'scale(3)',
-              }}
+            )
+          ) : (
+            <EmptyState
+              icon={Users}
+              title="Select a Team to View Their Roster"
+              description="Pick a team from the list to see their players."
+              className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
             />
-            <div className="text-zinc-400 text-center font-semibold mt-4">Select a Team to View Their Roster</div>
-          </div>
-        )}
+          )}
+        </Card>
       </div>
       {/* Right: Planned Features */}
       <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
         <SectionLabel>Planned Features</SectionLabel>
-        <EntityMetadataCard
-          fields={[{
-            label: "",
-            value: (
-              <div className="pt-2 w-full">
-                <ul className="mb-4 text-zinc-400 text-sm list-disc pl-5" style={{maxWidth: 260}}>
-                  <li><span className="font-semibold text-[#C2B56B]">Practice & game schedule</span></li>
-                  <li><span className="font-semibold text-[#C2B56B]">Team attendance & participation heatmap</span></li>
-                  <li><span className="font-semibold text-[#C2B56B]">Announcements & team messaging</span></li>
-                </ul>
-                <span className="text-white italic text-xs block mt-2">
-                  These features are on our roadmap and will be launching soon for all teams!
-                </span>
-              </div>
-            ),
-            highlight: true
-          }]}
-          cardClassName="w-full h-full flex flex-col justify-start"
-        />
+        <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
+          <div className="pt-2 w-full">
+            <ul className="mb-4 text-zinc-400 text-sm list-disc pl-5" style={{maxWidth: 260}}>
+              <li><span className="font-semibold text-[#C2B56B]">Practice & game schedule</span></li>
+              <li><span className="font-semibold text-[#C2B56B]">Team attendance & participation heatmap</span></li>
+              <li><span className="font-semibold text-[#C2B56B]">Announcements & team messaging</span></li>
+            </ul>
+            <span className="text-white italic text-xs block mt-2">
+              These features are on our roadmap and will be launching soon for all teams!
+            </span>
+          </div>
+        </Card>
       </div>
       <AddTeamModal
         open={modalOpen}

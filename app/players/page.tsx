@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import PageTitle from "@/components/PageTitle";
 import PlayerListPane from "@/components/PlayerListPane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
-import DevelopmentPlanCard from "@/components/DevelopmentPlanCard";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import EmptyCard from "@/components/EmptyCard";
 import PDPArchivePane from "@/components/PDPArchivePane";
@@ -217,15 +216,10 @@ export default function PlayersPage() {
                   playerId={selectedPlayer.id}
                   showDeleteButton={false}
                 />
-                <DevelopmentPlanCard 
-                  plan={currentPdp?.content || ""}
-                  started={currentPdp?.start_date || ""}
-                />
               </div>
             ) : (
               <div className="flex flex-col gap-4 h-full">
                 <EmptyCard title="Player Profile" titleClassName="font-bold text-center" />
-                <EmptyCard title="Development Plan" titleClassName="font-bold text-center" />
               </div>
             )
           }

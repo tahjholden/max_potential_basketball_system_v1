@@ -7,7 +7,6 @@ import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerListPane from "@/components/PlayerListPane";
 import PlayerProfilePane from "@/components/PlayerProfilePane";
 import PlayerMetadataCard from "@/components/PlayerMetadataCard";
-import DevelopmentPlanCard from "@/components/cards/DevelopmentPlanCard";
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import DeletePlayerButton from "@/components/DeletePlayerButton";
 import ObservationInsightsPane from "@/components/ObservationInsightsPane";
@@ -165,23 +164,10 @@ export default function DashboardPage() {
                   playerId={selectedPlayer.id}
                   showDeleteButton={false}
                 />
-                <DevelopmentPlanCard 
-                  pdp={currentPdp}
-                  playerId={selectedPlayer.id}
-                  playerName={selectedPlayer.name}
-                  onPdpUpdate={() => {
-                    // Refresh PDP data by re-fetching
-                    if (playerId) {
-                      fetchPdp();
-                    }
-                    fetchAllPdps();
-                  }}
-                />
               </div>
             ) : (
               <div className="flex flex-col gap-4 h-full">
                 <EmptyCard title="Player Profile" titleClassName="font-bold text-center" />
-                <EmptyCard title="Development Plan" titleClassName="font-bold text-center" />
               </div>
             )
           }
