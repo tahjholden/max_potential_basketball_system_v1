@@ -32,6 +32,7 @@ interface Player {
   joined: string;
   team_id?: string;
   team_name?: string;
+  team_coach_id?: string;
 }
 
 interface Pdp {
@@ -93,6 +94,7 @@ export default function TestPlayersPage() {
   const [observationSearch, setObservationSearch] = useState('');
   const [showAllObservations, setShowAllObservations] = useState(false);
   const MAX_OBSERVATIONS = 10;
+  const [currentCoachId, setCurrentCoachId] = useState<string | null>(null);
   
   const selectedPlayer = players.find((p) => p.id === playerId);
   const searchParams = useSearchParams();
@@ -133,6 +135,7 @@ export default function TestPlayersPage() {
         if (!isSuperadmin && teamsData && teamsData.length > 0) {
           setSelectedTeamId(teamsData[0].id);
         }
+        if (coachData && coachData.id) setCurrentCoachId(coachData.id);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred while fetching teams');
       }
@@ -151,13 +154,18 @@ export default function TestPlayersPage() {
     const supabase = createClient();
 
     // Fetch current PDP
-    const { data: pdpData } = await supabase
-      .from("pdp")
-      .select("id, content, created_at, start_date, player_id, archived_at")
-      .eq("player_id", playerId)
-      .is("archived_at", null)
-      .maybeSingle();
-    setCurrentPdp(pdpData);
+    const { data: currentPdpData, error } = await supabase
+      .from('pdp')
+      .select('id, content, start_date, created_at, player_id, archived_at')
+      .eq('player_id', playerId)
+      .is('archived_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Supabase PDP error:', error);
+    }
+    setCurrentPdp(currentPdpData && currentPdpData.length > 0 ? currentPdpData[0] : null);
 
     // Fetch recent observations for the player (matching dashboard behavior)
     const { data: observationsData, error: observationsError } = await supabase
@@ -171,11 +179,11 @@ export default function TestPlayersPage() {
 
     // Fetch archived PDPs
     const { data: archivedData } = await supabase
-      .from("pdp")
-      .select("id, content, created_at, start_date, archived_at")
-      .eq("player_id", playerId)
-      .not("archived_at", "is", null)
-      .order("archived_at", { ascending: sortOrder === "asc" });
+      .from('pdp')
+      .select('id, player_id, content, created_at, start_date, archived_at, coach_id, org_id')
+      .eq('player_id', playerId)
+      .not('archived_at', 'is', null)
+      .order('archived_at', { ascending: sortOrder === "asc" });
 
     // Fetch all archived observations for this player
     const { data: archivedObsData } = await supabase
@@ -279,13 +287,18 @@ export default function TestPlayersPage() {
         counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
       });
       
-      const transformedPlayers = (playersData || []).map((player: any) => ({
-        ...player,
-        name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
-        observations: counts.get(player.id) || 0,
-        joined: new Date(player.created_at).toLocaleDateString(),
-        team_name: player.teams?.name || undefined,
-      }));
+      const teamsById = new Map(teams.map((t) => [t.id, t]));
+      const transformedPlayers = (playersData || []).map((player: any) => {
+        const team = player.team_id ? teamsById.get(player.team_id) : undefined;
+        return {
+          ...player,
+          name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
+          observations: counts.get(player.id) || 0,
+          joined: new Date(player.created_at).toLocaleDateString(),
+          team_name: team?.name || undefined,
+          team_coach_id: team?.coach_id || undefined,
+        };
+      });
       setPlayers(transformedPlayers);
     } catch (err) {
       console.error('Error fetching players:', err);
@@ -293,7 +306,7 @@ export default function TestPlayersPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedTeamId, isAdmin]);
+  }, [selectedTeamId, isAdmin, teams]);
 
   useEffect(() => {
     fetchAllData();
@@ -449,12 +462,11 @@ export default function TestPlayersPage() {
                       </div>
                     )}
                     <div className="flex gap-2 justify-end mt-4">
-                      <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
-                        Edit Player
-                      </button>
-                      <button className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
-                        Delete Player
-                      </button>
+                      {selectedPlayer && currentCoachId && selectedPlayer.team_coach_id === currentCoachId && (
+                        <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                          Edit Player
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -474,15 +486,19 @@ export default function TestPlayersPage() {
                       <div className="text-sm text-zinc-400 font-medium mb-1">
                         Started: {currentPdp.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—"}
                       </div>
-                      <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No content available"}</div>
-                      <div className="flex gap-2 justify-end mt-4">
-                        <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
-                          Edit Plan
-                        </button>
-                        <button className="text-zinc-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
-                          Archive Plan
-                        </button>
-                      </div>
+                      {currentPdp && !currentPdp.archived_at ? (
+                        <>
+                          <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No content available"}</div>
+                          {selectedPlayer && selectedPlayer.team_coach_id === currentCoachId && (
+                            <div className="flex gap-2 justify-end mt-4">
+                              <button onClick={handleEdit}>Edit PDP</button>
+                              <button onClick={handleDelete}>Archive PDP</button>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-base text-zinc-300 mb-2">{currentPdp?.content || "No content available"}</div>
+                      )}
                     </div>
                   ) : (
                     <EmptyState
