@@ -1,8 +1,12 @@
 "use client";
 import { useState } from "react";
-import { Plus, Edit, Trash2, Calendar, User } from "lucide-react";
-import toast from "react-hot-toast";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { Plus, Calendar, User, Edit, Trash2 } from "lucide-react";
+import { Modal } from "@/components/ui/UniversalModal";
+import UniversalButton from "@/components/ui/UniversalButton";
+import { useCoach } from "@/hooks/useCoach";
+import { getUserRole } from "@/lib/role-utils";
 
 interface ObservationStreamProps {
   pdp: any | null;
@@ -14,23 +18,35 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedObservation, setSelectedObservation] = useState<any | null>(null);
   const [newObservationContent, setNewObservationContent] = useState("");
   const [editObservationContent, setEditObservationContent] = useState("");
-  const supabase = createClient();
+  const [selectedObservation, setSelectedObservation] = useState<any>(null);
+
+  const { coach } = useCoach();
+  const userRole = getUserRole(coach);
+  const isSuperadmin = userRole === "superadmin";
+  const isAdmin = userRole === "admin";
 
   const handleAddObservation = async () => {
-    if (!pdp || !newObservationContent.trim()) return;
-    
+    if (!newObservationContent.trim()) {
+      toast.error("Please enter observation content");
+      return;
+    }
+    if (!coach?.org_id) {
+      toast.error("Organization information not available");
+      return;
+    }
+
+    const supabase = createClient();
     const { error } = await supabase
       .from("observations")
-      .insert([{
+      .insert({
         pdp_id: pdp.id,
-        player_id: pdp.player_id,
         content: newObservationContent.trim(),
-        observation_date: new Date().toISOString()
-      }]);
-    
+        observation_date: new Date().toISOString(),
+        org_id: coach.org_id,
+      });
+
     if (error) {
       toast.error("Failed to add observation");
     } else {
@@ -42,13 +58,19 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
   };
 
   const handleEditObservation = async () => {
-    if (!selectedObservation || !editObservationContent.trim()) return;
-    
+    if (!selectedObservation || !editObservationContent.trim()) {
+      toast.error("Please enter observation content");
+      return;
+    }
+
+    const supabase = createClient();
     const { error } = await supabase
       .from("observations")
-      .update({ content: editObservationContent.trim() })
+      .update({
+        content: editObservationContent.trim(),
+      })
       .eq("id", selectedObservation.id);
-    
+
     if (error) {
       toast.error("Failed to update observation");
     } else {
@@ -63,6 +85,7 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
   const handleDeleteObservation = async () => {
     if (!selectedObservation) return;
     
+    const supabase = createClient();
     const { error } = await supabase
       .from("observations")
       .delete()
@@ -95,12 +118,13 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
     <div className="bg-[#232323] rounded-lg p-4 border border-[#323232] h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-[#C2B56B]">Observations ({observations.length})</h2>
-        <button
+        <UniversalButton.Primary
+          size="sm"
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-1 bg-[#C2B56B] text-[#161616] px-3 py-1 rounded text-sm font-semibold hover:bg-[#C2B56B]/80 transition-colors"
         >
-          <Plus size={14} /> Add
-        </button>
+          <Plus size={14} className="mr-1" />
+          Add
+        </UniversalButton.Primary>
       </div>
 
       <div className="flex-1 space-y-3 -mr-2 pr-2">
@@ -119,25 +143,27 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <UniversalButton.Ghost
+                    size="sm"
                     onClick={() => {
                       setSelectedObservation(obs);
                       setEditObservationContent(obs.content);
                       setIsEditModalOpen(true);
                     }}
-                    className="p-1 text-[#C2B56B] hover:bg-[#323232] rounded"
+                    className="p-1 text-[#C2B56B] hover:bg-[#323232]"
                   >
                     <Edit size={14} />
-                  </button>
-                  <button
+                  </UniversalButton.Ghost>
+                  <UniversalButton.Ghost
+                    size="sm"
                     onClick={() => {
                       setSelectedObservation(obs);
                       setIsDeleteModalOpen(true);
                     }}
-                    className="p-1 text-red-400 hover:bg-[#323232] rounded"
+                    className="p-1 text-red-400 hover:bg-[#323232]"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </UniversalButton.Ghost>
                 </div>
               </div>
               <p className="text-slate-300 text-sm whitespace-pre-wrap">
@@ -154,100 +180,55 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
       </div>
 
       {/* Add Observation Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Add New Observation</h3>
-            <textarea
-              placeholder="Enter observation details..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
-              value={newObservationContent}
-              onChange={(e) => setNewObservationContent(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddObservation}
-                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
-              >
-                Add Observation
-              </button>
-              <button
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setNewObservationContent("");
-                }}
-                className="flex-1 bg-[#323232] text-white px-4 py-2 rounded font-semibold hover:bg-[#404040] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal.Add
+        open={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
+        title="Add New Observation"
+        description="Enter the details of your observation below."
+        onSubmit={handleAddObservation}
+        submitText="Add Observation"
+        loading={false}
+        disabled={!newObservationContent.trim()}
+      >
+        <textarea
+          placeholder="Enter observation details..."
+          className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none h-32 resize-none"
+          value={newObservationContent}
+          onChange={(e) => setNewObservationContent(e.target.value)}
+          autoFocus
+        />
+      </Modal.Add>
 
       {/* Edit Observation Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Edit Observation</h3>
-            <textarea
-              placeholder="Enter observation details..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
-              value={editObservationContent}
-              onChange={(e) => setEditObservationContent(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleEditObservation}
-                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
-              >
-                Update Observation
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setEditObservationContent("");
-                  setSelectedObservation(null);
-                }}
-                className="flex-1 bg-[#323232] text-white px-4 py-2 rounded font-semibold hover:bg-[#404040] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal.Edit
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        title="Edit Observation"
+        description="Update the observation details below."
+        onSubmit={handleEditObservation}
+        submitText="Update Observation"
+        loading={false}
+        disabled={!editObservationContent.trim()}
+      >
+        <textarea
+          placeholder="Enter observation details..."
+          className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none h-32 resize-none"
+          value={editObservationContent}
+          onChange={(e) => setEditObservationContent(e.target.value)}
+          autoFocus
+        />
+      </Modal.Edit>
 
       {/* Delete Observation Modal */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Delete Observation</h3>
-            <p className="text-slate-300 mb-4">
-              Are you sure you want to delete this observation? This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleDeleteObservation}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition-colors"
-              >
-                Delete Observation
-              </button>
-              <button
-                onClick={() => {
-                  setIsDeleteModalOpen(false);
-                  setSelectedObservation(null);
-                }}
-                className="flex-1 bg-[#323232] text-white px-4 py-2 rounded font-semibold hover:bg-[#404040] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal.Delete
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        title="Delete Observation"
+        description="Are you sure you want to delete this observation? This action cannot be undone."
+        onConfirm={handleDeleteObservation}
+        confirmText="Delete Observation"
+        loading={false}
+      />
     </div>
   );
 } 

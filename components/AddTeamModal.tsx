@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { OutlineButton } from "@/components/ui/gold-outline-button";
 import { createClient } from "@/lib/supabase/client";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useCoach } from "@/hooks/useCoach";
+import { Modal } from "@/components/ui/UniversalModal";
+import UniversalButton from "@/components/ui/UniversalButton";
 import type { Organization } from "@/types/entities";
 
 export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boolean; onClose: () => void; onTeamAdded?: () => void }) {
@@ -32,7 +32,7 @@ export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boo
             setOrganizations([]);
             return;
           }
-          setOrganizations(data || []);
+          setOrganizations((data || []) as Organization[]);
           if (data && data.length > 0) {
             setSelectedOrgId(data[0].id);
           }
@@ -92,67 +92,52 @@ export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boo
     }
   };
 
+  const isFormValid = teamName.trim() && (!isSuperadmin || selectedOrgId);
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-[#181818] border border-[#C2B56B]/30 rounded-2xl shadow-2xl px-8 py-7 w-full max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-extrabold text-center mb-4 bg-gradient-to-r from-[#C2B56B] via-[#C2B56B] to-[#C2B56B] bg-clip-text text-transparent">
-            Add Team
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <div>
-            <label htmlFor="team_name" className="block text-xs text-[#C2B56B] tracking-wider mb-1 font-semibold">
-              Team Name*
-            </label>
-            <Input
-              id="team_name"
-              placeholder="e.g., U12 Gold"
-              value={teamName}
-              onChange={e => setTeamName(e.target.value)}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B] placeholder-[#C2B56B]/60 focus:border-[#C2B56B] focus:ring-1 focus:ring-[#C2B56B] transition-all duration-200"
-              required
-            />
-          </div>
-          {isSuperadmin && (
-            <div>
-              <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
-                Organization
-              </label>
-              <select
-                id="org_select"
-                value={selectedOrgId}
-                onChange={e => setSelectedOrgId(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
-                disabled={loadingOrgs}
-              >
-                {organizations.map(org => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+    <Modal.Add
+      open={open}
+      onOpenChange={(open) => !open && onClose()}
+      title="Add Team"
+      description="Enter the team information below."
+      onSubmit={handleAddTeam}
+      submitText={loading ? "Adding..." : "Add Team"}
+      loading={loading}
+      disabled={!isFormValid}
+    >
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="team_name" className="block text-xs text-[#C2B56B] tracking-wider mb-1 font-semibold">
+            Team Name*
+          </label>
+          <Input
+            id="team_name"
+            placeholder="e.g., U12 Gold"
+            value={teamName}
+            onChange={e => setTeamName(e.target.value)}
+            className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B] placeholder-[#C2B56B]/60 focus:border-[#C2B56B] focus:ring-1 focus:ring-[#C2B56B] transition-all duration-200"
+            required
+          />
         </div>
-        <DialogFooter className="flex gap-3 pt-4">
-          <OutlineButton
-            type="button"
-            color="zinc"
-            onClick={onClose}
-            className="flex-1 px-6 py-2"
-            disabled={loading}
-          >
-            Cancel
-          </OutlineButton>
-          <OutlineButton
-            color="gold"
-            onClick={handleAddTeam}
-            disabled={loading || !teamName.trim() || (isSuperadmin && !selectedOrgId)}
-            className="flex-1 px-6 py-2"
-          >
-            {loading ? "Adding..." : "Add Team"}
-          </OutlineButton>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        {isSuperadmin && (
+          <div>
+            <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+              Organization
+            </label>
+            <select
+              id="org_select"
+              value={selectedOrgId}
+              onChange={e => setSelectedOrgId(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
+              disabled={loadingOrgs}
+            >
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+    </Modal.Add>
   );
 } 

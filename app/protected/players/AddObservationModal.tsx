@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { useCoach } from "@/hooks/useCoach";
+import { toast } from "sonner";
+import { Modal } from "@/components/ui/UniversalModal";
 import type { Organization } from "@/types/entities";
 
 interface AddObservationModalProps {
@@ -23,7 +23,6 @@ export default function AddObservationModal({
   const [content, setContent] = useState("");
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [loadingOrgs, setLoadingOrgs] = useState(false);
@@ -61,31 +60,30 @@ export default function AddObservationModal({
 
   const handleSubmit = async () => {
     if (!content.trim() || !date) {
-      setError("Observation and date required");
+      toast.error("Observation and date required");
       return;
     }
     if (isSuperadmin && !selectedOrgId) {
-      setError("Please select an organization");
+      toast.error("Please select an organization");
       return;
     }
     setLoading(true);
-    setError(null);
     try {
       const supabase = createClient();
       // Fetch the player's current active PDP
       const { data: pdp, error: pdpError } = await supabase
-        .from("pdp")
+        .from("pdps")
         .select("id")
         .eq("player_id", player.id)
         .is("archived_at", null)
         .maybeSingle();
       if (pdpError) {
-        setError("Error fetching current PDP");
+        toast.error("Error fetching current PDP");
         setLoading(false);
         return;
       }
       if (!pdp) {
-        setError("No active development plan (PDP) found for this player. Please create a PDP first.");
+        toast.error("No active development plan (PDP) found for this player. Please create a PDP first.");
         setLoading(false);
         return;
       }
@@ -97,66 +95,64 @@ export default function AddObservationModal({
         archived: false,
         org_id: isSuperadmin ? selectedOrgId : coach?.org_id,
       });
+      toast.success("Observation added successfully!");
       setContent("");
       setDate("");
       onClose();
       onObservationAdded?.();
     } catch (err: any) {
-      setError(err.message || "Failed to add observation");
+      toast.error(err.message || "Failed to add observation");
     } finally {
       setLoading(false);
     }
   };
 
+  const isFormValid = content.trim() && date && (!isSuperadmin || selectedOrgId);
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="bg-zinc-900 border border-zinc-700">
-        <DialogHeader>
-          <DialogTitle>Add Observation</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            disabled={loading}
-          />
-          <textarea
-            placeholder="Enter observation details..."
-            className="w-full rounded bg-zinc-800 p-2 text-white min-h-[80px] resize-none"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            disabled={loading}
-          />
-          {isSuperadmin && (
-            <div>
-              <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
-                Organization
-              </label>
-              <select
-                id="org_select"
-                value={selectedOrgId}
-                onChange={e => setSelectedOrgId(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
-                disabled={loadingOrgs}
-              >
-                {organizations.map(org => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          {error && <div className="text-red-500">{error}</div>}
-        </div>
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Saving..." : "Add"}
-          </Button>
-          <Button variant="ghost" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Modal.Add
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title="Add Observation"
+      description="Enter the observation details below."
+      onSubmit={handleSubmit}
+      submitText={loading ? "Saving..." : "Add"}
+      loading={loading}
+      disabled={!isFormValid}
+    >
+      <div className="space-y-3">
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          disabled={loading}
+        />
+        <textarea
+          placeholder="Enter observation details..."
+          className="w-full rounded bg-zinc-800 p-2 text-white min-h-[80px] resize-none"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          disabled={loading}
+        />
+        {isSuperadmin && (
+          <div>
+            <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+              Organization
+            </label>
+            <select
+              id="org_select"
+              value={selectedOrgId}
+              onChange={e => setSelectedOrgId(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
+              disabled={loadingOrgs}
+            >
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+    </Modal.Add>
   );
 } 

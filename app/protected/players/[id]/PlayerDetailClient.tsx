@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getCoachName } from "@/lib/utils";
+import { getUserRole } from "@/lib/role-utils";
+import { useCoach } from "@/hooks/useCoach";
 
 // Import Modals
 import EditPDPModal from "@/components/EditPDPModal";
@@ -17,6 +19,10 @@ import PlayerDetailLayout from "@/components/PlayerDetailLayout";
 export default function PlayerDetailClient({ player, currentPDP, recentObservations, coach }: any) {
   const supabase = createClient();
   const router = useRouter();
+  const { coach: currentCoach } = useCoach();
+  const userRole = getUserRole(currentCoach);
+  const isSuperadmin = userRole === "superadmin";
+  const isAdmin = userRole === "admin";
 
   // Modal states
   const [isEditModalOpen, setEditModalOpen] = useState(false);
@@ -60,9 +66,15 @@ export default function PlayerDetailClient({ player, currentPDP, recentObservati
   }));
 
   const handleAddObservation = async (data: { player_id: string; content: string; observation_date: string }) => {
+    if (!currentCoach?.org_id) {
+      console.error("Organization information not available");
+      return;
+    }
+
     const { error } = await supabase.from('observations').insert({
       ...data,
       coach_id: coach?.id,
+      org_id: currentCoach.org_id,
     });
     if (error) {
       console.error('Failed to add observation:', error);

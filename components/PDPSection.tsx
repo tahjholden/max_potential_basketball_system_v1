@@ -1,9 +1,13 @@
 "use client";
 import { useState } from "react";
-import { Edit, Archive, Plus, ChevronDown, ChevronRight } from "lucide-react";
-import toast from "react-hot-toast";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { Plus, Edit, Archive, ChevronRight, ChevronDown } from "lucide-react";
+import { Modal } from "@/components/ui/UniversalModal";
+import UniversalButton from "@/components/ui/UniversalButton";
 import ArchiveAndReplaceButton from "./ArchiveAndReplaceButton";
+import { useCoach } from "@/hooks/useCoach";
+import { getUserRole } from "@/lib/role-utils";
 
 interface PDPSectionProps {
   player: any | null;
@@ -23,40 +27,60 @@ export default function PDPSection({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
-  const [expandedArchives, setExpandedArchives] = useState(false);
   const [newPdpContent, setNewPdpContent] = useState("");
   const [editPdpContent, setEditPdpContent] = useState("");
-  const supabase = createClient();
+  const [expandedArchives, setExpandedArchives] = useState(false);
+
+  const { coach } = useCoach();
+  const userRole = getUserRole(coach);
+  const isSuperadmin = userRole === "superadmin";
+  const isAdmin = userRole === "admin";
 
   const handleCreatePDP = async () => {
-    if (!player || !newPdpContent.trim()) return;
-    
-    const { error } = await supabase
-      .from("pdp")
-      .insert([{
+    if (!newPdpContent.trim() || !player) {
+      toast.error("Please enter PDP content");
+      return;
+    }
+    if (!coach?.org_id) {
+      toast.error("Organization information not available");
+      return;
+    }
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("pdps")
+      .insert({
         player_id: player.id,
         content: newPdpContent.trim(),
-        start_date: new Date().toISOString()
-      }]);
-    
+        start_date: new Date().toISOString(),
+        org_id: coach.org_id,
+      })
+      .select()
+      .single();
+
     if (error) {
       toast.error("Failed to create PDP");
     } else {
       toast.success("PDP created successfully");
       setNewPdpContent("");
       setIsCreateModalOpen(false);
+      onPdpChange(data);
       onRefresh();
     }
   };
 
   const handleEditPDP = async () => {
-    if (!currentPdp || !editPdpContent.trim()) return;
-    
+    if (!currentPdp || !editPdpContent.trim()) {
+      toast.error("Please enter PDP content");
+      return;
+    }
+
+    const supabase = createClient();
     const { error } = await supabase
-      .from("pdp")
+      .from("pdps")
       .update({ content: editPdpContent.trim() })
       .eq("id", currentPdp.id);
-    
+
     if (error) {
       toast.error("Failed to update PDP");
     } else {
@@ -69,27 +93,36 @@ export default function PDPSection({
 
   const handleArchivePDP = async () => {
     if (!currentPdp) return;
-    
+
+    const supabase = createClient();
     const { error } = await supabase
-      .from("pdp")
-      .update({ archived_at: new Date().toISOString() })
+      .from("pdps")
+      .update({ 
+        archived: true,
+        archived_at: new Date().toISOString()
+      })
       .eq("id", currentPdp.id);
-    
+
     if (error) {
       toast.error("Failed to archive PDP");
     } else {
       toast.success("PDP archived successfully");
       setIsArchiveModalOpen(false);
+      onPdpChange(null);
       onRefresh();
     }
   };
 
   const handleRestorePDP = async (pdpId: string) => {
+    const supabase = createClient();
     const { error } = await supabase
-      .from("pdp")
-      .update({ archived_at: null })
+      .from("pdps")
+      .update({ 
+        archived: false,
+        archived_at: null
+      })
       .eq("id", pdpId);
-    
+
     if (error) {
       toast.error("Failed to restore PDP");
     } else {
@@ -111,12 +144,13 @@ export default function PDPSection({
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-[#C2B56B]">{player.name}</h2>
         {!currentPdp && (
-          <button
+          <UniversalButton.Primary
+            size="sm"
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-1 bg-[#C2B56B] text-[#161616] px-3 py-1 rounded text-sm font-semibold hover:bg-[#C2B56B]/80 transition-colors"
           >
-            <Plus size={14} /> Create PDP
-          </button>
+            <Plus size={14} className="mr-1" />
+            Create PDP
+          </UniversalButton.Primary>
         )}
       </div>
 
@@ -127,27 +161,29 @@ export default function PDPSection({
             <div className="flex justify-between items-start mb-3">
               <h3 className="text-md font-semibold text-white">Current PDP</h3>
               <div className="flex gap-2">
-                <button
+                <UniversalButton.Ghost
+                  size="sm"
                   onClick={() => {
                     setEditPdpContent(currentPdp.content || '');
                     setIsEditModalOpen(true);
                   }}
-                  className="p-1 text-[#C2B56B] hover:bg-[#323232] rounded"
+                  className="p-1 text-[#C2B56B] hover:bg-[#323232]"
                 >
                   <Edit size={16} />
-                </button>
+                </UniversalButton.Ghost>
                 <ArchiveAndReplaceButton
                   playerId={player.id}
                   onSuccess={onRefresh}
                   className="p-1 text-[#C2B56B] hover:bg-[#323232] rounded"
                   variant="button"
                 />
-                <button
+                <UniversalButton.Ghost
+                  size="sm"
                   onClick={() => setIsArchiveModalOpen(true)}
-                  className="p-1 text-red-400 hover:bg-[#323232] rounded"
+                  className="p-1 text-red-400 hover:bg-[#323232]"
                 >
                   <Archive size={16} />
-                </button>
+                </UniversalButton.Ghost>
               </div>
             </div>
             <p className="text-slate-300 text-sm whitespace-pre-wrap mb-3">
@@ -166,13 +202,13 @@ export default function PDPSection({
         {/* Archived PDPs */}
         {archives.length > 0 && (
           <div className="bg-[#18191A] p-4 rounded-lg border border-[#323232]">
-            <button
+            <UniversalButton.Ghost
               onClick={() => setExpandedArchives(!expandedArchives)}
-              className="flex items-center gap-2 text-white font-semibold mb-3"
+              className="flex items-center gap-2 text-white font-semibold mb-3 p-0"
             >
               {expandedArchives ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
               Archived PDPs ({archives.length})
-            </button>
+            </UniversalButton.Ghost>
             
             {expandedArchives && (
               <div className="space-y-3">
@@ -185,12 +221,13 @@ export default function PDPSection({
                       <p className="text-xs text-slate-500">
                         {new Date(pdp.start_date).toLocaleDateString()} - {new Date(pdp.archived_at).toLocaleDateString()}
                       </p>
-                      <button
+                      <UniversalButton.Text
+                        size="xs"
                         onClick={() => handleRestorePDP(pdp.id)}
                         className="text-xs text-[#C2B56B] hover:underline"
                       >
                         Restore
-                      </button>
+                      </UniversalButton.Text>
                     </div>
                   </div>
                 ))}
@@ -201,96 +238,55 @@ export default function PDPSection({
       </div>
 
       {/* Create PDP Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Create New PDP</h3>
-            <textarea
-              placeholder="Enter PDP content..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
-              value={newPdpContent}
-              onChange={(e) => setNewPdpContent(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleCreatePDP}
-                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
-              >
-                Create PDP
-              </button>
-              <button
-                onClick={() => {
-                  setIsCreateModalOpen(false);
-                  setNewPdpContent("");
-                }}
-                className="flex-1 bg-[#323232] text-white px-4 py-2 rounded font-semibold hover:bg-[#404040] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal.Add
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        title="Create New PDP"
+        description="Enter the development plan content below."
+        onSubmit={handleCreatePDP}
+        submitText="Create PDP"
+        loading={false}
+        disabled={!newPdpContent.trim()}
+      >
+        <textarea
+          placeholder="Enter development plan content..."
+          className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none h-32 resize-none"
+          value={newPdpContent}
+          onChange={(e) => setNewPdpContent(e.target.value)}
+          autoFocus
+        />
+      </Modal.Add>
 
       {/* Edit PDP Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Edit PDP</h3>
-            <textarea
-              placeholder="Enter PDP content..."
-              className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none mb-4 h-32 resize-none"
-              value={editPdpContent}
-              onChange={(e) => setEditPdpContent(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleEditPDP}
-                className="flex-1 bg-[#C2B56B] text-[#161616] px-4 py-2 rounded font-semibold hover:bg-[#C2B56B]/80 transition-colors"
-              >
-                Update PDP
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setEditPdpContent("");
-                }}
-                className="flex-1 bg-[#323232] text-white px-4 py-2 rounded font-semibold hover:bg-[#404040] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal.Edit
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        title="Edit PDP"
+        description="Update the development plan content below."
+        onSubmit={handleEditPDP}
+        submitText="Update PDP"
+        loading={false}
+        disabled={!editPdpContent.trim()}
+      >
+        <textarea
+          placeholder="Enter development plan content..."
+          className="w-full bg-[#18191A] border border-[#323232] rounded-md px-3 py-2 text-[#f5f5f7] placeholder:text-[#b0b0b0] focus:border-[#C2B56B] focus:outline-none h-32 resize-none"
+          value={editPdpContent}
+          onChange={(e) => setEditPdpContent(e.target.value)}
+          autoFocus
+        />
+      </Modal.Edit>
 
       {/* Archive PDP Modal */}
-      {isArchiveModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#232323] p-6 rounded-lg border border-[#323232] w-96">
-            <h3 className="text-lg font-bold text-[#C2B56B] mb-4">Archive PDP</h3>
-            <p className="text-slate-300 mb-4">
-              Are you sure you want to archive this PDP? This will move it to the archived section.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleArchivePDP}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition-colors"
-              >
-                Archive PDP
-              </button>
-              <button
-                onClick={() => setIsArchiveModalOpen(false)}
-                className="flex-1 bg-[#323232] text-white px-4 py-2 rounded font-semibold hover:bg-[#404040] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal.Archive
+        open={isArchiveModalOpen}
+        onOpenChange={setIsArchiveModalOpen}
+        title="Archive PDP"
+        description="Are you sure you want to archive this PDP? It will be moved to the archived section."
+        onConfirm={handleArchivePDP}
+        confirmText="Archive PDP"
+        loading={false}
+      />
     </div>
   );
 } 

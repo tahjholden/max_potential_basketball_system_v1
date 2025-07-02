@@ -1,17 +1,10 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { GoldButton } from "./ui/gold-button";
-import { Button } from "./ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { useCoach } from "@/hooks/useCoach";
-import type { Organization } from "@/types/entities";
+import { Modal } from "@/components/ui/UniversalModal";
 import EmptyState from "@/components/ui/EmptyState";
+import type { Organization } from "@/types/entities";
 
 export default function CreatePDPModal({
   open,
@@ -28,7 +21,6 @@ export default function CreatePDPModal({
 }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [loadingOrgs, setLoadingOrgs] = useState(false);
@@ -66,25 +58,26 @@ export default function CreatePDPModal({
   useEffect(() => {
     if (!open) {
       setContent("");
-      setError(null);
     }
   }, [open]);
 
   const handleCreate = async () => {
-    if (!content.trim() || !player) return;
+    if (!content.trim() || !player) {
+      toast.error("Please enter PDP content");
+      return;
+    }
     if (isSuperadmin && !selectedOrgId) {
-      setError("Please select an organization");
+      toast.error("Please select an organization");
       return;
     }
     setLoading(true);
-    setError(null);
     try {
       const supabase = createClient();
       const now = new Date().toISOString();
       // Get the current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        setError("User not authenticated.");
+        toast.error("User not authenticated.");
         setLoading(false);
         return;
       }
@@ -113,7 +106,7 @@ export default function CreatePDPModal({
           .select()
           .single();
         if (createCoachError) {
-          setError(`Failed to create coach record: ${createCoachError.message}`);
+          toast.error(`Failed to create coach record: ${createCoachError.message}`);
           setLoading(false);
           return;
         }
@@ -126,12 +119,12 @@ export default function CreatePDPModal({
       // Determine org_id for PDP
       const pdpOrgId = isSuperadmin ? selectedOrgId : orgId;
       if (!pdpOrgId) {
-        setError("Organization not found");
+        toast.error("Organization not found");
         setLoading(false);
         return;
       }
       // Create the new PDP
-      const { error: insertError } = await supabase.from("pdp").insert({
+      const { error: insertError } = await supabase.from("pdps").insert({
         player_id: player.id,
         content: content.trim(),
         start_date: now,
@@ -141,50 +134,60 @@ export default function CreatePDPModal({
       });
       if (insertError) {
         if (insertError.code === '23505') {
-          setError(
-            "This player already has an active PDP. Please refresh and try again."
-          );
+          toast.error("This player already has an active PDP. Please refresh and try again.");
         } else {
-          setError(`Failed to create the new PDP: ${insertError.message}`);
+          toast.error(`Failed to create the new PDP: ${insertError.message}`);
           console.error("PDP creation error:", insertError);
         }
       } else {
+        toast.success("PDP created successfully!");
         onCreated();
         onClose();
       }
     } catch (err) {
-      setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      toast.error(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
       console.error("PDP creation error:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const isFormValid = content.trim() && (!isSuperadmin || selectedOrgId);
+
   if (!player) {
     return (
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white">
-          <EmptyState 
-            variant="error" 
-            title="Player Not Found" 
-            description="The selected player could not be found."
-            action={{
-              label: "Close",
-              onClick: onClose,
-              color: "gray"
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <Modal.Info
+        open={open}
+        onOpenChange={(open) => !open && onClose()}
+        title="Player Not Found"
+        description="The selected player could not be found."
+      >
+        <EmptyState 
+          variant="error" 
+          title="Player Not Found" 
+          description="The selected player could not be found."
+          action={{
+            label: "Close",
+            onClick: onClose,
+            color: "gray"
+          }}
+        />
+      </Modal.Info>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-900 border-zinc-700 text-white">
-        <DialogHeader>
-          <DialogTitle>Create New PDP for {player.name}</DialogTitle>
-        </DialogHeader>
+    <Modal.Add
+      open={open}
+      onOpenChange={(open) => !open && onClose()}
+      title={`Create New PDP for ${player.name}`}
+      description="Enter the development plan content below."
+      onSubmit={handleCreate}
+      submitText={loading ? "Creating..." : "Create PDP"}
+      loading={loading}
+      disabled={!isFormValid}
+    >
+      <div className="space-y-4">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -193,7 +196,7 @@ export default function CreatePDPModal({
           className="w-full px-3 py-2 rounded bg-[#2a2a2a] border border-slate-600 text-white focus:outline-none focus:ring focus:border-gold"
         />
         {isSuperadmin && (
-          <div className="mt-3">
+          <div>
             <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
               Organization
             </label>
@@ -210,19 +213,7 @@ export default function CreatePDPModal({
             </select>
           </div>
         )}
-        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-        <DialogFooter className="flex justify-end gap-3 mt-4">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <GoldButton
-            onClick={handleCreate}
-            disabled={!content.trim() || loading || (isSuperadmin && !selectedOrgId)}
-          >
-            {loading ? "Creating..." : "Create PDP"}
-          </GoldButton>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </Modal.Add>
   );
 } 

@@ -31,9 +31,8 @@ import dynamic from "next/dynamic";
 const AddPlayerModal = dynamic(() => import("@/app/protected/players/AddPlayerModal"), { ssr: false });
 const AddObservationModal = dynamic(() => import("@/app/protected/players/AddObservationModal"), { ssr: false });
 const CreatePDPModal = dynamic(() => import("@/components/CreatePDPModal"), { ssr: false });
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import AddCoachModal from "@/components/AddCoachModal";
+
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 const AddTeamModal = dynamic(() => import("@/components/AddTeamModal"), { ssr: false });
@@ -71,8 +70,7 @@ export default function Navigation() {
   const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string } | null>(null);
   
   // Form states
-  const [coachForm, setCoachForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
-  const [coachLoading, setCoachLoading] = useState(false);
+
 
   // Add a sidebarExpanded state to control label visibility
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -219,26 +217,7 @@ export default function Navigation() {
     }
   };
 
-  const handleAddCoachSubmit = async () => {
-    if (!coachForm.firstName.trim() || !coachForm.lastName.trim() || !coachForm.email.trim()) {
-      toast.error("All fields are required");
-      return;
-    }
 
-    setCoachLoading(true);
-    try {
-      const supabase = createClient();
-      
-      toast.success("Coach added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
-      setAddCoachOpen(false);
-      setCoachForm({ firstName: "", lastName: "", email: "", phone: "" });
-      setTimeout(() => { router.refresh(); }, 1200);
-    } catch (error) {
-      toast.error("Failed to add coach");
-    } finally {
-      setCoachLoading(false);
-    }
-  };
 
   const handleObservationAdded = () => {
     setAddObservationOpen(false);
@@ -290,86 +269,17 @@ export default function Navigation() {
       )}
       
       {/* Add Coach Modal */}
-      <Dialog open={addCoachOpen} onOpenChange={setAddCoachOpen}>
-        <DialogContent className="bg-[#181818] border border-[#d8cc97]/30 rounded-2xl shadow-2xl px-8 py-7 w-full max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-extrabold text-center mb-4 bg-gradient-to-r from-[#d8cc97] via-[#d8cc97] to-[#d8cc97] bg-clip-text text-transparent">
-              Add Coach
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div>
-              <label htmlFor="coach_first_name" className="block text-xs text-[#d8cc97] uppercase tracking-wider mb-1 font-semibold">
-                First Name *
-              </label>
-              <Input
-                id="coach_first_name"
-                placeholder="e.g., John"
-                value={coachForm.firstName}
-                onChange={e => setCoachForm(prev => ({ ...prev, firstName: e.target.value }))}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#d8cc97] placeholder-[#d8cc97]/60 focus:border-[#d8cc97] focus:ring-1 focus:ring-[#d8cc97] transition-all duration-200"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="coach_last_name" className="block text-xs text-[#d8cc97] uppercase tracking-wider mb-1 font-semibold">
-                Last Name *
-              </label>
-              <Input
-                id="coach_last_name"
-                placeholder="e.g., Smith"
-                value={coachForm.lastName}
-                onChange={e => setCoachForm(prev => ({ ...prev, lastName: e.target.value }))}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#d8cc97] placeholder-[#d8cc97]/60 focus:border-[#d8cc97] focus:ring-1 focus:ring-[#d8cc97] transition-all duration-200"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="coach_email" className="block text-xs text-[#d8cc97] uppercase tracking-wider mb-1 font-semibold">
-                Email *
-              </label>
-              <Input
-                id="coach_email"
-                type="email"
-                placeholder="e.g., john.smith@example.com"
-                value={coachForm.email}
-                onChange={e => setCoachForm(prev => ({ ...prev, email: e.target.value }))}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#d8cc97] placeholder-[#d8cc97]/60 focus:border-[#d8cc97] focus:ring-1 focus:ring-[#d8cc97] transition-all duration-200"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="coach_phone" className="block text-xs text-[#d8cc97] uppercase tracking-wider mb-1 font-semibold">
-                Phone Number
-              </label>
-              <Input
-                id="coach_phone"
-                type="tel"
-                placeholder="e.g., (555) 123-4567"
-                value={coachForm.phone}
-                onChange={e => setCoachForm(prev => ({ ...prev, phone: e.target.value }))}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#d8cc97] placeholder-[#d8cc97]/60 focus:border-[#d8cc97] focus:ring-1 focus:ring-[#d8cc97] transition-all duration-200"
-              />
-            </div>
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setAddCoachOpen(false)}
-                className="flex-1 border-[#d8cc97]/30 text-[#d8cc97] hover:bg-[#d8cc97]/10"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAddCoachSubmit}
-                disabled={coachLoading || !coachForm.firstName.trim() || !coachForm.lastName.trim() || !coachForm.email.trim()}
-                className="flex-1 bg-[#d8cc97] text-black hover:bg-[#d8cc97]/80 disabled:opacity-50"
-              >
-                {coachLoading ? "Adding..." : "Add Coach"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {addCoachOpen && (
+        <AddCoachModal
+          open={addCoachOpen}
+          onClose={() => setAddCoachOpen(false)}
+          onCoachAdded={() => {
+            setAddCoachOpen(false);
+            toast.success("Coach added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
+            setTimeout(() => { router.refresh(); }, 1200);
+          }}
+        />
+      )}
 
       {/* Add Observation Modal */}
       {selectedPlayer && addObservationOpen && (

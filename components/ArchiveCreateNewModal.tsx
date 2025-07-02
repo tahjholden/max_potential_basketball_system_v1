@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogHeader, DialogDescription } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+import { Modal } from "@/components/ui/UniversalModal"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { archiveAndCreateNewPDP } from "@/lib/archiveAndCreateNewPDP"
@@ -19,13 +18,11 @@ export default function ArchiveCreateNewModal({
   const [open, setOpen] = useState(false)
   const [content, setContent] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [modalState, setModalState] = useState<"confirm" | "create">("confirm")
 
   const resetState = () => {
     setContent("")
     setLoading(false)
-    setError(null)
     setModalState("confirm")
   }
 
@@ -38,12 +35,11 @@ export default function ArchiveCreateNewModal({
 
   const handleArchive = async () => {
     setLoading(true)
-    setError(null)
     const supabase = createClient()
     
     try {
       const { data: currentPdp } = await supabase
-        .from('pdp')
+        .from('pdps')
         .select('*')
         .eq('player_id', playerId)
         .is('archived_at', null)
@@ -58,7 +54,6 @@ export default function ArchiveCreateNewModal({
       setModalState("create")
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during archiving."
-      setError(errorMessage)
       toast.error(errorMessage)
     } finally {
       setLoading(false)
@@ -67,17 +62,16 @@ export default function ArchiveCreateNewModal({
 
   const handleCreate = async () => {
     if (!content.trim()) {
-      setError("Please provide content for the new development plan.")
+      toast.error("Please provide content for the new development plan.")
       return
     }
     setLoading(true)
-    setError(null)
 
     try {
       // Get the current PDP to archive
       const supabase = createClient();
       const { data: currentPdp } = await supabase
-        .from('pdp')
+        .from('pdps')
         .select('*')
         .eq('player_id', playerId)
         .is('archived_at', null)
@@ -96,12 +90,10 @@ export default function ArchiveCreateNewModal({
         onSuccess?.();
         router.refresh();
       } else {
-        setError(result.error || "Failed to create new development plan.");
         toast.error(result.error || "Failed to create new development plan.");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during creation."
-      setError(errorMessage)
       toast.error(errorMessage)
     } finally {
       setLoading(false)
@@ -109,82 +101,51 @@ export default function ArchiveCreateNewModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <EntityButton color="gold">Archive & Create New</EntityButton>
-      </DialogTrigger>
-      <DialogContent className="bg-zinc-900 border border-zinc-700 text-white max-w-md">
-        {modalState === "confirm" ? (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold mb-3">Archive Current Plan</DialogTitle>
-              <DialogDescription className="text-sm text-zinc-400">
-                This will close the current development plan and archive all of its associated observations.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 text-sm">
-              <p>Are you sure you want to proceed? This action cannot be undone.</p>
-            </div>
-            {error && (
-              <div className="bg-red-900/20 border border-red-500/30 p-3 rounded text-sm text-red-400">{error}</div>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <button 
-                onClick={() => handleOpenChange(false)} 
-                disabled={loading}
-                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleArchive} 
-                disabled={loading} 
-                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
-              >
-                {loading ? "Archiving..." : "Confirm & Continue"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold mb-3">Create New Development Plan</DialogTitle>
-              <DialogDescription className="text-sm text-zinc-400">
-                The previous plan has been archived. Now, create a new plan for the player.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={5}
-                className="w-full rounded bg-zinc-800 border border-zinc-600 p-3 text-white text-sm resize-none"
-                placeholder="Write the new development plan here..."
-                autoFocus
-              />
-            </div>
-            {error && (
-              <div className="bg-red-900/20 border border-red-500/30 p-3 rounded text-sm text-red-400">{error}</div>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <button 
-                onClick={() => handleOpenChange(false)} 
-                disabled={loading}
-                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleCreate} 
-                disabled={loading || content.trim() === ""} 
-                className="border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition disabled:opacity-50"
-              >
-                {loading ? "Creating..." : "Create New Plan"}
-              </button>
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+    <>
+      <EntityButton 
+        color="gold"
+        onClick={() => setOpen(true)}
+      >
+        Archive & Create New
+      </EntityButton>
+      
+      {modalState === "confirm" ? (
+        <Modal.Archive
+          open={open}
+          onOpenChange={handleOpenChange}
+          title="Archive Current Plan"
+          description="This will close the current development plan and archive all of its associated observations."
+          onConfirm={handleArchive}
+          confirmText={loading ? "Archiving..." : "Confirm & Continue"}
+          loading={loading}
+        >
+          <div className="py-4 text-sm">
+            <p>Are you sure you want to proceed? This action cannot be undone.</p>
+          </div>
+        </Modal.Archive>
+      ) : (
+        <Modal.Add
+          open={open}
+          onOpenChange={handleOpenChange}
+          title="Create New Development Plan"
+          description="The previous plan has been archived. Now, create a new plan for the player."
+          onSubmit={handleCreate}
+          submitText={loading ? "Creating..." : "Create New Plan"}
+          loading={loading}
+          disabled={!content.trim()}
+        >
+          <div className="py-4">
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={5}
+              className="w-full rounded bg-zinc-800 border border-zinc-600 p-3 text-white text-sm resize-none"
+              placeholder="Write the new development plan here..."
+              autoFocus
+            />
+          </div>
+        </Modal.Add>
+      )}
+    </>
   )
 } 
