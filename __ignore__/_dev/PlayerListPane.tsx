@@ -1,3 +1,4 @@
+// This file has been moved to __ignore__/_dev/PlayerListPane.tsx as part of archiving old player list variations.
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -130,7 +131,7 @@ export default function PlayerListPane({
           className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
         />
       </div>
-      <div className="space-y-2 max-h-96 overflow-y-auto pr-3">
+      <div className="space-y-2 max-h-96 pr-3">
         {teams.length === 0 ? (
           <NoTeamsEmptyState onAddTeam={() => {}} />
         ) : filteredPlayers.length === 0 ? (

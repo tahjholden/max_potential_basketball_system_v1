@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { GoldButton } from '@/components/ui/gold-button';
 import EntityMetadataCard from '@/components/EntityMetadataCard';
@@ -203,12 +204,12 @@ export default function TeamsPage() {
       { label: "Name", value: selectedTeam.name, highlight: true },
       { label: "Coach", value: teamCoach ? `${teamCoach.first_name} ${teamCoach.last_name}` : "No coach assigned" },
       { label: "Players", value: `${teamPlayers.length} player${teamPlayers.length !== 1 ? 's' : ''}` },
-      { label: "Created", value: new Date(selectedTeam.created_at).toLocaleDateString() },
+      { label: "Created", value: selectedTeam.created_at ? format(new Date(selectedTeam.created_at), "MMMM do, yyyy") : "—" },
     ];
   };
   const getTeamActions = () => (
     <div className="flex gap-1">
-      <GoldButton onClick={handleEdit}>Edit Team</GoldButton>
+      <GoldButton onClick={handleEdit} className="px-3 py-1 text-sm font-semibold">Edit Team</GoldButton>
       <Button variant="destructive" onClick={handleDelete}>Delete Team</Button>
     </div>
   );
@@ -221,7 +222,7 @@ export default function TeamsPage() {
         <SectionLabel>Teams</SectionLabel>
         <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 h-96 flex flex-col">
           {/* Scrollable team list, responsive height */}
-          <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+          <div className="flex-1 min-h-0 mb-2">
             {displayedTeams.length === 0 ? (
               <NoTeamsEmptyState onAddTeam={openCreateModal} />
             ) : (
@@ -270,8 +271,13 @@ export default function TeamsPage() {
         {selectedTeam ? (
           <EntityMetadataCard
             fields={getTeamMetadataFields()}
-            actions={getTeamActions()}
             cardClassName="mt-0"
+            actions={
+              <div className="flex gap-2 absolute bottom-3 right-4">
+                <GoldButton onClick={handleEdit} className="px-3 py-1 text-sm font-semibold">Edit Team</GoldButton>
+                <Button variant="destructive" size="sm" onClick={handleDelete} className="px-3 py-1 text-sm font-semibold">Delete Team</Button>
+              </div>
+            }
           />
         ) : (
           <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 flex flex-col items-center justify-center min-h-[120px]">
@@ -309,7 +315,7 @@ export default function TeamsPage() {
                   const hasPDP = playerPDPs[player.id];
                   let classes = "w-full flex items-center justify-center px-4 py-2 rounded font-medium border transition-colors ";
                   if (!hasPDP) {
-                    classes += "bg-[#A22828] text-white border-[#A22828] ";
+                    classes += "bg-zinc-900 text-white border-[#A22828] hover:bg-[#A22828]/10 ";
                   } else {
                     classes += "border-[#C2B56B] bg-zinc-900 ";
                   }

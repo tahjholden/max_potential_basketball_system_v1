@@ -1,3 +1,4 @@
+// This file has been moved to __ignore__/_dev/PlayerList.tsx as part of archiving old player list variations.
 "use client";
 import { useState } from "react";
 import { Search, PlusCircle } from "lucide-react";
@@ -61,7 +62,7 @@ export default function PlayerList({ players, selected, onSelect }: PlayerListPr
         />
       </div>
 
-      <ul className="flex-1 overflow-y-auto space-y-1 -mr-2 pr-2">
+      <ul className="flex-1 space-y-1 -mr-2 pr-2">
         {filteredPlayers.map((player) => (
           <li
             key={player.id}

@@ -18,6 +18,8 @@ import { NoPlayersEmptyState, NoTeamsEmptyState } from "@/components/ui/EmptySta
 import PlayerListPane from '@/components/PlayerListPane';
 import ThreePaneLayout from '@/components/ThreePaneLayout';
 import EmptyStateCard from "@/components/ui/EmptyStateCard";
+import { GoldButton } from "@/components/ui/gold-button";
+import { Button } from "@/components/ui/button";
 
 interface Player {
   id: string;
@@ -482,7 +484,7 @@ export default function DashboardPage() {
                     </button>
                   </div>
                   {/* Scrollable player list, responsive height */}
-                  <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                  <div className="flex-1 min-h-0 mb-2">
                     {displayedPlayers.map(player => renderPlayerItem(player, playerId === player.id))}
                     {filteredPlayers.length > MAX_PLAYERS && (
                       <div
@@ -520,7 +522,12 @@ export default function DashboardPage() {
                   { label: "Joined", value: selectedPlayer.joined },
                   ...(selectedPlayer.team_name ? [{ label: "Team", value: selectedPlayer.team_name }] : [])
                 ]}
-                actions={null}
+                actions={
+                  <div className="flex gap-2 justify-end">
+                    <GoldButton onClick={() => alert('Edit Player')}>Edit</GoldButton>
+                    <Button variant="destructive" onClick={() => alert('Delete Player')}>Delete</Button>
+                  </div>
+                }
                 cardClassName="mt-0"
               />
             ) : (
@@ -542,9 +549,9 @@ export default function DashboardPage() {
             )}
           </div>
           {/* Right: Observations Card */}
-          <div className="flex-1 min-w-0 flex flex-col gap-4">
+          <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Observations</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex flex-col">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-8 min-h-[120px] max-h-[220px] w-full flex flex-col items-center justify-center">
               {/* Header: Range selector */}
               {selectedPlayer ? (
                 <div className="flex items-center gap-2 mb-2">
@@ -560,14 +567,12 @@ export default function DashboardPage() {
                   </select>
                 </div>
               ) : (
-                <div className="flex items-center justify-center mb-2 w-full">
-                  <PaneTitle className="w-full text-center">Select a Player to View Observations</PaneTitle>
-                </div>
+                <div className="mb-2" />
               )}
               {/* Observation list, see more chevron for overflow */}
               <div className="flex flex-col gap-3 w-full mb-2" style={{overflow: 'visible'}}>
                 {!selectedPlayer || sortedObservations.length === 0 ? (
-                  <div className="flex items-center justify-center w-full overflow-x-hidden h-full">
+                  <div className="flex flex-col items-center justify-center w-full">
                     <div style={{
                       position: 'relative',
                       width: '100%',
@@ -577,6 +582,7 @@ export default function DashboardPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
+                      margin: '0 auto',
                     }}>
                       <Image
                         src="/maxsM.png"
@@ -593,6 +599,9 @@ export default function DashboardPage() {
                           transform: 'scale(3)',
                         }}
                       />
+                    </div>
+                    <div className="text-zinc-400 text-center font-semibold mt-4">
+                      {selectedPlayer ? 'No Observations Yet' : 'Select a Player to View Observations'}
                     </div>
                   </div>
                 ) : (

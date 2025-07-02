@@ -53,7 +53,7 @@ export default function PlayersPage({
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <ul className="max-h-[70vh] overflow-y-auto space-y-1 mt-2">
+          <ul className="max-h-[70vh] space-y-1 mt-2">
             {filteredPlayers.map((p) => (
               <li
                 key={p.id}

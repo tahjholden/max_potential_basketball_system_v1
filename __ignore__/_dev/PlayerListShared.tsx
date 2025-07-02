@@ -1,3 +1,4 @@
+// This file has been moved to __ignore__/_dev/PlayerListShared.tsx as part of archiving old player list variations.
 import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
@@ -111,7 +112,7 @@ const PlayerListShared: React.FC<PlayerListSharedProps> = ({
             </select>
           </div>
           {/* Scrollable player list, responsive height */}
-          <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+          <div className="flex-1 min-h-0 mb-2">
             {displayedPlayers.map((player) =>
               renderPlayerItem(player, selectedPlayerId === player.id)
             )}

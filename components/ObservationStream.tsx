@@ -103,7 +103,7 @@ export default function ObservationStream({ pdp, observations, onRefresh }: Obse
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 -mr-2 pr-2">
+      <div className="flex-1 space-y-3 -mr-2 pr-2">
         {observations.length > 0 ? (
           observations.map((obs) => (
             <div key={obs.id} className="bg-[#18191A] p-4 rounded-lg border border-[#323232]">

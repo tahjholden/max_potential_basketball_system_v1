@@ -140,7 +140,7 @@ export default function PlayerDetailModal({ open, onClose, player }: PlayerDetai
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-600 text-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] bg-slate-800 border-slate-600 text-white">
         <DialogHeader>
           <DialogTitle className="text-oldgold text-2xl font-bold">
             {player.name}

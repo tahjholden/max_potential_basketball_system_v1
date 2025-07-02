@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import SectionLabel from "@/components/SectionLabel";
 import { ChevronDown } from "lucide-react";
 import DeletePlayerButton from "./DeletePlayerButton";
+import SharedPlayerList from "@/components/SharedPlayerList";
 
 interface Player {
   id: string;
@@ -23,6 +24,7 @@ interface DashboardPlayerListPaneProps {
   teamOptions?: { id: string | null; name: string }[];
   selectedTeamId?: string | null;
   onSelectTeam?: (id: string | null) => void;
+  playerIdsWithPDP: string[];
 }
 
 const MAX_PLAYERS = 10;
@@ -36,6 +38,7 @@ const DashboardPlayerListPane: React.FC<DashboardPlayerListPaneProps> = ({
   teamOptions = [],
   selectedTeamId = null,
   onSelectTeam,
+  playerIdsWithPDP,
 }) => {
   const [showAllPlayers, setShowAllPlayers] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
@@ -75,32 +78,18 @@ const DashboardPlayerListPane: React.FC<DashboardPlayerListPaneProps> = ({
           )}
         </div>
         {/* Scrollable player list, responsive height */}
-        <div className="flex-1 min-h-0 overflow-y-auto mb-2">
-          {displayedPlayers.map(player => (
-            <button
-              key={player.id}
-              onClick={() => onSelectPlayer(player.id)}
-              className={
-                "w-full flex items-center justify-center rounded font-bold border-2 transition-colors px-4 py-2 mb-2 " +
-                (player.id === selectedPlayerId
-                  ? "bg-[#C2B56B] text-black border-[#C2B56B]"
-                  : "bg-zinc-900 text-[#C2B56B] border-[#C2B56B] hover:bg-[#C2B56B]/10")
-              }
-            >
-              {player.name}
-            </button>
-          ))}
-          {filteredPlayers.length > MAX_PLAYERS && (
-            <div
-              className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-              onClick={() => setShowAllPlayers(!showAllPlayers)}
-              title={showAllPlayers ? "Show less" : "Show more"}
-            >
-              <div className="flex-1 border-t border-zinc-700"></div>
-              <ChevronDown className={`w-5 h-5 transition-transform ${showAllPlayers ? 'rotate-180' : ''}`} />
-              <div className="flex-1 border-t border-zinc-700"></div>
-            </div>
-          )}
+        <div className="flex-1 min-h-0 mb-2">
+          <SharedPlayerList
+            players={players}
+            selectedPlayerId={selectedPlayerId}
+            onSelectPlayer={onSelectPlayer}
+            teamOptions={teamOptions}
+            selectedTeamId={selectedTeamId}
+            onSelectTeam={onSelectTeam}
+            playerIdsWithPDP={new Set(playerIdsWithPDP)}
+            showAddPlayer={showAddPlayer}
+            onAddPlayer={onAddPlayer}
+          />
         </div>
         {/* Search bar at the bottom - only show when chevron is needed */}
         {filteredPlayers.length > MAX_PLAYERS && (

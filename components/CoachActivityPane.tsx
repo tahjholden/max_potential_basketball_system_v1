@@ -155,7 +155,7 @@ export default function CoachActivityPane({ coach }: CoachActivityPaneProps) {
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-3">
+        <div className="flex-1 space-y-3">
           {activities.map((activity) => (
             <div
               key={activity.id}

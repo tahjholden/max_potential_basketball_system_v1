@@ -9,7 +9,6 @@ import BulkDeleteObservationsPane from "@/components/BulkDeleteObservationsPane"
 import PDPArchivePane from "@/components/PDPArchivePane";
 import { NoPlayersEmptyState, NoArchivedPDPsEmptyState } from '@/components/ui/EmptyState';
 import { ErrorBadge } from '@/components/StatusBadge';
-import PlayerListShared from "@/components/PlayerListShared";
 import SectionLabel from "@/components/SectionLabel";
 import PaneTitle from "@/components/PaneTitle";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,6 +18,7 @@ import AddObservationButton from "@/components/AddObservationButton";
 import DevelopmentPlanCard from "@/components/cards/DevelopmentPlanCard";
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
 import EmptyStateCard from "@/components/ui/EmptyStateCard";
+import SharedPlayerList from "@/components/SharedPlayerList";
 
 // Type Definitions
 interface Player {
@@ -404,14 +404,15 @@ export default function TestPlayersPage() {
           {/* Player list panel */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Players</SectionLabel>
-            <PlayerListShared
+            <SharedPlayerList
               players={filteredPlayers}
-              teams={teams}
               selectedPlayerId={playerId}
-              setSelectedPlayerId={setPlayerId}
+              onSelectPlayer={setPlayerId}
+              teamOptions={teams.map(t => ({ id: t.id, name: t.name }))}
               selectedTeamId={selectedTeamId}
-              setSelectedTeamId={setSelectedTeamId}
+              onSelectTeam={setSelectedTeamId}
               playerIdsWithPDP={playerIdsWithPDP}
+              showAddPlayer={false}
             />
           </div>
           {/* Center: Player Profile + Development Plan (wider column) */}
@@ -510,7 +511,7 @@ export default function TestPlayersPage() {
                       </select>
                     </div>
                     {/* Scrollable observation list, responsive height */}
-                    <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                    <div className="flex-1 min-h-0 mb-2">
                       <div className="flex flex-col gap-3 w-full">
                         {displayedObservations.map(obs => (
                           <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
@@ -563,37 +564,35 @@ export default function TestPlayersPage() {
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>PDP Archive</SectionLabel>
             {archivedPdps.length === 0 ? (
-              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex flex-col">
-                <div className="w-full text-center font-bold text-lg text-white mb-4">No archived plans found.</div>
-                <div className="flex-1 flex items-center justify-center w-full overflow-x-hidden h-full">
-                  <div style={{
-                    position: 'relative',
-                    width: '100%',
-                    maxWidth: '220px',
-                    height: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    margin: '0 auto',
-                  }}>
-                    <Image
-                      src="/maxsM.png"
-                      alt="MP Shield"
-                      width={220}
-                      height={120}
-                      priority
-                      style={{
-                        objectFit: 'contain',
-                        width: '100%',
-                        height: '100%',
-                        filter: 'drop-shadow(0 2px 12px #2226)',
-                        opacity: 0.75,
-                        transform: 'scale(3)',
-                      }}
-                    />
-                  </div>
+              <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex flex-col items-center justify-center min-h-[220px]">
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: '220px',
+                  height: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  margin: '0 auto',
+                }}>
+                  <Image
+                    src="/maxsM.png"
+                    alt="MP Shield"
+                    width={220}
+                    height={120}
+                    priority
+                    style={{
+                      objectFit: 'contain',
+                      width: '100%',
+                      height: '100%',
+                      filter: 'drop-shadow(0 2px 12px #2226)',
+                      opacity: 0.75,
+                      transform: 'scale(3)',
+                    }}
+                  />
                 </div>
+                <div className="text-zinc-400 text-center font-semibold mt-4">No archived plans found</div>
               </div>
             ) : (
               <PDPArchivePane

@@ -106,7 +106,7 @@ export default function ArchiveObservationsModal({ pdpId, open, onClose, onSucce
             />
             <span>Select All</span>
           </label>
-          <div className="max-h-48 overflow-y-auto border rounded bg-zinc-800 p-2">
+          <div className="max-h-48 border rounded bg-zinc-800 p-2">
             {observations.length === 0 ? (
               <div className="text-zinc-400 text-sm">No active observations for this PDP.</div>
             ) : (

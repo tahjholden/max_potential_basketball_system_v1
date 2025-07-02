@@ -73,7 +73,7 @@ export default function CoachListPane({
         />
       </div>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto pr-3">
+      <div className="space-y-2 max-h-96 pr-3">
         {filteredCoaches.length === 0 ? (
           <div className="text-zinc-500 text-sm text-center py-4">
             {searchTerm ? "No coaches found." : "No coaches available."}

@@ -15,7 +15,7 @@ import EntityButton from '@/components/EntityButton';
 import { ErrorBadge } from '@/components/StatusBadge';
 import SectionLabel from "@/components/SectionLabel";
 import EntityMetadataCard from "@/components/EntityMetadataCard";
-import PlayerListShared from "@/components/PlayerListShared";
+import SharedPlayerList from "@/components/SharedPlayerList";
 import EmptyStateCard from "@/components/ui/EmptyStateCard";
 import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 
@@ -366,21 +366,16 @@ export default function ObservationsPage() {
           {/* Left: Player list */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Players</SectionLabel>
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex-1 min-h-0 flex flex-col">
-              {(teams.length === 0 || players.length === 0) ? (
-                <NoTeamsEmptyState onAddTeam={() => {}} />
-              ) : (
-                <PlayerListShared
-                  players={players}
-                  teams={teams}
-                  selectedPlayerId={playerId}
-                  setSelectedPlayerId={setPlayerId}
-                  selectedTeamId={selectedTeamId}
-                  setSelectedTeamId={setSelectedTeamId}
-                  playerIdsWithPDP={playerIdsWithPDP}
-                />
-              )}
-            </div>
+            <SharedPlayerList
+              players={filteredPlayers}
+              selectedPlayerId={playerId}
+              onSelectPlayer={setPlayerId}
+              teamOptions={teams.map(t => ({ id: t.id, name: t.name }))}
+              selectedTeamId={selectedTeamId}
+              onSelectTeam={setSelectedTeamId}
+              playerIdsWithPDP={playerIdsWithPDP}
+              showAddPlayer={false}
+            />
           </div>
           {/* Center: Player Profile + Development Plan */}
           <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
@@ -430,7 +425,7 @@ export default function ObservationsPage() {
                   </select>
                 </div>
                 {/* Scrollable observation list, responsive height */}
-                <div className="flex-1 min-h-0 overflow-y-auto mb-2">
+                <div className="flex-1 min-h-0 mb-2">
                   {displayedObservations.length === 0 ? (
                     <EmptyStateCard message="No observations found." />
                   ) : (

@@ -92,7 +92,7 @@ export default function ObservationsPageClient({
   return (
     <div className="flex h-[calc(100vh-100px)] bg-[#161616] text-white">
       {/* LEFT PANE: Player List */}
-      <div className="w-1/4 border-r border-zinc-800 p-4 overflow-y-auto">
+      <div className="w-1/4 border-r border-zinc-800 p-4">
         <h2 className="text-xl font-bold mb-4">Players</h2>
         <input
           type="text"
@@ -124,7 +124,7 @@ export default function ObservationsPageClient({
       </div>
 
       {/* CENTER PANE: Player's Observations */}
-      <div className="w-1/2 border-r border-zinc-800 p-6 overflow-y-auto">
+      <div className="w-1/2 border-r border-zinc-800 p-6">
         <h2 className="text-xl font-bold mb-4">
           {selectedPlayer
             ? `${selectedPlayer.name}'s Observations`
@@ -155,7 +155,7 @@ export default function ObservationsPageClient({
       </div>
 
       {/* RIGHT PANE: Observation Detail with Tabs */}
-      <div className="w-1/4 p-6 overflow-y-auto">
+      <div className="w-1/4 p-6">
         <h2 className="text-xl font-bold mb-4">Coming Soon</h2>
         <ObservationDetailPanel observation={selectedObservation} />
       </div>

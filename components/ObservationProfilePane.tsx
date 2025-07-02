@@ -46,7 +46,7 @@ export default function ObservationProfilePane({
 
   if (!player) {
     return (
-      <main className="w-full lg:flex-1 lg:max-w-[700px] bg-zinc-900 p-5 rounded-xl shadow-inner overflow-y-auto">
+      <main className="w-full lg:flex-1 lg:max-w-[700px] bg-zinc-900 p-5 rounded-xl shadow-inner">
         <div className="text-center text-zinc-500 mt-8">
           <p>Select a player to view observations</p>
         </div>
@@ -55,7 +55,7 @@ export default function ObservationProfilePane({
   }
 
   return (
-    <main className="w-full lg:flex-1 lg:max-w-[700px] bg-zinc-900 p-5 rounded-xl shadow-inner overflow-y-auto">
+    <main className="w-full lg:flex-1 lg:max-w-[700px] bg-zinc-900 p-5 rounded-xl shadow-inner">
       <h2 className="text-sm font-semibold text-zinc-400 mb-4">Observations: {player.name}</h2>
       
       <div className="flex justify-between items-center mb-4">

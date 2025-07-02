@@ -77,7 +77,7 @@ const EntityListPane: React.FC<EntityListPaneProps> = ({
           className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
         />
       </div>
-      <div className="space-y-2 max-h-96 overflow-y-auto pr-3 flex-1">
+      <div className="space-y-2 max-h-96 pr-3 flex-1">
         {filteredItems.length === 0 ? (
           <div className="text-zinc-500 text-sm text-center py-4">
             {searchTerm ? `No ${title.toLowerCase()} found.` : `No ${title.toLowerCase()} available.`}

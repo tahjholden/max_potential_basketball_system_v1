@@ -14,6 +14,7 @@ import ObservationFeedPane from "@/components/ObservationFeedPane";
 import PlayerListShared from "@/components/PlayerListShared";
 import SectionLabel from "@/components/SectionLabel";
 import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
+import SharedPlayerList from "@/components/SharedPlayerList";
 
 interface Player {
   id: string;
@@ -52,7 +53,7 @@ interface ArchivedPDP {
 
 export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId, clearPlayerId } = useSelectedPlayer();
+  const { playerId, setPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [allPdps, setAllPdps] = useState<Pdp[]>([]);
@@ -60,6 +61,9 @@ export default function PlayersPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
+  const [playerIdsWithPDP, setPlayerIdsWithPDP] = useState<string[]>([]);
 
   const selectedPlayer = players.find((p: Player) => p.id === playerId);
 
@@ -191,13 +195,15 @@ export default function PlayersPage() {
                 {players.length === 0 ? (
                   <NoTeamsEmptyState onAddTeam={() => {}} />
                 ) : (
-                  <PlayerListShared
+                  <SharedPlayerList
                     players={players}
-                    teams={[]}
                     selectedPlayerId={playerId}
-                    setSelectedPlayerId={() => {}}
-                    selectedTeamId={null}
-                    setSelectedTeamId={() => {}}
+                    onSelectPlayer={setPlayerId}
+                    teamOptions={teams.map(t => ({ id: t.id, name: t.name }))}
+                    selectedTeamId={selectedTeamId}
+                    onSelectTeam={setSelectedTeamId}
+                    playerIdsWithPDP={new Set(playerIdsWithPDP)}
+                    showAddPlayer={false}
                   />
                 )}
               </div>

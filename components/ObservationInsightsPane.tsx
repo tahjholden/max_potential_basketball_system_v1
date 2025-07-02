@@ -13,15 +13,19 @@ export default function ObservationInsightsPane({ total, playerTotal }: { total:
           <div className="flex flex-col gap-4 w-full">
             {/* Metrics Row with Card Boxes */}
             <div className="flex flex-row gap-3 w-full justify-center">
-              <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex flex-col items-center flex-1 min-w-0">
-                <span className="text-zinc-400 text-xs mb-0.5 text-center w-full">Total Observations</span>
-                <span className="text-zinc-400 text-[11px] leading-tight text-center w-full">(This Week)</span>
-                <span className="text-2xl font-bold text-white">{total}</span>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex flex-col items-center flex-1 min-w-0 h-32 justify-between">
+                <div className="flex flex-col items-center w-full" style={{ minHeight: 38 }}>
+                  <span className="text-zinc-400 text-xs mb-0.5 text-center w-full">Total Observations</span>
+                  <span className="text-zinc-400 text-[11px] leading-tight text-center w-full">(This Week)</span>
+                </div>
+                <span className="text-2xl font-bold text-white mt-auto">{total}</span>
               </div>
-              <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex flex-col items-center flex-1 min-w-0">
-                <span className="text-zinc-400 text-xs mb-0.5 text-center w-full">Player Observations</span>
-                <span className="text-zinc-400 text-[11px] leading-tight text-center w-full invisible">(This Week)</span>
-                <span className="text-2xl font-bold text-white">&nbsp;{playerTotal}</span>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex flex-col items-center flex-1 min-w-0 h-32 justify-between">
+                <div className="flex flex-col items-center w-full" style={{ minHeight: 38 }}>
+                  <span className="text-zinc-400 text-xs mb-0.5 text-center w-full">Player Observations</span>
+                  <span className="text-zinc-400 text-[11px] leading-tight text-center w-full invisible">(This Week)</span>
+                </div>
+                <span className="text-2xl font-bold text-white mt-auto">&nbsp;{playerTotal}</span>
               </div>
             </div>
             {/* Coming Soon Features */}

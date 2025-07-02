@@ -16,7 +16,7 @@ export default function PlayerListCard({ players, selectedPlayerId, onSelect, te
         <h2 className="text-lg font-semibold text-gray-900">Players</h2>
         <p className="text-sm text-gray-500">{players.length} players</p>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1">
         {!hasTeams ? (
           <EmptyCard title="Add your first team to get started" />
         ) : players.length === 0 ? (
