@@ -286,6 +286,7 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
                 className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
                 disabled={loadingOrgs}
               >
+                <option value="">Select an organization</option>
                 {organizations.map(org => (
                   <option key={org.id} value={org.id}>{org.name}</option>
                 ))}

@@ -13,12 +13,14 @@ interface PlayerMetadataCardProps {
   player: Player;
   playerId?: string;
   showDeleteButton?: boolean;
+  isAdminOrSuperadmin: boolean;
 }
 
 const PlayerMetadataCard: React.FC<PlayerMetadataCardProps> = ({
   player,
   playerId,
   showDeleteButton = false,
+  isAdminOrSuperadmin,
 }) => {
   const fields = [
     { label: "Name", value: <span className="font-bold text-[#C2B56B] text-base">{player.name}</span>, highlight: true },
@@ -37,7 +39,7 @@ const PlayerMetadataCard: React.FC<PlayerMetadataCardProps> = ({
   return (
     <EntityMetadataCard
       actions={
-        showDeleteButton && playerId ? (
+        isAdminOrSuperadmin && playerId ? (
           <DeletePlayerButton playerId={playerId} playerName={player.name} />
         ) : null
       }

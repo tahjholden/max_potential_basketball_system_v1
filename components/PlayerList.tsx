@@ -13,9 +13,10 @@ interface PlayerListProps {
   players: any[];
   selected: any | null;
   onSelect: (player: any) => void;
+  isAdminOrSuperadmin: boolean;
 }
 
-export default function PlayerList({ players, selected, onSelect }: PlayerListProps) {
+export default function PlayerList({ players, selected, onSelect, isAdminOrSuperadmin }: PlayerListProps) {
   const [search, setSearch] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -160,13 +161,15 @@ export default function PlayerList({ players, selected, onSelect }: PlayerListPr
     <div className="bg-[#232323] rounded-lg p-4 border border-[#323232] h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-[#d8cc97]">Players</h2>
-        <UniversalButton.Primary
-          size="sm"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          <PlusCircle size={14} className="mr-1" />
-          Add
-        </UniversalButton.Primary>
+        {isAdminOrSuperadmin && (
+          <UniversalButton.Primary
+            size="sm"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <PlusCircle size={14} className="mr-1" />
+            Add
+          </UniversalButton.Primary>
+        )}
       </div>
 
       <div className="relative mb-4">

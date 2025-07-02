@@ -74,6 +74,8 @@ export default function CoachesPage() {
   const [error, setError] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAdminOrSuperadmin, setIsAdminOrSuperadmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
 
   // Handle hydration
   useEffect(() => {
@@ -570,7 +572,7 @@ export default function CoachesPage() {
                     title="No Coaches Found"
                     description="Add your first coach to get started."
                     className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                    action={{ label: "Add Coach", onClick: openCreateModal, color: "gold" }}
+                    action={isAdminOrSuperadmin ? { label: "Add Coach", onClick: openCreateModal, color: "gold" } : undefined}
                   />
                 ) : (
                   <>
@@ -626,7 +628,7 @@ export default function CoachesPage() {
                       title="No Coaches Found"
                       description="There are no coaches in your team yet. Add your first coach to get started."
                       className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                      action={{ label: "Add Coach", onClick: openCreateModal, color: "gold" }}
+                      action={isAdminOrSuperadmin ? { label: "Add Coach", onClick: openCreateModal, color: "gold" } : undefined}
                     />
                   </Card>
                 </div>
@@ -649,8 +651,12 @@ export default function CoachesPage() {
                         Created: {selectedCoach.created_at ? format(new Date(selectedCoach.created_at), "MMMM do, yyyy") : "—"}
                       </div>
                       <div className="flex gap-2 justify-end mt-4">
-                        <EntityButton color="gold" onClick={handleEdit}>Edit Coach</EntityButton>
-                        <EntityButton color="danger" onClick={handleDelete}>Delete Coach</EntityButton>
+                        {(isAdminOrSuperadmin || selectedCoach.id === currentUserId) && (
+                          <EntityButton color="gold" onClick={handleEdit}>Edit Coach</EntityButton>
+                        )}
+                        {isAdminOrSuperadmin && selectedCoach.id !== currentUserId && (
+                          <EntityButton color="danger" onClick={handleDelete}>Delete Coach</EntityButton>
+                        )}
                       </div>
                     </div>
                   </Card>

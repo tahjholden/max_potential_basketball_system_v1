@@ -8,19 +8,22 @@ const AddCoachModal = dynamic(() => import("@/components/AddCoachModal"), { ssr:
 interface AddCoachButtonProps {
   onCoachAdded?: () => void;
   className?: string;
+  isAdminOrSuperadmin: boolean;
 }
 
-export default function AddCoachButton({ onCoachAdded, className = "" }: AddCoachButtonProps) {
+export default function AddCoachButton({ onCoachAdded, className = "", isAdminOrSuperadmin }: AddCoachButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`border border-gold text-gold font-bold rounded-lg px-4 py-2 shadow hover:bg-gold/10 transition-colors ${className}`}
-      >
-        Add Coach
-      </button>
+      {isAdminOrSuperadmin && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`border border-gold text-gold font-bold rounded-lg px-4 py-2 shadow hover:bg-gold/10 transition-colors ${className}`}
+        >
+          Add Coach
+        </button>
+      )}
       <AddCoachModal
         open={isOpen}
         onClose={() => setIsOpen(false)}
