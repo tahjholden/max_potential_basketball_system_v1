@@ -7,9 +7,10 @@ interface AddPlayerObservationModalProps {
   onClose: () => void;
   onSubmit: (data: { player_id: string; content: string; observation_date: string }) => void;
   player: { id: string; name: string } | null;
+  onSuccess?: () => void;
 }
 
-export default function AddPlayerObservationModal({ open, onClose, onSubmit, player }: AddPlayerObservationModalProps) {
+export default function AddPlayerObservationModal({ open, onClose, onSubmit, player, onSuccess }: AddPlayerObservationModalProps) {
   const [content, setContent] = useState("");
   const [observationDate, setObservationDate] = useState(new Date().toISOString().slice(0, 10));
 
@@ -28,6 +29,7 @@ export default function AddPlayerObservationModal({ open, onClose, onSubmit, pla
         content,
         observation_date: observationDate,
       });
+      if (onSuccess) onSuccess();
     }
   };
 

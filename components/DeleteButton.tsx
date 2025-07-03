@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,12 +55,14 @@ export default function DeleteButton({
           </button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-zinc-900 text-white border border-zinc-700">
+      <DialogContent className="bg-zinc-900 text-white border-2 border-red-600" aria-describedby="delete-dialog-desc">
         <DialogHeader>
-          <DialogTitle>Delete {entity}?</DialogTitle>
+          <DialogTitle className="text-red-400">Delete {entity}?</DialogTitle>
         </DialogHeader>
+        <DialogDescription id="delete-dialog-desc">
+          {description || "This action is permanent and cannot be undone."}
+        </DialogDescription>
         <div className="text-sm text-zinc-400 my-4 space-y-4">
-          <p>{description || "This action is permanent and cannot be undone."}</p>
           {confirmText && (
             <div>
               <p className="mb-2">
@@ -68,7 +71,7 @@ export default function DeleteButton({
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="bg-zinc-800 border-zinc-600"
+                className="bg-zinc-800 border-red-600 focus:border-red-600 focus:ring-red-600"
                 autoFocus
               />
             </div>
@@ -80,6 +83,7 @@ export default function DeleteButton({
           </Button>
           <Button
             variant="destructive"
+            className="bg-red-600 text-white hover:bg-red-700 border-red-600"
             onClick={() => {
               if (isConfirmed) {
                 onConfirm();

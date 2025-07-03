@@ -14,6 +14,8 @@ import PlayerListShared from "@/components/PlayerListShared";
 import SectionLabel from "@/components/SectionLabel";
 import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 import SharedPlayerList from "@/components/SharedPlayerList";
+import { isAdminOrHigher } from "@/lib/role-utils";
+import { useCurrentCoach } from "@/hooks/useCurrentCoach";
 
 interface Player {
   id: string;
@@ -63,8 +65,10 @@ export default function PlayersPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [playerIdsWithPDP, setPlayerIdsWithPDP] = useState<string[]>([]);
+  const { coach } = useCurrentCoach();
 
   const selectedPlayer = players.find((p: Player) => p.id === playerId);
+  const isAdminOrSuperadmin = isAdminOrHigher(coach);
 
   const fetchPdp = async () => {
     if (!playerId) return setCurrentPdp(null);
@@ -91,7 +95,7 @@ export default function PlayersPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("pdp")
-      .select("id, content, start_date, created_at, player_id, archived_at, observations")
+      .select("id, content, start_date, created_at, player_id, archived_at")
       .eq("player_id", playerId)
       .not("archived_at", "is", null)
       .order("archived_at", { ascending: sortOrder === "asc" });
@@ -215,6 +219,7 @@ export default function PlayersPage() {
                   player={{ name: selectedPlayer.name, joined: selectedPlayer.joined }} 
                   playerId={selectedPlayer.id}
                   showDeleteButton={false}
+                  isAdminOrSuperadmin={isAdminOrSuperadmin}
                 />
               </div>
             ) : (

@@ -26,6 +26,11 @@ export default function ArchivePDPModal({
       .update({ archived_at: new Date().toISOString() })
       .eq("id", pdp.id);
 
+    const { error: obsError } = await supabase
+      .from("observations")
+      .update({ archived: true })
+      .eq("pdp_id", pdp.id);
+
     if (!error) {
       onClose();     // close archive modal
       onArchived();  // open create PDP modal
@@ -38,18 +43,18 @@ export default function ArchivePDPModal({
     <GoldModal
       open={open}
       onOpenChange={onClose}
-      title={`Manage PDP for ${player.name}`}
+      title={`Manage Plan for ${player.name}`}
       footer={
         <button
           onClick={handleArchive}
-          className="border border-[#C2B56B] text-xs px-3 py-1.5 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition"
+          className="border border-gray-400 text-xs px-3 py-1.5 rounded font-semibold text-gray-400 hover:bg-gray-700/20 transition"
         >
           Archive & Create New
         </button>
       }
     >
       <p className="text-sm text-slate-400 mb-2">
-        Current PDP <span className="italic">(Started {new Date(pdp.start_date).toLocaleDateString()})</span>
+        Current Plan <span className="italic">(Started {new Date(pdp.start_date).toLocaleDateString()})</span>
       </p>
       <div className="bg-[#1e1e1e] border border-slate-600 p-3 rounded text-sm text-slate-300">
         {pdp.content}

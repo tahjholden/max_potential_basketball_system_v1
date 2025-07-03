@@ -37,6 +37,8 @@ interface Observation {
   content: string;
   observation_date: string;
   created_at: string;
+  pdp_id?: string;
+  archived: boolean;
 }
 
 interface ArchivedPdp {
@@ -53,7 +55,7 @@ interface PlayerListPdp {
   id: string;
   player_id: string;
   content: string | null;
-  archived_at?: string;
+  archived_at: string | null;
 }
 
 export default function TestPlayersPage() {
@@ -89,14 +91,14 @@ export default function TestPlayersPage() {
     // Fetch ALL observations for the player
     const { data: allObsData } = await supabase
       .from("observations")
-      .select("id, content, observation_date, created_at, pdp_id, archived_at")
+      .select("id, content, observation_date, created_at, pdp_id, archived")
       .eq("player_id", playerId)
       .order("created_at", { ascending: false });
 
     const allObservations = allObsData || [];
 
     // Filter for active (un-archived) observations
-    const activeObservations = allObservations.filter(obs => !obs.archived_at);
+    const activeObservations = allObservations.filter(obs => !obs.archived);
     setObservations(activeObservations);
 
     // Fetch archived PDPs
@@ -200,14 +202,13 @@ export default function TestPlayersPage() {
               <div className="flex flex-col gap-4">
                 <PlayerMetadataCard
                   player={selectedPlayer}
-                  observations={observations}
                   playerId={selectedPlayer.id}
                   showDeleteButton
+                  isAdminOrSuperadmin={false}
                 />
                 <DevelopmentPlanCard
-                  player={selectedPlayer}
-                  pdp={currentPdp}
-                  onPdpUpdate={fetchPlayerData}
+                  plan={currentPdp?.content || ""}
+                  started={currentPdp?.start_date || ""}
                 />
                 <BulkDeleteObservationsPane
                   observations={observations}

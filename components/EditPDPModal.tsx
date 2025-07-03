@@ -39,7 +39,7 @@ export default function EditPDPModal({
     try {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from("pdps")
+        .from("pdp")
         .update({
           content: newContent.trim(),
           updated_at: new Date().toISOString(),

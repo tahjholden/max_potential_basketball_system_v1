@@ -48,7 +48,7 @@ export default function PDPSection({
 
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("pdps")
+      .from("pdp")
       .insert({
         player_id: player.id,
         content: newPdpContent.trim(),
@@ -77,7 +77,7 @@ export default function PDPSection({
 
     const supabase = createClient();
     const { error } = await supabase
-      .from("pdps")
+      .from("pdp")
       .update({ content: editPdpContent.trim() })
       .eq("id", currentPdp.id);
 
@@ -96,7 +96,7 @@ export default function PDPSection({
 
     const supabase = createClient();
     const { error } = await supabase
-      .from("pdps")
+      .from("pdp")
       .update({ 
         archived: true,
         archived_at: new Date().toISOString()
@@ -116,7 +116,7 @@ export default function PDPSection({
   const handleRestorePDP = async (pdpId: string) => {
     const supabase = createClient();
     const { error } = await supabase
-      .from("pdps")
+      .from("pdp")
       .update({ 
         archived: false,
         archived_at: null

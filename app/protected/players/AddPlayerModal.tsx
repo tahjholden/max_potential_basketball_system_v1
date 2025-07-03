@@ -158,15 +158,72 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
       
       // Create initial PDP if provided
       if (initialPDP.trim() && player) {
-        const { error: pdpError } = await supabase
-          .from("pdps")
-          .insert({
-            player_id: player.id,
-            content: initialPDP.trim(),
-            org_id: orgId,
-          });
-        if (pdpError) {
-          toast.error(`Failed to create initial PDP: ${pdpError.message}`);
+        const now = new Date().toISOString();
+        // Get the current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          toast.error("User not authenticated.");
+          setLoading(false);
+          return;
+        }
+        // Look up (or create) the coach record
+        let coachIdToUse: string;
+        let orgIdToUse: string | undefined;
+        let { data: coachRow } = await supabase
+          .from('coaches')
+          .select('id, org_id')
+          .eq('auth_uid', user.id)
+          .maybeSingle();
+        if (!coachRow) {
+          // Auto-create coach record if missing
+          const { data: newCoach, error: createCoachError } = await supabase
+            .from('coaches')
+            .insert({
+              auth_uid: user.id,
+              first_name: user.user_metadata?.first_name || '',
+              last_name: user.user_metadata?.last_name || '',
+              email: user.email || '',
+              is_admin: false,
+              active: true,
+              created_at: now,
+              updated_at: now
+            })
+            .select()
+            .single();
+          if (createCoachError) {
+            toast.error(`Failed to create coach record: ${createCoachError.message}`);
+            setLoading(false);
+            return;
+          }
+          coachIdToUse = newCoach.id;
+          orgIdToUse = newCoach.org_id;
+        } else {
+          coachIdToUse = coachRow.id;
+          orgIdToUse = coachRow.org_id;
+        }
+        // Determine org_id for PDP
+        const pdpOrgId = orgIdToUse;
+        if (!pdpOrgId) {
+          toast.error("Organization not found");
+          setLoading(false);
+          return;
+        }
+        // Create the new PDP
+        const { error: insertError } = await supabase.from("pdp").insert({
+          player_id: player.id,
+          content: initialPDP.trim(),
+          start_date: now,
+          created_at: now,
+          updated_at: now,
+          org_id: pdpOrgId,
+        });
+        if (insertError) {
+          if (insertError.code === '23505') {
+            toast.error("This player already has an active PDP. Please refresh and try again.");
+          } else {
+            toast.error(`Failed to create the new PDP: ${insertError.message}`);
+            console.error("PDP creation error:", insertError);
+          }
         }
       }
       
@@ -315,7 +372,7 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
         </div>
         <div>
           <label htmlFor="initial_pdp" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
-            Initial PDP (optional)
+            Initial Plan (optional)
           </label>
           <Input
             id="initial_pdp"

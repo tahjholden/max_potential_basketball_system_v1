@@ -36,7 +36,7 @@ export default function PlayerDetailClient({ player, currentPDP, recentObservati
   const handleArchivePDP = async () => {
     if (!currentPDP) return;
     const { error } = await supabase
-      .from("pdps")
+      .from("pdp")
       .update({ archived_at: new Date().toISOString() })
       .eq("id", currentPDP.id);
 

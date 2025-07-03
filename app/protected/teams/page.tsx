@@ -18,6 +18,10 @@ import AddTeamModal from "@/components/AddTeamModal";
 import { Card } from "@/components/ui/card";
 import { Users, Shield } from "lucide-react";
 import EntityButton from '@/components/EntityButton';
+import { toast } from "sonner";
+import DeleteButton from "@/components/DeleteButton";
+import { Modal } from "@/components/ui/UniversalModal";
+import { Input } from "@/components/ui/input";
 
 interface Team {
   id: string;
@@ -59,6 +63,10 @@ export default function TeamsPage() {
   const filteredTeams = sortedTeams.filter(t => t.name.toLowerCase().includes(teamSearch.toLowerCase()));
   const displayedTeams = showAllTeams ? filteredTeams : filteredTeams.slice(0, MAX_TEAMS);
   const [playerPDPs, setPlayerPDPs] = useState<Record<string, boolean>>({});
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [teamBeingEdited, setTeamBeingEdited] = useState<Team | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -197,8 +205,30 @@ export default function TeamsPage() {
 
   const openCreateModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
-  const handleEdit = () => {};
-  const handleDelete = () => {};
+  const handleEdit = () => {
+    setTeamBeingEdited(selectedTeam);
+    setEditModalOpen(true);
+  };
+  const handleDelete = () => {
+    setDeleteConfirmOpen(true);
+  };
+  async function deleteTeam() {
+    if (!selectedTeam) return;
+    setDeleteLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("teams").delete().eq("id", selectedTeam.id);
+    setDeleteLoading(false);
+    setDeleteConfirmOpen(false);
+    if (error) {
+      toast.error("Failed to delete team");
+      return;
+    }
+    toast.success("Team deleted");
+    setSelectedTeam(null);
+    // Refetch teams
+    const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
+    setTeams(teamData || []);
+  }
 
   // --- CANONICAL DASHBOARD LAYOUT STARTS HERE ---
   return (
@@ -276,8 +306,18 @@ export default function TeamsPage() {
                 Created: {selectedTeam.created_at ? format(new Date(selectedTeam.created_at), "MMMM do, yyyy") : "—"}
               </div>
               <div className="flex gap-2 justify-end mt-4">
-                <GoldButton onClick={handleEdit} className="px-3 py-1 text-sm font-semibold">Edit Team</GoldButton>
-                <EntityButton color="danger" onClick={handleDelete} className="px-3 py-1 text-sm font-semibold">Delete Team</EntityButton>
+                <button
+                  onClick={handleEdit}
+                  className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm mr-4"
+                >
+                  Edit Team
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="text-red-500 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                >
+                  Delete Team
+                </button>
               </div>
             </div>
           ) : (
@@ -365,6 +405,96 @@ export default function TeamsPage() {
           fetchData();
         }}
       />
+      {editModalOpen && teamBeingEdited && (
+        <EditTeamModal
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          team={teamBeingEdited}
+          onSuccess={async () => {
+            setEditModalOpen(false);
+            // Refetch teams
+            const supabase = createClient();
+            const { data: teamData } = await supabase.from("teams").select("*").order("created_at", { ascending: false });
+            setTeams(teamData || []);
+          }}
+        />
+      )}
+      <DeleteButton
+        onConfirm={deleteTeam}
+        entity="Team"
+        description={`This will permanently delete ${selectedTeam?.name} and remove all linked data.`}
+        iconOnly={false}
+        label="Delete Team"
+        confirmText={selectedTeam?.name}
+        triggerClassName="hidden" // Hide the default trigger, use our button
+      />
+      {deleteConfirmOpen && (
+        <Modal.Delete
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          title="Delete Team"
+          description={`Are you sure you want to delete ${selectedTeam?.name}? This action cannot be undone.`}
+          onConfirm={deleteTeam}
+          loading={deleteLoading}
+        />
+      )}
     </div>
+  );
+}
+
+interface EditTeamModalProps {
+  open: boolean;
+  onClose: () => void;
+  team: Team;
+  onSuccess: () => void;
+}
+
+function EditTeamModal({ open, onClose, team, onSuccess }: EditTeamModalProps) {
+  const [teamName, setTeamName] = useState(team.name);
+  const [loading, setLoading] = useState(false);
+  const handleSave = async () => {
+    if (!teamName.trim()) {
+      toast.error("Team name is required");
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("teams").update({ name: teamName.trim(), updated_at: new Date().toISOString() }).eq("id", team.id);
+    setLoading(false);
+    if (error) {
+      toast.error("Failed to update team");
+      return;
+    }
+    toast.success("Team updated successfully!");
+    onSuccess();
+    onClose();
+  };
+  return (
+    <Modal.Edit
+      open={open}
+      onOpenChange={(open) => !open && onClose()}
+      title="Edit Team"
+      description="Update the team information below."
+      onSubmit={handleSave}
+      submitText={loading ? "Saving..." : "Save Changes"}
+      loading={loading}
+      disabled={!teamName.trim()}
+    >
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="edit_team_name" className="block text-xs text-[#C2B56B] tracking-wider mb-1 font-semibold">
+            Team Name*
+          </label>
+          <Input
+            id="edit_team_name"
+            placeholder="e.g., U12 Gold"
+            value={teamName}
+            onChange={e => setTeamName(e.target.value)}
+            className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B] placeholder-[#C2B56B]/60 focus:border-[#C2B56B] focus:ring-1 focus:ring-[#C2B56B] transition-all duration-200"
+            required
+          />
+        </div>
+      </div>
+    </Modal.Edit>
   );
 } 

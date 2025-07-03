@@ -58,6 +58,8 @@ interface Pdp {
   created_at: string;
 }
 
+import { useCoach } from "@/hooks/useCoach";
+
 export default function ObservationsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const { playerId, setPlayerId } = useSelectedPlayer();
@@ -74,6 +76,10 @@ export default function ObservationsPage() {
   const [observationSearch, setObservationSearch] = useState('');
   const [showAllObservations, setShowAllObservations] = useState(false);
   const [addObservationOpen, setAddObservationOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [editObservationModalOpen, setEditObservationModalOpen] = useState(false);
+  const [observationBeingEdited, setObservationBeingEdited] = useState<Observation | null>(null);
+  const [editObservationContent, setEditObservationContent] = useState('');
   
   // Modal states for player and PDP management
   const [editPlayerModalOpen, setEditPlayerModalOpen] = useState(false);
@@ -81,7 +87,7 @@ export default function ObservationsPage() {
   const [editPDPModalOpen, setEditPDPModalOpen] = useState(false);
   const [archivePDPModalOpen, setArchivePDPModalOpen] = useState(false);
   
-  const MAX_OBSERVATIONS = 10;
+  const MAX_OBSERVATIONS = 5;
 
   const selectedPlayer = players.find((p) => p.id === playerId);
 
@@ -92,6 +98,43 @@ export default function ObservationsPage() {
     observationsCount: observations.length,
     allObservationsCount: allObservations.length
   });
+
+  const { coach } = useCoach();
+  const isSuperadmin = coach?.is_superadmin;
+
+  // Team/org filter logic
+  const teamOptions = isSuperadmin
+    ? [{ id: null, name: "All Teams" }, ...teams.map(t => ({ id: t.id, name: t.name }))]
+    : [{ id: null, name: "All Teams" }, ...teams.map(t => ({ id: t.id, name: t.name }))];
+
+  // MVP: Filter and sort observations by search and team/org
+  const mvpFilteredObservations = allObservations.filter(obs => {
+    const player = players.find(p => p.id === obs.player_id);
+    const teamMatch = !selectedTeamId || player?.team_id === selectedTeamId;
+    const searchMatch =
+      !observationSearch.trim() ||
+      (player && (
+        player.name.toLowerCase().includes(observationSearch.toLowerCase()) ||
+        (player.team_name && player.team_name.toLowerCase().includes(observationSearch.toLowerCase()))
+      )) ||
+      obs.content.toLowerCase().includes(observationSearch.toLowerCase());
+    return teamMatch && searchMatch;
+  }).sort((a, b) => {
+    if (sortOrder === 'newest') {
+      return new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime();
+    } else {
+      return new Date(a.observation_date).getTime() - new Date(b.observation_date).getTime();
+    }
+  });
+
+  // Insights
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+  const totalThisWeek = allObservations.filter(o => new Date(o.observation_date) >= weekAgo).length;
+  // TODO: If coach_id is not available on Observation, this metric cannot be calculated. Placeholder:
+  const yourThisWeek = 0; // Not available unless coach_id is present on Observation
+  const lastAdded = allObservations.length > 0 ? allObservations.reduce((latest, obs) => new Date(obs.observation_date) > new Date(latest.observation_date) ? obs : latest, allObservations[0]) : null;
 
   const fetchPdp = async () => {
     if (!playerId) return setCurrentPdp(null);
@@ -295,10 +338,6 @@ export default function ObservationsPage() {
     // Implementation of handleDelete function
   };
 
-  // Filter players by selected team (to match dashboard logic)
-  const filteredPlayers = selectedTeamId
-    ? players.filter((p) => p.team_id === selectedTeamId)
-    : players;
   // Get playerIdsWithPDP for styling
   const playerIdsWithPDP = new Set(
     allPdps.filter((pdp) => !pdp.archived_at).map((pdp) => pdp.player_id)
@@ -462,283 +501,171 @@ export default function ObservationsPage() {
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="mt-2 px-6 flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0 flex gap-6">
-          {/* Left: Player list */}
+          {/* Left: Search and Filter */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <SectionLabel>Players</SectionLabel>
+            <SectionLabel>Search & Filter</SectionLabel>
             <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-              {filteredPlayers.length === 0 ? (
-                <EmptyState
-                  icon={Users}
-                  title="No Players Found"
-                  description="Add your first player to get started."
-                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+              <div className="flex flex-col gap-4">
+                <input
+                  type="text"
+                  placeholder="Search players, teams, or observations…"
+                  value={observationSearch}
+                  onChange={e => setObservationSearch(e.target.value)}
+                  className="w-full p-2 rounded bg-zinc-800 text-sm placeholder-gray-400 border border-zinc-700"
                 />
-              ) : (
-                <SharedPlayerList
-                  players={filteredPlayers}
-                  selectedPlayerId={playerId}
-                  onSelectPlayer={setPlayerId}
-                  teamOptions={teams.map(t => ({ id: t.id, name: t.name }))}
-                  selectedTeamId={selectedTeamId}
-                  onSelectTeam={setSelectedTeamId}
-                  playerIdsWithPDP={playerIdsWithPDP}
-                  showAddPlayer={false}
-                />
-              )}
+                <select
+                  value={selectedTeamId || ""}
+                  onChange={e => setSelectedTeamId(e.target.value || null)}
+                  className="w-full p-2 rounded bg-zinc-800 text-sm text-white border border-zinc-700"
+                >
+                  {teamOptions.map(opt => (
+                    <option key={opt.id || "all"} value={opt.id || ""}>{opt.name}</option>
+                  ))}
+                </select>
+                {(!observationSearch && !selectedTeamId) && (
+                  <div className="text-xs text-zinc-400 mt-2">Tip: Select a team or search for a player to filter observations.</div>
+                )}
+              </div>
             </Card>
           </div>
-          {/* Center: Player Profile + Development Plan */}
+
+          {/* Center: Observations Feed */}
           <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
-            <SectionLabel>Player Profile</SectionLabel>
+            {/* Header with controls */}
+            <div className="flex items-center justify-between">
+              <SectionLabel>Observations</SectionLabel>
+              <button
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[#C2B56B] transition-colors"
+                onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+                aria-label="Toggle sort order"
+              >
+                <span>Sort: {sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
+                <svg className={`w-3 h-3 transition-transform ${sortOrder === 'newest' ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Observations Card */}
             <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-              {selectedPlayer ? (
-                <div>
-                  <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedPlayer.name}</div>
-                  <div className="text-sm text-zinc-400 font-medium mb-1">Joined: {selectedPlayer.joined ? format(new Date(selectedPlayer.joined), "MMMM do, yyyy") : "—"}</div>
-                  {selectedPlayer.team_name && (
-                    <div className="text-sm text-zinc-400 font-medium mb-1">Team: {selectedPlayer.team_name}</div>
-                  )}
-                  <div className="flex gap-2 justify-end mt-4">
-                    <button 
-                      onClick={handleEditPlayer}
-                      className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
-                    >
-                      Edit Player
-                    </button>
-                    <button 
-                      onClick={() => setDeletePlayerModalOpen(true)}
-                      className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
-                    >
-                      Delete Player
-                    </button>
-                  </div>
-                </div>
+              {mvpFilteredObservations.length === 0 ? (
+                <div className="text-sm text-zinc-400">No observations found for this search/filter.</div>
               ) : (
-                <EmptyState
-                  icon={Users}
-                  title="Select a Player to View Their Profile"
-                  description="Pick a player from the list to see their details."
-                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                />
-              )}
-            </Card>
-            <SectionLabel>Development Plan</SectionLabel>
-            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-              {selectedPlayer ? (
-                currentPdp ? (
-                  <div>
-                    <div className="text-sm text-zinc-400 font-medium mb-1">
-                      Started: {currentPdp.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—"}
-                    </div>
-                    <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No content available"}</div>
-                    <div className="flex gap-2 justify-end mt-4">
-                      <button 
-                        onClick={handleEditPDP}
-                        className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
-                      >
-                        Edit Plan
-                      </button>
-                      <button 
-                        onClick={handleArchivePDP}
-                        className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
-                      >
-                        Archive Plan
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <EmptyState
-                    icon={Target}
-                    title="No Development Plan"
-                    description="This player doesn't have an active development plan yet."
-                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                    action={{ label: "Create Plan", onClick: () => {}, color: "gold" }}
-                  />
-                )
-              ) : (
-                <EmptyState
-                  icon={Target}
-                  title="Select a Player to View Their Development Plan"
-                  description="Pick a player from the list to see their development plan."
-                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                />
-              )}
-            </Card>
-            <SectionLabel>Observations</SectionLabel>
-            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-              {!selectedPlayer ? (
-                <EmptyState
-                  icon={FileText}
-                  title="Select a Player to View Observations"
-                  description="Pick a player from the list to see their observations."
-                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                />
-              ) : displayedObservations.length === 0 ? (
-                <EmptyState
-                  icon={FileText}
-                  title="No Observations Found"
-                  description="There are no observations for this player yet."
-                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                  action={{ label: "Add Observation", onClick: () => setAddObservationOpen(true), color: "gold" }}
-                />
-              ) : (
-                <>
-                  {/* Header: Add Observation button and Range selector */}
-                  <div className="flex items-center gap-2 mb-2 justify-between">
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={observationRange}
-                        onChange={e => setObservationRange(e.target.value)}
-                        className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
-                        style={{ minWidth: 120 }}
-                      >
-                        <option value="week">This week</option>
-                        <option value="month">This month</option>
-                        <option value="all">All</option>
-                      </select>
-                    </div>
+                <div className="flex flex-col gap-3">
+                  {(showAllObservations ? mvpFilteredObservations : mvpFilteredObservations.slice(0, MAX_OBSERVATIONS)).map(obs => {
+                    const player = players.find(p => p.id === obs.player_id);
+                    return (
+                      <div key={obs.id} className="bg-zinc-800 p-4 rounded flex flex-col gap-1 border border-zinc-700">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex flex-col">
+                            <div className="text-base font-bold text-[#C2B56B]">{player?.name || "Unknown Player"}</div>
+                            {player?.team_name && (
+                              <div className="text-xs text-zinc-400">{player.team_name}</div>
+                            )}
+                          </div>
+                          <div className="text-xs text-zinc-400">
+                            {format(new Date(obs.observation_date), "MMM do, yyyy")}
+                          </div>
+                        </div>
+                        <div className="text-base text-zinc-100 mb-3">{obs.content}</div>
+                        {/* Optional Edit button for coach/admin */}
+                        {(coach?.is_admin || coach?.is_superadmin) && (
+                          <button
+                            className="text-xs text-[#C2B56B] font-semibold hover:underline self-end"
+                            onClick={() => {
+                              setObservationBeingEdited(obs);
+                              setEditObservationContent(obs.content);
+                              setEditObservationModalOpen(true);
+                            }}
+                          >Edit</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {mvpFilteredObservations.length > MAX_OBSERVATIONS && !showAllObservations && (
                     <button
-                      className="bg-[#C2B56B] text-black font-bold rounded px-4 py-2 text-sm hover:bg-[#b3a04e] transition-colors"
-                      onClick={() => setAddObservationOpen(true)}
-                      disabled={!selectedPlayer || !currentPdp}
+                      className="mt-2 text-xs text-[#C2B56B] font-semibold hover:underline self-center"
+                      onClick={() => setShowAllObservations(true)}
                     >
-                      + Add Observation
+                      Show More
                     </button>
-                  </div>
-                  {/* Scrollable observation list, responsive height */}
-                  <div className="flex-1 min-h-0 mb-2">
-                    <div className="flex flex-col gap-3 w-full">
-                      {displayedObservations.map(obs => (
-                        <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                          <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
-                          <div className="text-base text-zinc-100">{obs.content}</div>
-                        </div>
-                      ))}
-                      {filteredObservations.length > MAX_OBSERVATIONS && (
-                        <div
-                          className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                          onClick={() => setShowAllObservations(!showAllObservations)}
-                          title={showAllObservations ? "Show less" : "Show more"}
-                        >
-                          <div className="flex-1 border-t border-zinc-700"></div>
-                          <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                          <div className="flex-1 border-t border-zinc-700"></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {/* Search bar at the bottom - only show when chevron is needed */}
-                  {filteredObservations.length > MAX_OBSERVATIONS && (
-                    <input
-                      type="text"
-                      placeholder="Search observations..."
-                      value={observationSearch}
-                      onChange={e => setObservationSearch(e.target.value)}
-                      className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm"
-                    />
                   )}
-                </>
+                  {showAllObservations && mvpFilteredObservations.length > MAX_OBSERVATIONS && (
+                    <button
+                      className="mt-2 text-xs text-[#C2B56B] font-semibold hover:underline self-center"
+                      onClick={() => setShowAllObservations(false)}
+                    >
+                      Show Less
+                    </button>
+                  )}
+                </div>
               )}
-              {/* Add Observation Modal - moved outside conditional block */}
-              <AddObservationModal
-                open={addObservationOpen}
-                onClose={() => setAddObservationOpen(false)}
-                onSubmit={handleAddObservation}
-                playerId={selectedPlayer ? selectedPlayer.id : ""}
-                pdpId={currentPdp ? currentPdp.id : ""}
-              />
             </Card>
           </div>
-          {/* Right: Insights or additional info */}
+
+          {/* Right: Insights */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Insights</SectionLabel>
             <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-              {selectedPlayer ? (
-                <div className="flex flex-col gap-4 w-full">
-                  {/* Metrics Row with Card Boxes */}
-                  <div className="flex flex-row gap-3 w-full justify-center">
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex flex-col items-center flex-1 min-w-0 h-32 justify-between">
-                      <div className="flex flex-col items-center w-full" style={{ minHeight: 38 }}>
-                        <span className="text-zinc-400 text-xs mb-0.5 text-center w-full">Total Observations</span>
-                        <span className="text-zinc-400 text-[11px] leading-tight text-center w-full">(This Week)</span>
-                      </div>
-                      <span className="text-2xl font-bold text-white mt-auto">{observations.filter(o => {
-                        const obsDate = new Date(o.observation_date);
-                        const now = new Date();
-                        const weekAgo = new Date(now);
-                        weekAgo.setDate(now.getDate() - 7);
-                        return obsDate >= weekAgo;
-                      }).length}</span>
-                    </div>
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex flex-col items-center flex-1 min-w-0 h-32 justify-between">
-                      <div className="flex flex-col items-center w-full" style={{ minHeight: 38 }}>
-                        <span className="text-zinc-400 text-xs mb-0.5 text-center w-full">Player Observations</span>
-                        <span className="text-zinc-400 text-[11px] leading-tight text-center w-full invisible">(This Week)</span>
-                      </div>
-                      <span className="text-2xl font-bold text-white mt-auto">&nbsp;{observations.filter(o => o.player_id === selectedPlayer.id).length}</span>
-                    </div>
-                  </div>
-                  {/* Coming Soon Features */}
-                  <div className="flex flex-col items-center text-center w-full">
-                    <ul className="mb-4 text-[#C2B56B] text-sm space-y-1 text-left w-full">
-                      <li>• Player growth metrics</li>
-                      <li>• Automated progress reports</li>
-                      <li>• AI-powered feedback</li>
-                      <li>• Tag trends & heatmaps</li>
-                      <li>• Development plan tracking</li>
-                    </ul>
-                    <span className="text-white italic text-xs block mt-2 w-full">
-                      These insights are coming soon. Stay tuned for advanced analytics!
-                    </span>
-                  </div>
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between text-sm">
+                  <span>Total (this week):</span>
+                  <span className="font-bold">{totalThisWeek}</span>
                 </div>
-              ) : (
-                <EmptyState
-                  icon={BarChart3}
-                  title="Select a Player to View Insights"
-                  description="Pick a player from the list to see their analytics and insights."
-                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                />
-              )}
+                <div className="flex justify-between text-sm">
+                  <span>Your observations:</span>
+                  <span className="font-bold">{yourThisWeek}</span>
+                </div>
+                {lastAdded && (
+                  <div className="flex justify-between text-sm">
+                    <span>Last added:</span>
+                    <span>{format(new Date(lastAdded.observation_date), "MMMM do, yyyy")}</span>
+                  </div>
+                )}
+                <div className="text-xs text-zinc-400 mt-2 pt-2 border-t border-zinc-700">
+                  Keep logging observations to see your activity here!
+                </div>
+              </div>
             </Card>
           </div>
         </div>
       </div>
-
-      {/* Player and PDP Management Modals */}
-      <EditPlayerModal
-        open={editPlayerModalOpen}
-        onClose={() => setEditPlayerModalOpen(false)}
-        player={selectedPlayer || null}
-        onSuccess={handlePlayerUpdated}
-      />
-
-      <DeletePlayerModal
-        open={deletePlayerModalOpen}
-        onClose={() => setDeletePlayerModalOpen(false)}
-        onConfirm={handleDeletePlayer}
-        player={selectedPlayer || null}
-      />
-
-      <EditPDPModal
-        open={editPDPModalOpen}
-        onClose={() => setEditPDPModalOpen(false)}
-        player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
-        currentPdp={currentPdp}
-        onSuccess={handlePDPUpdated}
-      />
-
-      <ArchivePDPModal
-        open={archivePDPModalOpen}
-        onClose={() => setArchivePDPModalOpen(false)}
-        player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
-        pdp={currentPdp ? { 
-          id: currentPdp.id, 
-          content: currentPdp.content || "", 
-          start_date: currentPdp.start_date 
-        } : null}
-        onArchived={handlePDPArchived}
-      />
+      {/* Edit Observation Modal */}
+      {editObservationModalOpen && observationBeingEdited && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-bold mb-4 text-[#C2B56B]">Edit Observation</h2>
+            <textarea
+              className="w-full p-2 rounded bg-zinc-800 text-sm text-white border border-zinc-700 mb-4"
+              rows={5}
+              value={editObservationContent}
+              onChange={e => setEditObservationContent(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 rounded bg-zinc-700 text-white hover:bg-zinc-600"
+                onClick={() => setEditObservationModalOpen(false)}
+              >Cancel</button>
+              <button
+                className="px-4 py-2 rounded bg-[#C2B56B] text-zinc-900 font-semibold hover:bg-[#b3a14e]"
+                onClick={async () => {
+                  // Save changes to observation
+                  const supabase = createClient();
+                  await supabase
+                    .from('observations')
+                    .update({ content: editObservationContent })
+                    .eq('id', observationBeingEdited.id);
+                  // Update local state
+                  setAllObservations(prev => prev.map(o => o.id === observationBeingEdited.id ? { ...o, content: editObservationContent } : o));
+                  setEditObservationModalOpen(false);
+                  setObservationBeingEdited(null);
+                }}
+                disabled={editObservationContent.trim() === ''}
+              >Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

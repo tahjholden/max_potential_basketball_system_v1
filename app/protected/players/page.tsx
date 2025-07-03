@@ -22,6 +22,14 @@ import SharedPlayerList from "@/components/SharedPlayerList";
 import EmptyState from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Users, FileText, Archive, Target } from "lucide-react";
+import EditPlayerModal from "@/components/EditPlayerModal";
+import EditPDPModal from "@/components/EditPDPModal";
+import ArchiveCreateNewModal from "@/components/ArchiveCreateNewModal";
+import DeletePlayerButton from "@/components/DeletePlayerButton";
+import AddPlayerModal from "@/components/AddPlayerModal";
+import { Modal } from "@/components/ui/UniversalModal";
+import { toast } from "sonner";
+import { UniversalModal } from "@/components/ui/UniversalModal";
 
 // Type Definitions
 interface Player {
@@ -99,6 +107,10 @@ export default function TestPlayersPage() {
   const [currentCoachId, setCurrentCoachId] = useState<string | null>(null);
   const [createPDPModalOpen, setCreatePDPModalOpen] = useState(false);
   const [addObservationModalOpen, setAddObservationModalOpen] = useState(false);
+  const [editPlayerModalOpen, setEditPlayerModalOpen] = useState(false);
+  const [editPDPModalOpen, setEditPDPModalOpen] = useState(false);
+  const [archivePDPModalOpen, setArchivePDPModalOpen] = useState(false);
+  const [addPlayerModalOpen, setAddPlayerModalOpen] = useState(false);
   
   const selectedPlayer = players.find((p) => p.id === playerId);
   const searchParams = useSearchParams();
@@ -332,15 +344,9 @@ export default function TestPlayersPage() {
     if (teamIdParam) setSelectedTeamId(teamIdParam);
   }, [searchParams, setPlayerId, setSelectedTeamId]);
 
-  const handleEdit = () => {
-    // Implementation for editing player
-    console.log('Edit player:', selectedPlayer?.id);
-  };
-
-  const handleDelete = () => {
-    // Implementation for deleting player
-    console.log('Delete player:', selectedPlayer?.id);
-  };
+  const handleEditPlayer = () => setEditPlayerModalOpen(true);
+  const handleEditPDP = () => setEditPDPModalOpen(true);
+  const handleArchivePDP = () => setArchivePDPModalOpen(true);
 
   // Get playerIdsWithPDP for styling (all active PDPs, not filtered by team/coach)
   const playerIdsWithPDP = new Set(
@@ -488,9 +494,23 @@ export default function TestPlayersPage() {
                     )}
                     <div className="flex gap-2 justify-end mt-4">
                       {selectedPlayer && currentCoachId && selectedPlayer.team_coach_id === currentCoachId && (
-                        <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
-                          Edit Player
-                        </button>
+                        <>
+                          <button
+                            className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                            onClick={handleEditPlayer}
+                          >
+                            Edit Player
+                          </button>
+                          <DeletePlayerButton
+                            playerId={selectedPlayer.id}
+                            playerName={selectedPlayer.name}
+                            triggerClassName="text-red-500 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                            onDeleted={() => {
+                              setPlayerId("");
+                              fetchAllData();
+                            }}
+                          />
+                        </>
                       )}
                     </div>
                   </div>
@@ -504,49 +524,26 @@ export default function TestPlayersPage() {
                 )}
               </Card>
               <SectionLabel>Development Plan</SectionLabel>
-              <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-                {selectedPlayer ? (
-                  currentPdp ? (
+              <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg flex flex-col justify-between min-h-[120px] relative">
+                {selectedPlayer && currentPdp ? (
+                  <>
                     <div>
                       <div className="text-sm text-zinc-400 font-medium mb-1">
                         Started: {currentPdp.created_at ? format(new Date(currentPdp.created_at), "MMMM do, yyyy") : "—"}
                       </div>
-                      {currentPdp && !currentPdp.archived_at ? (
-                        <>
-                          <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No content available"}</div>
-                          {selectedPlayer && selectedPlayer.team_coach_id === currentCoachId && (
-                            <div className="flex gap-2 justify-end mt-4">
-                              <button 
-                                onClick={() => setCreatePDPModalOpen(true)}
-                                className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
-                              >
-                                Create New Plan
-                              </button>
-                              <button onClick={handleEdit}>Edit PDP</button>
-                              <button onClick={handleDelete}>Archive PDP</button>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-base text-zinc-300 mb-2">{currentPdp?.content || "No content available"}</div>
-                      )}
+                      <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No active plan."}</div>
                     </div>
-                  ) : (
-                    <EmptyState
-                      icon={Target}
-                      title="No Development Plan"
-                      description="This player doesn't have an active development plan yet."
-                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                      action={{ label: "Create Plan", onClick: () => setCreatePDPModalOpen(true), color: "gold" }}
-                    />
-                  )
+                    {!currentPdp.archived_at && selectedPlayer.team_coach_id === currentCoachId && (
+                      <button
+                        onClick={handleEditPDP}
+                        className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm absolute bottom-4 right-6"
+                      >
+                        Edit Plan
+                      </button>
+                    )}
+                  </>
                 ) : (
-                  <EmptyState
-                    icon={Target}
-                    title="Select a Player to View Their Development Plan"
-                    description="Pick a player from the list to see their development plan."
-                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                  />
+                  <div className="text-base text-zinc-300 mb-2">No active plan.</div>
                 )}
               </Card>
               <SectionLabel>Observations</SectionLabel>
@@ -620,28 +617,22 @@ export default function TestPlayersPage() {
           </div>
           {/* Right: PDP Archive */}
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
-            <SectionLabel>PDP Archive</SectionLabel>
-            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-              {archivedPdps.length === 0 ? (
-                <EmptyState
-                  icon={Archive}
-                  title="No Archived Plans"
-                  description="There are no archived development plans to display."
-                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                />
-              ) : (
-                <PDPArchivePane
-                  pdps={archivedPdps}
-                  onSortOrderChange={setSortOrder}
-                  sortOrder={sortOrder}
-                />
-              )}
+            <SectionLabel>Development Plan Archive</SectionLabel>
+            <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg flex flex-col justify-between min-h-[180px] relative">
+              <span className="text-zinc-300 text-base font-medium">Archive plan ability coming soon.</span>
             </Card>
           </div>
         </div>
       </div>
       
       {/* Modals */}
+      <AddPlayerModal
+        open={addPlayerModalOpen}
+        onClose={() => setAddPlayerModalOpen(false)}
+        onPlayerAdded={() => {
+          fetchAllData();
+        }}
+      />
       {selectedPlayer && (
         <>
           <CreatePDPModal
@@ -651,7 +642,6 @@ export default function TestPlayersPage() {
             coachId={currentCoachId || undefined}
             onCreated={() => {
               fetchPlayerData();
-              // Refresh the allPdps list as well
               fetchAllData();
             }}
           />
@@ -661,6 +651,41 @@ export default function TestPlayersPage() {
             player={selectedPlayer}
             onObservationAdded={() => {
               fetchPlayerData();
+              fetchAllData();
+            }}
+          />
+          <EditPlayerModal
+            open={editPlayerModalOpen}
+            onClose={() => setEditPlayerModalOpen(false)}
+            player={selectedPlayer}
+            onSuccess={() => {
+              fetchPlayerData();
+              fetchAllData();
+            }}
+          />
+          {selectedPlayer && currentPdp && (
+            <EditPDPModal
+              open={editPDPModalOpen}
+              onClose={() => setEditPDPModalOpen(false)}
+              player={selectedPlayer}
+              currentPdp={currentPdp}
+              onSuccess={() => {
+                fetchPlayerData();
+                fetchAllData();
+              }}
+            />
+          )}
+          <ArchiveCreateNewModal
+            playerId={selectedPlayer?.id || ""}
+            open={archivePDPModalOpen}
+            onClose={() => {
+              setArchivePDPModalOpen(false);
+              // Optionally: fetchPlayerData(); fetchAllData();
+            }}
+            onSuccess={() => {
+              setArchivePDPModalOpen(false);
+              fetchPlayerData();
+              fetchAllData();
             }}
           />
         </>

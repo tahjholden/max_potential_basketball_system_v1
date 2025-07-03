@@ -9,7 +9,6 @@ interface Observation {
   id: string;
   content: string;
   archived?: boolean;
-  archived_at?: string | null;
 }
 
 interface ArchiveObservationsModalProps {
@@ -31,7 +30,7 @@ export default function ArchiveObservationsModal({ pdpId, open, onClose, onSucce
       const supabase = createClient();
       const { data, error } = await supabase
         .from("observations")
-        .select("id, content, archived, archived_at")
+        .select("id, content, archived")
         .eq("pdp_id", pdpId)
         .or("archived.is.null,archived.eq.false");
       if (error) {

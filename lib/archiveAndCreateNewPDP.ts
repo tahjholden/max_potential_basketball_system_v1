@@ -19,8 +19,11 @@ type Observation = {
   content: string;
   observation_date: string;
   created_at: string;
-  archived_at?: string;
   archived?: boolean;
+  archived_by?: string;
+  updated_at?: string;
+  created_by?: string;
+  org_id?: string;
 };
 
 export async function archiveAndCreateNewPDP({
@@ -80,7 +83,7 @@ export async function archiveAndCreateNewPDP({
     if (currentPdp) {
       const { error: pdpError } = await supabase.from('pdp').update({
         archived_at: now,
-        end_date: now,
+        archived_by: user.id,
         updated_at: now
       }).eq('id', currentPdp.id);
 
@@ -89,14 +92,17 @@ export async function archiveAndCreateNewPDP({
         return { success: false, error: `Failed to archive PDP: ${pdpError.message}` };
       }
 
-      // Step 2: Archive all observations linked to the old PDP
-      // Note: Removed coach_id update since it no longer exists on observations table
+      // Step 2: Archive all unarchived observations for this player and associate them with the archived PDP
       const { error: obsError } = await supabase
         .from('observations')
         .update({
-          archived: true
+          archived: true,
+          archived_by: user.id,
+          pdp_id: currentPdp.id,
+          updated_at: now
         })
-        .eq('pdp_id', currentPdp.id);
+        .eq('player_id', playerId)
+        .eq('archived', false);
 
       if (obsError) {
         console.error('Error archiving linked observations:', obsError);

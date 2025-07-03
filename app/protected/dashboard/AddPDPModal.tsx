@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { GoldModal } from "@/components/ui/gold-modal";
+import { supabase } from "@/lib/supabase";
 
 interface AddPDPModalProps {
   open: boolean;
@@ -13,7 +14,27 @@ interface AddPDPModalProps {
 export default function AddPDPModal({ open, onClose, onSubmit, players, selectedPlayer, currentUser }: AddPDPModalProps) {
   const [playerId, setPlayerId] = useState(selectedPlayer?.id || (players[0]?.id ?? ""));
   const [content, setContent] = useState("");
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState("");
+
+  const handleSubmit = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const pdpToInsert = {
+      player_id: selectedPlayer.id,
+      content,
+      org_id: currentUser?.org_id,
+      created_by: currentUser?.auth_uid,
+      start_date: startDate || today,
+    };
+    const { data, error } = await supabase
+      .from('pdp')
+      .insert([pdpToInsert]);
+    if (error) {
+      console.error("Error inserting PDP:", error);
+    } else {
+      onSubmit(pdpToInsert);
+      setContent("");
+    }
+  };
 
   return (
     <GoldModal open={open} onOpenChange={onClose} title="Add PDP">
@@ -36,12 +57,13 @@ export default function AddPDPModal({ open, onClose, onSubmit, players, selected
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#f5f5f7] mb-2">Start Date</label>
+          <label className="block text-sm font-medium text-zinc-300 mb-1">Plan Start Date (defaults to today)</label>
           <input
-            className="w-full p-3 rounded bg-[#323232] text-[#f5f5f7] border border-[#323232] focus:border-[#d8cc97] focus:outline-none transition-colors"
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-300 mb-4"
+            placeholder="YYYY-MM-DD"
           />
         </div>
         <div>
@@ -55,14 +77,7 @@ export default function AddPDPModal({ open, onClose, onSubmit, players, selected
         </div>
         <button
           className="w-full bg-[#d8cc97] text-[#161616] rounded px-4 py-3 font-bold hover:bg-[#d8cc97]/80 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          onClick={() => {
-            onSubmit({
-              player_id: playerId,
-              content: content.trim(),
-              start_date: startDate
-            });
-            setContent("");
-          }}
+          onClick={handleSubmit}
           disabled={!content.trim() || !playerId}
         >
           Create PDP

@@ -42,7 +42,7 @@ export default function PlayerDetailModal({ open, onClose, player }: PlayerDetai
 
       // Fetch current (active) PDP
       const { data: currentPDPData } = await supabase
-        .from("pdps")
+        .from("pdp")
         .select(`
           id,
           content,
@@ -76,7 +76,7 @@ export default function PlayerDetailModal({ open, onClose, player }: PlayerDetai
 
       // Fetch archived PDPs
       const { data: archivedPDPsData } = await supabase
-        .from("pdps")
+        .from("pdp")
         .select(`
           id,
           content,

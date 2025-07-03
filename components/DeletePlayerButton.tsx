@@ -7,9 +7,13 @@ import { toast } from "sonner";
 export default function DeletePlayerButton({
   playerId,
   playerName,
+  triggerClassName,
+  onDeleted,
 }: {
   playerId: string;
   playerName: string;
+  triggerClassName?: string;
+  onDeleted?: () => void;
 }) {
   async function handleDelete() {
     const supabase = createClient();
@@ -18,8 +22,11 @@ export default function DeletePlayerButton({
       toast.error(`Failed to delete ${playerName}`);
     } else {
       toast.success(`${playerName} deleted`);
-      // Optional: trigger reload or refetch
-      window.location.reload();
+      if (onDeleted) {
+        onDeleted();
+      } else {
+        window.location.reload();
+      }
     }
   }
 
@@ -31,6 +38,7 @@ export default function DeletePlayerButton({
       iconOnly={false}
       label="Delete Player"
       confirmText={playerName}
+      triggerClassName={triggerClassName}
     />
   );
 } 

@@ -201,27 +201,30 @@ export const Modal = {
   Archive: ({
     open,
     onOpenChange,
-    title = "Confirm Archive",
+    title = "Archive Item",
     description,
     onConfirm,
     onCancel,
     confirmText = "Archive",
     cancelText = "Cancel",
     loading = false,
-  }: Omit<ConfirmationModalProps, 'variant'>) => {
+    children,
+  }: Omit<ConfirmationModalProps, 'variant'> & { children?: React.ReactNode }) => {
     return (
       <UniversalModal.Confirm
         open={open}
         onOpenChange={onOpenChange}
         title={title}
-        description={description || "Are you sure you want to archive this item? You can restore it later."}
+        description={description || "Are you sure you want to archive this item? This action cannot be undone."}
         onConfirm={onConfirm}
         onCancel={onCancel}
         confirmText={confirmText}
         cancelText={cancelText}
         variant="archive"
         loading={loading}
-      />
+      >
+        {children}
+      </UniversalModal.Confirm>
     );
   },
 
