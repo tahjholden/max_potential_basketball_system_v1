@@ -22,6 +22,12 @@ import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
 import AddObservationModal from "@/app/protected/dashboard/AddObservationModal";
 import { Card } from "@/components/ui/card";
 
+// Import modals for player and PDP management
+import EditPlayerModal from "@/components/EditPlayerModal";
+import DeletePlayerModal from "@/app/protected/players/DeletePlayerModal";
+import EditPDPModal from "@/components/EditPDPModal";
+import ArchivePDPModal from "@/components/ArchivePDPModal";
+
 // Type definitions - matching dashboard exactly
 interface Player {
   id: string;
@@ -68,6 +74,13 @@ export default function ObservationsPage() {
   const [observationSearch, setObservationSearch] = useState('');
   const [showAllObservations, setShowAllObservations] = useState(false);
   const [addObservationOpen, setAddObservationOpen] = useState(false);
+  
+  // Modal states for player and PDP management
+  const [editPlayerModalOpen, setEditPlayerModalOpen] = useState(false);
+  const [deletePlayerModalOpen, setDeletePlayerModalOpen] = useState(false);
+  const [editPDPModalOpen, setEditPDPModalOpen] = useState(false);
+  const [archivePDPModalOpen, setArchivePDPModalOpen] = useState(false);
+  
   const MAX_OBSERVATIONS = 10;
 
   const selectedPlayer = players.find((p) => p.id === playerId);
@@ -365,6 +378,47 @@ export default function ObservationsPage() {
     setObservations((data || []).map((obs: any) => ({ ...obs, archived: false })));
   };
 
+  // Player management handlers
+  const handleEditPlayer = () => {
+    setEditPlayerModalOpen(true);
+  };
+
+  const handleDeletePlayer = (playerId: string) => {
+    const supabase = createClient();
+    supabase.from("players").delete().eq("id", playerId).then(() => {
+      setDeletePlayerModalOpen(false);
+      setPlayerId("");
+      // Refresh the page to update the player list
+      window.location.reload();
+    });
+  };
+
+  const handlePlayerUpdated = () => {
+    setEditPlayerModalOpen(false);
+    // Refresh the page to update the player list
+    window.location.reload();
+  };
+
+  // PDP management handlers
+  const handleEditPDP = () => {
+    setEditPDPModalOpen(true);
+  };
+
+  const handleArchivePDP = () => {
+    setArchivePDPModalOpen(true);
+  };
+
+  const handlePDPUpdated = () => {
+    setEditPDPModalOpen(false);
+    fetchPdp();
+  };
+
+  const handlePDPArchived = () => {
+    setArchivePDPModalOpen(false);
+    setCurrentPdp(null);
+    fetchPdp();
+  };
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-zinc-950 flex items-center justify-center">
@@ -440,15 +494,21 @@ export default function ObservationsPage() {
               {selectedPlayer ? (
                 <div>
                   <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedPlayer.name}</div>
-                  <div className="text-sm text-zinc-400 font-medium mb-1">Joined: {selectedPlayer.joined}</div>
+                  <div className="text-sm text-zinc-400 font-medium mb-1">Joined: {selectedPlayer.joined ? format(new Date(selectedPlayer.joined), "MMMM do, yyyy") : "—"}</div>
                   {selectedPlayer.team_name && (
                     <div className="text-sm text-zinc-400 font-medium mb-1">Team: {selectedPlayer.team_name}</div>
                   )}
                   <div className="flex gap-2 justify-end mt-4">
-                    <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                    <button 
+                      onClick={handleEditPlayer}
+                      className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
+                    >
                       Edit Player
                     </button>
-                    <button className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                    <button 
+                      onClick={() => setDeletePlayerModalOpen(true)}
+                      className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
+                    >
                       Delete Player
                     </button>
                   </div>
@@ -472,10 +532,16 @@ export default function ObservationsPage() {
                     </div>
                     <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No content available"}</div>
                     <div className="flex gap-2 justify-end mt-4">
-                      <button className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                      <button 
+                        onClick={handleEditPDP}
+                        className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
+                      >
                         Edit Plan
                       </button>
-                      <button className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm">
+                      <button 
+                        onClick={handleArchivePDP}
+                        className="text-red-400 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm cursor-pointer"
+                      >
                         Archive Plan
                       </button>
                     </div>
@@ -638,6 +704,41 @@ export default function ObservationsPage() {
           </div>
         </div>
       </div>
+
+      {/* Player and PDP Management Modals */}
+      <EditPlayerModal
+        open={editPlayerModalOpen}
+        onClose={() => setEditPlayerModalOpen(false)}
+        player={selectedPlayer || null}
+        onSuccess={handlePlayerUpdated}
+      />
+
+      <DeletePlayerModal
+        open={deletePlayerModalOpen}
+        onClose={() => setDeletePlayerModalOpen(false)}
+        onConfirm={handleDeletePlayer}
+        player={selectedPlayer || null}
+      />
+
+      <EditPDPModal
+        open={editPDPModalOpen}
+        onClose={() => setEditPDPModalOpen(false)}
+        player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
+        currentPdp={currentPdp}
+        onSuccess={handlePDPUpdated}
+      />
+
+      <ArchivePDPModal
+        open={archivePDPModalOpen}
+        onClose={() => setArchivePDPModalOpen(false)}
+        player={selectedPlayer ? { id: selectedPlayer.id, name: selectedPlayer.name } : null}
+        pdp={currentPdp ? { 
+          id: currentPdp.id, 
+          content: currentPdp.content || "", 
+          start_date: currentPdp.start_date 
+        } : null}
+        onArchived={handlePDPArchived}
+      />
     </div>
   );
 }
