@@ -107,344 +107,167 @@ export default function CoachesPage() {
     return coachData.id;
   }, []);
 
-  const fetchAllData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const supabase = createClient();
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      let isAdmin = false;
-      let isSuperadmin = false;
-      let orgId = null;
-      if (user) {
-        const { data: coachData } = await supabase
-          .from('coaches')
-          .select('is_admin, is_superadmin, org_id')
-          .eq('auth_uid', user.id)
-          .single();
-        isAdmin = coachData?.is_admin || false;
-        isSuperadmin = coachData?.is_superadmin || false;
-        orgId = coachData?.org_id;
-      }
-      // Fetch coaches
-      let coachesQuery = supabase
-        .from("coaches")
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          is_admin,
-          is_superadmin,
-          active,
-          created_at,
-          org_id
-        `)
-        .order("last_name", { ascending: true });
-      if (!isSuperadmin && orgId) {
-        coachesQuery = coachesQuery.eq("org_id", orgId);
-      }
-      if (!isAdmin && !isSuperadmin) {
-        coachesQuery = coachesQuery.eq("active", true);
-      }
-      const { data: coachesData, error: coachesError } = await coachesQuery;
-      if (coachesError) {
-        setError("Error fetching coaches: " + coachesError.message);
-        setCoaches([]);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch team information separately (teams have coach_id)
-      let teamsQuery = supabase.from("teams").select("id, name, coach_id, org_id");
-      if (!isSuperadmin && orgId) {
-        teamsQuery = teamsQuery.eq("org_id", orgId);
-      }
-      const { data: teamsData } = await teamsQuery;
-
-      // Create a map of coach_id to team_name
-      const coachTeamMap = new Map();
-      teamsData?.forEach((t: any) => {
-        if (t.coach_id) {
-          coachTeamMap.set(t.coach_id, t.name);
+  // --- Top-level org-wide data fetch ---
+  useEffect(() => {
+    async function fetchOrgWideData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const supabase = createClient();
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        let isAdmin = false;
+        let isSuperadmin = false;
+        let orgId = null;
+        if (user) {
+          const { data: coachData } = await supabase
+            .from('coaches')
+            .select('is_admin, is_superadmin, org_id')
+            .eq('auth_uid', user.id)
+            .single();
+          isAdmin = coachData?.is_admin || false;
+          isSuperadmin = coachData?.is_superadmin || false;
+          orgId = coachData?.org_id;
         }
-      });
-
-      const transformedCoaches = (coachesData || []).map((coach: any) => ({
-        ...coach,
-        team_name: coachTeamMap.get(coach.id) || undefined,
-      }));
-      setCoaches(transformedCoaches);
-
-      // Fetch all active PDPs for the PlayerListPane with org filtering
-      let pdpsQuery = supabase
-        .from("pdp")
-        .select("id, player_id, content, archived_at")
-        .is("archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      
-      if (!isSuperadmin && orgId) {
-        pdpsQuery = pdpsQuery.eq("org_id", orgId);
-      }
-      
-      const { data: pdpsData } = await pdpsQuery;
-      setAllPdps(pdpsData || []);
-
-      // Set default selected coach to current user (only once)
-      if (!hasSetDefaultCoach.current) {
-        const currentCoachId = await getCurrentUserCoachId();
-        if (currentCoachId && !selectedCoachId) {
-          setSelectedCoachId(currentCoachId);
-          hasSetDefaultCoach.current = true;
-        }
-      }
-      setLoading(false);
-    } catch (err: any) {
-      setError("Error loading data: " + (err.message || err.toString()));
-      setLoading(false);
-    }
-  }, [getCurrentUserCoachId]);
-
-  const fetchCoachData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (!selectedCoachId) {
-        setSelectedCoach(null);
-        setObservations([]);
-        setPlayers([]);
-        setTeams([]);
-        setLoading(false);
-        return;
-      }
-
-      const supabase = createClient();
-
-      // Find the selected coach
-      const selectedCoachData = coaches.find(c => c.id === selectedCoachId);
-      if (!selectedCoachData) return;
-      setSelectedCoach(selectedCoachData);
-
-      if (selectedCoachData.is_admin) {
-        // Admin: fetch all teams
-        const { data: allTeams } = await supabase
-          .from("teams")
-          .select("id, name");
-        setTeams(allTeams || []);
-
-        // Admin: fetch all players
-        const { data: playersData } = await supabase
-          .from("players")
+        // Fetch coaches
+        let coachesQuery = supabase
+          .from("coaches")
           .select(`
             id,
-            name,
             first_name,
             last_name,
+            email,
+            is_admin,
+            is_superadmin,
+            active,
             created_at,
-            team_id
+            org_id
           `)
           .order("last_name", { ascending: true });
-
-        // Get observation counts for all players
-        const { data: observationsData } = await supabase
-          .from("observations")
-          .select("player_id")
-          .or("archived.is.null,archived.eq.false")
-          .range(0, 49);
-
-        const counts = new Map();
-        observationsData?.forEach((obs: any) => {
-          counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
-        });
-
-        const transformedPlayers = (playersData || []).map((player: any) => ({
-          ...player,
-          name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
-          observations: counts.get(player.id) || 0,
-          joined: player.created_at ? format(new Date(player.created_at), "MMMM do, yyyy") : "—",
-          team_name: allTeams?.find(t => t.id === player.team_id)?.name || undefined,
-        }));
-        setPlayers(transformedPlayers);
-
-        // Admin: fetch 10 most recent observations for all players
-        if (transformedPlayers.length > 0) {
-          const playerIds = transformedPlayers.map(p => p.id);
-          const { data: recentObsData } = await supabase
-            .from("observations")
-            .select(`
-              id,
-              content,
-              observation_date,
-              created_at,
-              player_id
-            `)
-            .in("player_id", playerIds)
-            .or("archived.is.null,archived.eq.false")
-            .order("created_at", { ascending: false })
-            .limit(10);
-
-          if (recentObsData) {
-            // Fetch player information for these observations
-            const obsPlayerIds = recentObsData.map((obs: any) => obs.player_id).filter(Boolean);
-            if (obsPlayerIds.length > 0) {
-              const { data: obsPlayersData } = await supabase
-                .from("players")
-                .select("id, name, first_name, last_name")
-                .in("id", obsPlayerIds);
-
-              const playerMap = new Map();
-              obsPlayersData?.forEach((player: any) => {
-                playerMap.set(player.id, player);
-              });
-
-              const transformedObservations = recentObsData.map((obs: any) => {
-                const player = playerMap.get(obs.player_id);
-                return {
-                  ...obs,
-                  player_name: player?.first_name && player?.last_name 
-                    ? `${player.first_name} ${player.last_name}` 
-                    : player?.name || 'Unknown Player'
-                };
-              });
-              setObservations(transformedObservations);
-            } else {
-              setObservations([]);
-            }
-          } else {
-            setObservations([]);
-          }
-        } else {
-          setObservations([]);
+        if (!isSuperadmin && orgId) {
+          coachesQuery = coachesQuery.eq("org_id", orgId);
         }
-        return;
+        if (!isAdmin && !isSuperadmin) {
+          coachesQuery = coachesQuery.eq("active", true);
+        }
+        const { data: coachesData, error: coachesError } = await coachesQuery;
+        if (coachesError) throw new Error("Error fetching coaches: " + coachesError.message);
+        // Fetch teams
+        let teamsQuery = supabase.from("teams").select("id, name, coach_id, org_id");
+        if (!isSuperadmin && orgId) {
+          teamsQuery = teamsQuery.eq("org_id", orgId);
+        }
+        const { data: teamsData } = await teamsQuery;
+        // Fetch all PDPs (active and archived) for the org
+        let pdpsQuery = supabase
+          .from("pdp")
+          .select("id, player_id, content, archived_at")
+          .order("created_at", { ascending: false });
+        if (!isSuperadmin && orgId) {
+          pdpsQuery = pdpsQuery.eq("org_id", orgId);
+        }
+        const { data: pdpsData } = await pdpsQuery;
+        setCoaches(coachesData || []);
+        setTeams(teamsData || []);
+        setAllPdps(pdpsData || []);
+        setLoading(false);
+      } catch (err: any) {
+        setError("Error loading data: " + (err.message || err.toString()));
+        setLoading(false);
       }
-
-      // Get the team for this coach (teams have coach_id)
-      const { data: teamData } = await supabase
-        .from("teams")
-        .select("id, name")
-        .eq("coach_id", selectedCoachId)
-        .maybeSingle();
-
-      const coachTeamId = teamData?.id;
-      const coachTeamName = teamData?.name;
-      setTeams(teamData ? [teamData] : []);
-
-      // Fetch recent observations for players on this coach's team
-      if (coachTeamId) {
-        // First get all players on this team
-        const { data: teamPlayers } = await supabase
-          .from("players")
-          .select("id")
-          .eq("team_id", coachTeamId);
-
-        if (teamPlayers && teamPlayers.length > 0) {
-          const playerIds = teamPlayers.map((p: any) => p.id);
-          // Only query observations if playerIds is not empty
-          if (playerIds.length > 0) {
-            // Then get observations for those players
-            const { data: recentObsData } = await supabase
-              .from("observations")
-              .select(`
-                id, 
-                content, 
-                observation_date, 
-                created_at,
-                player_id
-              `)
-              .in("player_id", playerIds)
-              .or("archived.is.null,archived.eq.false")
-              .order("created_at", { ascending: false })
-              .limit(10);
-
-            if (recentObsData) {
-              // Fetch player information separately
-              const { data: playersData } = await supabase
-                .from("players")
-                .select("id, name, first_name, last_name")
-                .in("id", playerIds);
-
-              const playerMap = new Map();
-              playersData?.forEach((player: any) => {
-                playerMap.set(player.id, player);
-              });
-
-              const transformedObservations = recentObsData.map((obs: any) => {
-                const player = playerMap.get(obs.player_id);
-                return {
-                  ...obs,
-                  player_name: player?.first_name && player?.last_name 
-                    ? `${player.first_name} ${player.last_name}` 
-                    : player?.name || 'Unknown Player'
-                };
-              });
-              setObservations(transformedObservations);
-            } else {
-              setObservations([]);
-            }
-          } else {
-            setObservations([]);
-          }
-        } else {
-          setObservations([]);
-        }
-
-        // Fetch players coached by this coach (players have team_id)
-        const { data: playersData } = await supabase
-          .from("players")
-          .select(`
-            id, 
-            name, 
-            first_name, 
-            last_name, 
-            created_at,
-            team_id
-          `)
-          .eq("team_id", coachTeamId)
-          .order("last_name", { ascending: true });
-
-        if (playersData) {
-          // Get observation counts for all players
-          const { data: observationsData } = await supabase
-            .from("observations")
-            .select("player_id")
-            .or("archived.is.null,archived.eq.false")
-            .range(0, 49);
-          
-          const counts = new Map();
-          observationsData?.forEach((obs: any) => {
-            counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
-          });
-
-          const transformedPlayers = playersData.map((player: any) => ({
-            ...player,
-            name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
-            observations: counts.get(player.id) || 0,
-            joined: player.created_at ? format(new Date(player.created_at), "MMMM do, yyyy") : "—",
-            team_name: coachTeamName || undefined,
-          }));
-          setPlayers(transformedPlayers);
-        }
-      } else {
-        setObservations([]);
-        setPlayers([]);
-      }
-      setLoading(false);
-    } catch (err: any) {
-      setError("Error loading coach data: " + (err.message || err.toString()));
-      setLoading(false);
     }
+    fetchOrgWideData();
+  }, []);
+
+  // --- Coach-specific data fetch ---
+  useEffect(() => {
+    async function fetchCoachSpecificData() {
+      setLoading(true);
+      setError(null);
+      try {
+        if (!selectedCoachId) {
+          setSelectedCoach(null);
+          setObservations([]);
+          setPlayers([]);
+          setTeams([]);
+          setLoading(false);
+          return;
+        }
+        // Find the selected coach
+        const selectedCoachData = coaches.find(c => c.id === selectedCoachId);
+        if (!selectedCoachData) {
+          setLoading(false);
+          return;
+        }
+        setSelectedCoach(selectedCoachData);
+        const supabase = createClient();
+        // Get the team for this coach (teams have coach_id)
+        const { data: teamData } = await supabase
+          .from("teams")
+          .select("id, name")
+          .eq("coach_id", selectedCoachId)
+          .maybeSingle();
+        const coachTeamId = teamData?.id;
+        const coachTeamName = teamData?.name;
+        setTeams(teamData ? [teamData] : []);
+        // Fetch players and observations for this coach's team
+        if (coachTeamId) {
+          // Get all players on this team
+          const { data: playersData } = await supabase
+            .from("players")
+            .select("id, name, first_name, last_name, created_at, team_id")
+            .eq("team_id", coachTeamId)
+            .order("last_name", { ascending: true });
+          if (playersData) {
+            // Get observation counts for all players
+            const { data: observationsData } = await supabase
+              .from("observations")
+              .select("player_id")
+              .or("archived.is.null,archived.eq.false")
+              .range(0, 49);
+            const counts = new Map();
+            observationsData?.forEach((obs: any) => {
+              counts.set(obs.player_id, (counts.get(obs.player_id) || 0) + 1);
+            });
+            const transformedPlayers = playersData.map((player: any) => ({
+              ...player,
+              name: player.first_name && player.last_name ? `${player.first_name} ${player.last_name}`: player.name,
+              observations: counts.get(player.id) || 0,
+              joined: player.created_at ? format(new Date(player.created_at), "MMMM do, yyyy") : "—",
+              team_name: coachTeamName || undefined,
+            }));
+            setPlayers(transformedPlayers);
+          }
+          // Fetch recent observations for players on this team
+          if (playersData && playersData.length > 0) {
+            const playerIds = playersData.map((p: any) => p.id);
+            if (playerIds.length > 0) {
+              const { data: recentObsData } = await supabase
+                .from("observations")
+                .select("id, content, observation_date, created_at, player_id")
+                .in("player_id", playerIds)
+                .or("archived.is.null,archived.eq.false")
+                .order("created_at", { ascending: false })
+                .limit(10);
+              setObservations(recentObsData || []);
+            } else {
+              setObservations([]);
+            }
+          } else {
+            setObservations([]);
+          }
+        } else {
+          setObservations([]);
+          setPlayers([]);
+        }
+        setLoading(false);
+      } catch (err: any) {
+        setError("Error loading coach data: " + (err.message || err.toString()));
+        setLoading(false);
+      }
+    }
+    fetchCoachSpecificData();
   }, [selectedCoachId, coaches]);
-
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
-
-  useEffect(() => {
-    fetchCoachData();
-  }, [fetchCoachData]);
 
   const handleCoachSelect = (coachId: string) => {
     setSelectedCoachId(coachId);
@@ -620,6 +443,7 @@ export default function CoachesPage() {
             </div>
             {/* Center: Coach Profile and Observations */}
             <div className="flex-[2] min-w-0 flex flex-col gap-4 min-h-0">
+              <SectionLabel>Coach Profile</SectionLabel>
               {coaches.length === 0 ? (
                 <div className="flex flex-col gap-4 h-full">
                   <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
@@ -632,111 +456,109 @@ export default function CoachesPage() {
                     />
                   </Card>
                 </div>
-              ) : selectedCoach ? (
+              ) : (
                 <>
-                  <SectionLabel>Coach Profile</SectionLabel>
                   <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-                    <div>
-                      <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedCoach.first_name} {selectedCoach.last_name}</div>
-                      <div className="text-sm text-zinc-400 font-medium mb-1">Email: {selectedCoach.email}</div>
-                      {selectedCoach.team_name && (
-                        <div className="text-sm text-zinc-400 font-medium mb-1">Team: <span className="text-[#C2B56B]">{selectedCoach.team_name}</span></div>
-                      )}
-                      <div className="text-sm text-zinc-400 font-medium mb-1">
-                        Status: <span className={selectedCoach.active ? "text-[#C2B56B] font-semibold" : "text-red-400 font-semibold"}>
-                          {selectedCoach.active ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                      <div className="text-sm text-zinc-400 font-medium mb-1">
-                        Created: {selectedCoach.created_at ? format(new Date(selectedCoach.created_at), "MMMM do, yyyy") : "—"}
-                      </div>
-                      <div className="flex gap-2 justify-end mt-4">
-                        {(isAdminOrSuperadmin || selectedCoach.id === currentUserId) && (
-                          <EntityButton color="gold" onClick={handleEdit}>Edit Coach</EntityButton>
+                    {selectedCoach ? (
+                      <div>
+                        <div className="text-lg font-bold text-[#C2B56B] mb-2">{selectedCoach.first_name} {selectedCoach.last_name}</div>
+                        <div className="text-sm text-zinc-400 font-medium mb-1">Email: {selectedCoach.email}</div>
+                        {selectedCoach.team_name && (
+                          <div className="text-sm text-zinc-400 font-medium mb-1">Team: <span className="text-[#C2B56B]">{selectedCoach.team_name}</span></div>
                         )}
-                        {isAdminOrSuperadmin && selectedCoach.id !== currentUserId && (
-                          <EntityButton color="danger" onClick={handleDelete}>Delete Coach</EntityButton>
-                        )}
+                        <div className="text-sm text-zinc-400 font-medium mb-1">
+                          Status: <span className={selectedCoach.active ? "text-[#C2B56B] font-semibold" : "text-red-400 font-semibold"}>
+                            {selectedCoach.active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                        <div className="text-sm text-zinc-400 font-medium mb-1">
+                          Created: {selectedCoach.created_at ? format(new Date(selectedCoach.created_at), "MMMM do, yyyy") : "—"}
+                        </div>
+                        <div className="flex gap-2 justify-end mt-4">
+                          {(isAdminOrSuperadmin || selectedCoach.id === currentUserId) && (
+                            <EntityButton color="gold" onClick={handleEdit}>Edit Coach</EntityButton>
+                          )}
+                          {isAdminOrSuperadmin && selectedCoach.id !== currentUserId && (
+                            <EntityButton color="danger" onClick={handleDelete}>Delete Coach</EntityButton>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <EmptyState
+                        icon={UserCheck}
+                        title="Select a Coach to View Their Profile"
+                        description="Pick a coach from the list to see their details."
+                        className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                      />
+                    )}
                   </Card>
                   <SectionLabel>Observations</SectionLabel>
                   <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-                    {observations.length === 0 ? (
+                    {selectedCoach ? (
+                      observations.length === 0 ? (
+                        <EmptyState
+                          icon={FileText}
+                          title="No Observations Yet"
+                          description="This coach hasn't made any observations yet."
+                          className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                        />
+                      ) : (
+                        <>
+                          {/* Range selector in normal flow */}
+                          <select
+                            value={observationRange}
+                            onChange={e => setObservationRange(e.target.value)}
+                            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm shadow-lg mb-2"
+                            style={{ minWidth: 120 }}
+                          >
+                            <option value="week">This week</option>
+                            <option value="month">This month</option>
+                            <option value="all">All</option>
+                          </select>
+                          {/* Card content (background) */}
+                          <div className="flex-1 min-h-0 flex flex-col justify-center items-center">
+                            <div className="flex flex-col gap-3 w-full mt-10">
+                              {displayedObservations.map(obs => (
+                                <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
+                                  <div className="text-xs text-zinc-400 mb-1">{obs.player_name ? `${obs.player_name} — ` : ''}{obs.observation_date ? format(new Date(obs.observation_date), "MMMM do, yyyy") : ''}</div>
+                                  <div className="text-base text-zinc-100">{obs.content}</div>
+                                </div>
+                              ))}
+                              {filteredObservations.length > MAX_OBSERVATIONS && (
+                                <div
+                                  className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
+                                  onClick={() => setShowAllObservations(!showAllObservations)}
+                                  title={showAllObservations ? "Show less" : "Show more"}
+                                >
+                                  <div className="flex-1 border-t border-zinc-700"></div>
+                                  <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                  <div className="flex-1 border-t border-zinc-700"></div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {/* Search bar at the bottom - only show when chevron is needed */}
+                          {filteredObservations.length > MAX_OBSERVATIONS && (
+                            <input
+                              type="text"
+                              placeholder="Search observations..."
+                              value={observationSearch}
+                              onChange={e => setObservationSearch(e.target.value)}
+                              className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm mt-2"
+                            />
+                          )}
+                        </>
+                      )
+                    ) : (
                       <EmptyState
                         icon={FileText}
-                        title="No Observations Yet"
-                        description="This coach hasn't made any observations yet."
+                        title="Select a Coach to View Their Observations"
+                        description="Pick a coach from the list to see their observations."
                         className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
                       />
-                    ) : (
-                      <>
-                        {/* Range selector in normal flow */}
-                        <select
-                          value={observationRange}
-                          onChange={e => setObservationRange(e.target.value)}
-                          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm shadow-lg mb-2"
-                          style={{ minWidth: 120 }}
-                        >
-                          <option value="week">This week</option>
-                          <option value="month">This month</option>
-                          <option value="all">All</option>
-                        </select>
-                        {/* Card content (background) */}
-                        <div className="flex-1 min-h-0 flex flex-col justify-center items-center">
-                          <div className="flex flex-col gap-3 w-full mt-10">
-                            {displayedObservations.map(obs => (
-                              <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                                <div className="text-xs text-zinc-400 mb-1">{obs.player_name ? `${obs.player_name} — ` : ''}{obs.observation_date ? format(new Date(obs.observation_date), "MMMM do, yyyy") : ''}</div>
-                                <div className="text-base text-zinc-100">{obs.content}</div>
-                              </div>
-                            ))}
-                            {filteredObservations.length > MAX_OBSERVATIONS && (
-                              <div
-                                className="flex items-center justify-center gap-2 cursor-pointer text-zinc-400 hover:text-[#C2B56B] select-none py-1"
-                                onClick={() => setShowAllObservations(!showAllObservations)}
-                                title={showAllObservations ? "Show less" : "Show more"}
-                              >
-                                <div className="flex-1 border-t border-zinc-700"></div>
-                                <svg className={`w-5 h-5 transition-transform ${showAllObservations ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                                <div className="flex-1 border-t border-zinc-700"></div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {/* Search bar at the bottom - only show when chevron is needed */}
-                        {filteredObservations.length > MAX_OBSERVATIONS && (
-                          <input
-                            type="text"
-                            placeholder="Search observations..."
-                            value={observationSearch}
-                            onChange={e => setObservationSearch(e.target.value)}
-                            className="h-10 w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white placeholder-zinc-400 text-sm mt-2"
-                          />
-                        )}
-                      </>
                     )}
                   </Card>
                 </>
-              ) : (
-                <div className="flex flex-col gap-4 h-full">
-                  <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-                    <EmptyState
-                      icon={UserCheck}
-                      title="Select a Coach to View Their Profile"
-                      description="Pick a coach from the list to see their details."
-                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                    />
-                  </Card>
-                  <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg">
-                    <EmptyState
-                      icon={FileText}
-                      title="Select a Coach to View Their Observations"
-                      description="Pick a coach from the list to see their observations."
-                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                    />
-                  </Card>
-                </div>
               )}
             </div>
             {/* Right: Players list */}
@@ -774,7 +596,9 @@ export default function CoachesPage() {
                           className={`w-full text-left px-3 py-2 rounded mb-1 font-bold transition-colors duration-100 border-2 text-center
                             ${selectedPlayerForObservations === player.id
                               ? 'bg-[#C2B56B] text-black border-[#C2B56B]'
-                              : 'bg-zinc-900 text-[#C2B56B] border-[#C2B56B]'}
+                              : playerIdsWithPDP.has(player.id)
+                                ? 'bg-zinc-900 text-[#C2B56B] border-[#C2B56B]'
+                                : 'bg-zinc-900 text-[#A22828] border-[#A22828]'}
                           `}
                           onClick={() => setSelectedPlayerForObservations(selectedPlayerForObservations === player.id ? null : player.id)}
                         >
