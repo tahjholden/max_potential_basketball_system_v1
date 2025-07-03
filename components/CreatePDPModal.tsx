@@ -124,7 +124,7 @@ export default function CreatePDPModal({
         return;
       }
       // Create the new PDP
-      const { error: insertError } = await supabase.from("pdps").insert({
+      const { error: insertError } = await supabase.from("pdp").insert({
         player_id: player.id,
         content: content.trim(),
         start_date: now,

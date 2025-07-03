@@ -58,6 +58,17 @@ export default function AddObservationModal({
     }
   }, [open, isSuperadmin]);
 
+  useEffect(() => {
+    if (open) {
+      // Set date to today in YYYY-MM-DD format
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      setDate(`${yyyy}-${mm}-${dd}`);
+    }
+  }, [open]);
+
   const handleSubmit = async () => {
     if (!content.trim() || !date) {
       toast.error("Observation and date required");
@@ -72,7 +83,7 @@ export default function AddObservationModal({
       const supabase = createClient();
       // Fetch the player's current active PDP
       const { data: pdp, error: pdpError } = await supabase
-        .from("pdps")
+        .from("pdp")
         .select("id")
         .eq("player_id", player.id)
         .is("archived_at", null)

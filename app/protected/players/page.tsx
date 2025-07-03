@@ -15,6 +15,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 import AddObservationButton from "@/components/AddObservationButton";
+import AddObservationModal from "@/app/protected/players/AddObservationModal";
+import CreatePDPModal from "@/components/CreatePDPModal";
 import { useSelectedPlayer } from '@/stores/useSelectedPlayer';
 import SharedPlayerList from "@/components/SharedPlayerList";
 import EmptyState from "@/components/ui/EmptyState";
@@ -95,6 +97,8 @@ export default function TestPlayersPage() {
   const [showAllObservations, setShowAllObservations] = useState(false);
   const MAX_OBSERVATIONS = 10;
   const [currentCoachId, setCurrentCoachId] = useState<string | null>(null);
+  const [createPDPModalOpen, setCreatePDPModalOpen] = useState(false);
+  const [addObservationModalOpen, setAddObservationModalOpen] = useState(false);
   
   const selectedPlayer = players.find((p) => p.id === playerId);
   const searchParams = useSearchParams();
@@ -512,6 +516,12 @@ export default function TestPlayersPage() {
                           <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No content available"}</div>
                           {selectedPlayer && selectedPlayer.team_coach_id === currentCoachId && (
                             <div className="flex gap-2 justify-end mt-4">
+                              <button 
+                                onClick={() => setCreatePDPModalOpen(true)}
+                                className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                              >
+                                Create New Plan
+                              </button>
                               <button onClick={handleEdit}>Edit PDP</button>
                               <button onClick={handleDelete}>Archive PDP</button>
                             </div>
@@ -527,7 +537,7 @@ export default function TestPlayersPage() {
                       title="No Development Plan"
                       description="This player doesn't have an active development plan yet."
                       className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                      action={{ label: "Create Plan", onClick: () => {}, color: "gold" }}
+                      action={{ label: "Create Plan", onClick: () => setCreatePDPModalOpen(true), color: "gold" }}
                     />
                   )
                 ) : (
@@ -548,12 +558,12 @@ export default function TestPlayersPage() {
                       title="No Observations Yet"
                       description="This player doesn't have any observations yet."
                       className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                      action={{ label: "Add Observation", onClick: () => {}, color: "gold" }}
+                      action={{ label: "Add Observation", onClick: () => setAddObservationModalOpen(true), color: "gold" }}
                     />
                   ) : (
                     <>
-                      {/* Header: Range selector */}
-                      <div className="flex items-center gap-2 mb-2">
+                      {/* Header: Range selector and Add Observation button */}
+                      <div className="flex items-center justify-between gap-2 mb-2">
                         <select
                           value={observationRange}
                           onChange={e => setObservationRange(e.target.value)}
@@ -564,6 +574,14 @@ export default function TestPlayersPage() {
                           <option value="month">This month</option>
                           <option value="all">All</option>
                         </select>
+                        {selectedPlayer && selectedPlayer.team_coach_id === currentCoachId && (
+                          <button 
+                            onClick={() => setAddObservationModalOpen(true)}
+                            className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                          >
+                            Add Observation
+                          </button>
+                        )}
                       </div>
                       {/* Scrollable observation list, responsive height */}
                       <div className="flex-1 min-h-0 mb-2">
@@ -622,6 +640,31 @@ export default function TestPlayersPage() {
           </div>
         </div>
       </div>
+      
+      {/* Modals */}
+      {selectedPlayer && (
+        <>
+          <CreatePDPModal
+            open={createPDPModalOpen}
+            onClose={() => setCreatePDPModalOpen(false)}
+            player={selectedPlayer}
+            coachId={currentCoachId || undefined}
+            onCreated={() => {
+              fetchPlayerData();
+              // Refresh the allPdps list as well
+              fetchAllData();
+            }}
+          />
+          <AddObservationModal
+            open={addObservationModalOpen}
+            onClose={() => setAddObservationModalOpen(false)}
+            player={selectedPlayer}
+            onObservationAdded={() => {
+              fetchPlayerData();
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
