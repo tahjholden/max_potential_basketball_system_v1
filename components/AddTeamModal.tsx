@@ -7,6 +7,8 @@ import { Modal } from "@/components/ui/UniversalModal";
 import UniversalButton from "@/components/ui/UniversalButton";
 import type { Organization } from "@/types/entities";
 
+type CoachLite = { id: string; first_name: string; last_name: string };
+
 export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boolean; onClose: () => void; onTeamAdded?: () => void }) {
   const [teamName, setTeamName] = useState("");
   const [coachId, setCoachId] = useState("");
@@ -14,6 +16,8 @@ export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boo
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [loadingOrgs, setLoadingOrgs] = useState(false);
+  const [coaches, setCoaches] = useState<CoachLite[]>([]);
+  const [loadingCoaches, setLoadingCoaches] = useState(false);
 
   const { coach, isSuperadmin } = useCoach();
 
@@ -43,6 +47,31 @@ export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boo
     }
   }, [open, isSuperadmin]);
 
+  // Fetch coaches for the selected org (or current org if not superadmin)
+  useEffect(() => {
+    async function fetchCoaches(orgId: string) {
+      setLoadingCoaches(true);
+      const { data, error } = await createClient()
+        .from("coaches")
+        .select("id, first_name, last_name")
+        .eq("org_id", orgId)
+        .order("last_name");
+      setLoadingCoaches(false);
+      if (error) {
+        toast.error("Failed to fetch coaches");
+        setCoaches([]);
+        return;
+      }
+      setCoaches(data || []);
+    }
+    if (open) {
+      const orgId = isSuperadmin ? selectedOrgId : coach?.org_id;
+      if (orgId) fetchCoaches(orgId);
+    } else {
+      setCoaches([]);
+    }
+  }, [open, selectedOrgId, isSuperadmin, coach?.org_id]);
+
   const handleAddTeam = async () => {
     if (!teamName.trim()) {
       toast.error("Team name is required");
@@ -61,16 +90,16 @@ export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boo
         setLoading(false);
         return;
       }
-      if (!coach?.id || !orgId) {
-        console.error("Missing coach.id or orgId", { coachId: coach?.id, orgId });
-        toast.error("Coach or organization information missing. Please contact support.");
+      const coachToUse = coachId || coach?.id;
+      if (!coachToUse) {
+        toast.error("Coach information missing. Please contact support.");
         setLoading(false);
         return;
       }
-      console.log("Creating team with:", { name: teamName.trim(), coach_id: coach?.id, org_id: orgId });
+      console.log("Creating team with:", { name: teamName.trim(), coach_id: coachToUse, org_id: orgId });
       const { data, error } = await supabase.from("teams").insert({
         name: teamName.trim(),
-        coach_id: coach?.id,
+        coach_id: coachToUse,
         org_id: orgId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -137,6 +166,23 @@ export default function AddTeamModal({ open, onClose, onTeamAdded }: { open: boo
             </select>
           </div>
         )}
+        <div>
+          <label htmlFor="coach_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+            Coach (optional)
+          </label>
+          <select
+            id="coach_select"
+            value={coachId}
+            onChange={e => setCoachId(e.target.value)}
+            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-[#C2B56B]"
+            disabled={loadingCoaches}
+          >
+            <option value="">(Default: You)</option>
+            {coaches.map(c => (
+              <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </Modal.Add>
   );

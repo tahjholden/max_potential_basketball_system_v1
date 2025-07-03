@@ -153,19 +153,21 @@ export default function TestPlayersPage() {
     
     const supabase = createClient();
 
-    // Fetch current PDP
-    const { data: currentPdpData, error } = await supabase
+    // Debug: Log playerId before fetching PDP
+    console.log('DEBUG: Fetching PDP for playerId:', playerId);
+
+    // Fetch current PDP (active)
+    const { data: currentPdp, error: currentPdpError } = await supabase
       .from('pdp')
-      .select('id, content, start_date, created_at, player_id, archived_at')
+      .select('id, player_id, content, created_at, start_date, end_date, archived_at, org_id')
       .eq('player_id', playerId)
       .is('archived_at', null)
       .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error('Supabase PDP error:', error);
+      .maybeSingle();
+    if (currentPdpError) {
+      console.error('DEBUG: Supabase current PDP error:', currentPdpError);
     }
-    setCurrentPdp(currentPdpData && currentPdpData.length > 0 ? currentPdpData[0] : null);
+    setCurrentPdp(currentPdp || null);
 
     // Fetch recent observations for the player (matching dashboard behavior)
     const { data: observationsData, error: observationsError } = await supabase
@@ -178,12 +180,15 @@ export default function TestPlayersPage() {
     setObservations((observationsData || []).map((obs: any) => ({ ...obs, archived: false })));
 
     // Fetch archived PDPs
-    const { data: archivedData } = await supabase
+    const { data: archivedPdps, error: archivedPdpsError } = await supabase
       .from('pdp')
-      .select('id, player_id, content, created_at, start_date, archived_at, coach_id, org_id')
+      .select('id, player_id, content, created_at, start_date, end_date, archived_at, org_id')
       .eq('player_id', playerId)
       .not('archived_at', 'is', null)
       .order('archived_at', { ascending: sortOrder === "asc" });
+    if (archivedPdpsError) {
+      console.error('DEBUG: Supabase archived PDPs error:', archivedPdpsError);
+    }
 
     // Fetch all archived observations for this player
     const { data: archivedObsData } = await supabase
@@ -192,8 +197,8 @@ export default function TestPlayersPage() {
       .eq("player_id", playerId)
       .eq("archived", true);
 
-    if(archivedData) {
-      const processedArchived = archivedData.map((pdp: any) => {
+    if (archivedPdps) {
+      const processedArchived = archivedPdps.map((pdp: any) => {
         const startDate = format(new Date(pdp.start_date), "MMMM do, yyyy");
         const endDate = pdp.archived_at ? format(new Date(pdp.archived_at), "MMMM do, yyyy") : "Present";
         // Attach observations for this PDP
@@ -366,11 +371,27 @@ export default function TestPlayersPage() {
   const sortedObservations = [...filteredObservations].sort((a, b) => a.content.localeCompare(b.content));
   const displayedObservations = showAllObservations ? sortedObservations : sortedObservations.slice(0, MAX_OBSERVATIONS);
 
-  // When rendering the player list, filter by teamId from searchParams if present
-  const teamIdFromParams = searchParams.get("teamId");
-  const filteredPlayers = teamIdFromParams
-    ? players.filter(p => p.team_id === teamIdFromParams)
+  // When rendering the player list, filter by selectedTeamId (from dropdown) if present
+  const filteredPlayers = selectedTeamId && selectedTeamId !== ""
+    ? players.filter(p => p.team_id === selectedTeamId)
     : players;
+
+  // Handler for team selection change
+  function handleTeamChange(teamId: string | null) {
+    const safeTeamId = teamId ?? "";
+    setSelectedTeamId(safeTeamId);
+    // Find all players on the new team
+    const playersOnTeam = players.filter(p => p.team_id === safeTeamId);
+    // If the current player is on the new team, keep them selected
+    if (playersOnTeam.some(p => p.id === playerId)) {
+      // Do nothing, keep playerId
+    } else {
+      setPlayerId("");
+      setCurrentPdp(null);
+      setArchivedPdps([]);
+      setObservations([]);
+    }
+  }
 
   if (loading) {
     return (
@@ -433,7 +454,7 @@ export default function TestPlayersPage() {
                   onSelectPlayer={setPlayerId}
                   teamOptions={teams.map(t => ({ id: t.id, name: t.name }))}
                   selectedTeamId={selectedTeamId}
-                  onSelectTeam={setSelectedTeamId}
+                  onSelectTeam={handleTeamChange}
                   playerIdsWithPDP={playerIdsWithPDP}
                   showAddPlayer={false}
                 />

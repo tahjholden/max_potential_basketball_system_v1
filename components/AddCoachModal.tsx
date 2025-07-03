@@ -86,7 +86,26 @@ export default function AddCoachModal({ open, onClose, onCoachAdded }: { open: b
     setLoading(true);
     try {
       const supabase = createClient();
-      
+      // Check for existing coach by email
+      const { data: existingCoach, error: existingCoachError } = await supabase
+        .from('coaches')
+        .select('id, org_id')
+        .eq('email', coachForm.email.trim().toLowerCase())
+        .maybeSingle();
+      if (existingCoachError) {
+        throw existingCoachError;
+      }
+      if (existingCoach) {
+        if (existingCoach.org_id === orgId) {
+          toast.error("Coach already exists in this organization.");
+          setLoading(false);
+          return;
+        } else {
+          toast.error("This coach is already a member of another organization.");
+          setLoading(false);
+          return;
+        }
+      }
       // Create the coach record
       const { data, error } = await supabase
         .from('coaches')
@@ -102,9 +121,7 @@ export default function AddCoachModal({ open, onClose, onCoachAdded }: { open: b
         })
         .select()
         .single();
-
       if (error) throw error;
-
       toast.success("Coach added successfully!");
       setCoachForm({ 
         firstName: "", 
