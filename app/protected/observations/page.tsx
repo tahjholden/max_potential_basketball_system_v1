@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import { format } from "date-fns";
+import { formatDate } from "@/lib/ui-utils";
 import Image from "next/image";
 import { Users, FileText, Target, BarChart3 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -141,17 +142,20 @@ export default function ObservationsPage() {
   const now = new Date();
   const weekAgo = new Date(now);
   weekAgo.setDate(now.getDate() - 7);
-  const totalThisWeek = allObservations.filter(o => new Date(o.observation_date) >= weekAgo).length;
+  const totalThisWeek = allObservations.filter(o => new Date(o.observation_date) >= weekAgo && new Date(o.observation_date) <= now).length;
   // Calculate your observations this week
   const yourThisWeek = allObservations.filter(o => {
     const obsDate = new Date(o.observation_date);
-    const isRecent = obsDate >= weekAgo;
+    const isRecent = obsDate >= weekAgo && obsDate <= now;
     // Check for created_by match
     const isYours = (o.created_by && coach?.id && o.created_by === coach.id) ||
                     (o.created_by && coach?.auth_uid && o.created_by === coach.auth_uid);
     return isRecent && isYours;
   }).length;
-  const lastAdded = allObservations.length > 0 ? allObservations.reduce((latest, obs) => new Date(obs.observation_date) > new Date(latest.observation_date) ? obs : latest, allObservations[0]) : null;
+  // Use created_at for last added
+  const lastAdded = allObservations.length > 0
+    ? allObservations.reduce((latest, obs) => new Date(obs.created_at) > new Date(latest.created_at) ? obs : latest, allObservations[0])
+    : null;
 
   const fetchPdp = async () => {
     if (!playerId) return setCurrentPdp(null);
@@ -587,7 +591,7 @@ export default function ObservationsPage() {
                             )}
                           </div>
                           <div className="text-xs text-zinc-400">
-                            {format(new Date(obs.observation_date), "MMM do, yyyy")}
+                            {formatDate(obs.observation_date, "MMM do, yyyy")}
                           </div>
                         </div>
                         <div className="text-base text-zinc-100 mb-3">{obs.content}</div>
@@ -647,7 +651,7 @@ export default function ObservationsPage() {
                 {lastAdded && (
                   <div className="flex justify-between text-sm">
                     <span>Last added:</span>
-                    <span>{format(new Date(lastAdded.observation_date), "MMMM do, yyyy")}</span>
+                    <span>{formatDate(lastAdded.created_at, "MMMM do, yyyy")}</span>
                   </div>
                 )}
                 <div className="text-xs text-zinc-400 mt-2 pt-2 border-t border-zinc-700">
