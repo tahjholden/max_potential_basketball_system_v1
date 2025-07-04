@@ -83,8 +83,8 @@ export default function ArchivePDPButton({
     
     const variantClasses = {
       default: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-      outline: "border border-red-600 text-red-600 hover:bg-red-600 hover:text-white focus:ring-red-500",
-      ghost: "text-red-600 hover:bg-red-600 hover:text-white focus:ring-red-500"
+      outline: "border border-red-600 text-zinc-400 hover:bg-red-600 hover:text-white focus:ring-red-500",
+      ghost: "text-zinc-400 hover:bg-red-600 hover:text-white focus:ring-red-500"
     };
 
     const sizeClasses = {

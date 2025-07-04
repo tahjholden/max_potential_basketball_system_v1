@@ -35,6 +35,8 @@ export default function ManagePDPModal({
         <div className="flex justify-end">
           <ArchiveCreateNewModal 
             playerId={playerId} 
+            open={open}
+            onClose={() => setOpen(false)}
             onSuccess={() => {
               setOpen(false);
               onSuccess?.();

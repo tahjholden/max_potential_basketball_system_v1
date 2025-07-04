@@ -127,7 +127,7 @@ export async function archiveDevelopmentPlanAndObservations({
 export async function getArchivedPDPsWithObservations(playerId: string, orgId: string) {
   const supabase = createClient()
 
-  // Get archived PDPs
+  // Get archived PDPs (archived_at IS NOT NULL)
   const { data: archivedPDPs, error: pdpError } = await supabase
     .from('pdp')
     .select(`
@@ -147,31 +147,23 @@ export async function getArchivedPDPsWithObservations(playerId: string, orgId: s
     throw new Error(`Failed to fetch archived PDPs: ${pdpError.message}`)
   }
 
-  // Get archived observations for each PDP
+  // Get archived observations for each PDP (archived=true)
   const pdpsWithObservations = await Promise.all(
     archivedPDPs.map(async (pdp) => {
+      // Minimal, robust query for observations
       const { data: observations, error: obsError } = await supabase
         .from('observations')
-        .select(`
-          id,
-          content,
-          observation_date,
-          created_at,
-          archived_at
-        `)
+        .select('id, player_id, content, observation_date, created_at, updated_at, pdp_id, archived, archived_by, created_by, org_id')
         .eq('pdp_id', pdp.id)
+        .eq('archived', true)
         .eq('org_id', orgId)
-        .not('archived_at', 'is', null)
-        .order('observation_date', { ascending: false })
-
+        .order('observation_date', { ascending: false });
       if (obsError) {
-        console.warn(`Failed to fetch observations for PDP ${pdp.id}:`, obsError)
-        return { ...pdp, observations: [] }
+        console.warn(`Failed to fetch observations for PDP ${pdp.id}:`, obsError);
+        return { ...pdp, observations: [] };
       }
-
-      return { ...pdp, observations: observations || [] }
+      return { ...pdp, observations: observations || [] };
     })
-  )
-
-  return pdpsWithObservations
-} 
+  );
+  return pdpsWithObservations;
+}

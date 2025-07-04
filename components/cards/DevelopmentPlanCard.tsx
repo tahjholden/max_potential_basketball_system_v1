@@ -50,7 +50,7 @@ export default function DevelopmentPlanCard({ pdp, playerId, playerName, onPdpUp
         <ManagePDPModal
           playerId={playerId}
           playerName={playerName}
-          buttonClassName="text-xs text-[#C2B56B] underline hover:text-[#b3a04e] bg-transparent border-none p-0 m-0 shadow-none cursor-pointer"
+          buttonClassName="text-xs text-zinc-400 underline hover:text-zinc-200 bg-transparent border-none p-0 m-0 shadow-none cursor-pointer"
         />
       </div>
       <EditPDPModal
