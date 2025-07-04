@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import PaneTitle from "@/components/PaneTitle";
 import AddCoachButton from "./AddCoachButton";
+import { useCoach } from "@/hooks/useCoach";
 
 interface Coach {
   id: string;
@@ -32,6 +33,7 @@ export default function CoachListPane({
 }: CoachListPaneProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCoaches, setFilteredCoaches] = useState<Coach[]>([]);
+  const { isAdmin, isSuperadmin } = useCoach();
 
   // Sort coaches by name
   const sortedCoaches = useMemo(() => {
@@ -60,7 +62,7 @@ export default function CoachListPane({
     <div className="bg-zinc-900 p-4 rounded-md shadow-sm">
       <div className="flex justify-between items-center mb-4">
         <PaneTitle>Coaches</PaneTitle>
-        {onCoachAdded && <AddCoachButton onCoachAdded={onCoachAdded} />}
+        {onCoachAdded && <AddCoachButton onCoachAdded={onCoachAdded} isAdminOrSuperadmin={isAdmin || isSuperadmin} />}
       </div>
       
       <div className="mb-4">
