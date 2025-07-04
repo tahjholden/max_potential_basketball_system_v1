@@ -56,7 +56,7 @@ interface Team {
 
 export default function DashboardPage() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const { playerId, setPlayerId } = useSelectedPlayer();
+  const { playerId, setPlayerId, clearPlayerId } = useSelectedPlayer();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
   const [playersWithoutPDP, setPlayersWithoutPDP] = useState<string[]>([]);
@@ -474,7 +474,10 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 mb-2">
                     <select
                       value={selectedTeamId || ''}
-                      onChange={e => setSelectedTeamId(e.target.value || null)}
+                      onChange={e => {
+                        setSelectedTeamId(e.target.value || null);
+                        clearPlayerId(); // Clear player selection when switching teams
+                      }}
                       className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-zinc-300 text-sm"
                       style={{ minWidth: 120 }}
                     >
