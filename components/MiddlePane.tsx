@@ -1,5 +1,6 @@
 import PlayerMetadataCard from "./PlayerMetadataCard";
 import BulkDeleteObservationsPane from "./BulkDeleteObservationsPane";
+import { useCoach } from "@/hooks/useCoach";
 // import DevelopmentPlanCard from "./DevelopmentPlanCard";
 
 interface Player {
@@ -39,10 +40,15 @@ export default function MiddlePane({
   onPdpUpdate,
   onObservationAdded
 }: MiddlePaneProps) {
+  const { isAdmin, isSuperadmin } = useCoach();
   console.log("MiddlePane observations prop:", observations);
   return (
     <div className="flex flex-col gap-4">
-      {player && <PlayerMetadataCard player={player} observations={observations} />}
+      {player && <PlayerMetadataCard 
+        player={player} 
+        playerId={player.id}
+        isAdminOrSuperadmin={isAdmin || isSuperadmin}
+      />}
       <BulkDeleteObservationsPane
         observations={observations}
         onDeleteMany={onDeleteMany}
