@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -12,6 +13,22 @@ export default function WelcomeScreen() {
   const full1 = "Empower the ";
   const highlight = "Player.";
   const full2 = " Elevate the Game.";
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // User is not authenticated, redirect to login
+        router.push("/auth/login");
+        return;
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   useEffect(() => {
     if (phase === "typing1") {
