@@ -270,14 +270,13 @@ export default function PlayersPageClient({
       />
 
       {/* Manage PDP Modal */}
-      {selectedPlayer && activePDP && (
+      {selectedPlayer && (
         <ManagePDPModal
-          open={isManageModalOpen}
-          onClose={() => setIsManageModalOpen(false)}
-          player={selectedPlayer}
-          pdp={activePDP}
-          onEdit={handleEditPDP}
-          onArchive={handleArchivePDP}
+          playerId={selectedPlayer.id}
+          playerName={selectedPlayer.name}
+          onSuccess={() => {
+            router.refresh();
+          }}
         />
       )}
 
@@ -287,7 +286,6 @@ export default function PlayersPageClient({
           open={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           player={selectedPlayer}
-          currentPdp={activePDP ? { id: activePDP.id } : null}
           coachId={coach.id}
           onCreated={handleCreatePDP}
         />
