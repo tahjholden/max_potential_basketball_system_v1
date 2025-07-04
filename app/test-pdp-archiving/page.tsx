@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { Modal } from "@/components/ui/UniversalModal";
 
 interface Player {
   id: string;
@@ -42,6 +43,9 @@ export default function SimplePDPArchivingTest() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [newPlanText, setNewPlanText] = useState("");
+  const [archiveLoading, setArchiveLoading] = useState(false);
 
   // Fetch initial data
   useEffect(() => {
@@ -261,6 +265,81 @@ export default function SimplePDPArchivingTest() {
     }
   };
 
+  // Modal archive handler
+  const handleArchiveWithModal = async () => {
+    if (!selectedPlayer || !currentPDP) {
+      toast.error("Please select a player with an active PDP first");
+      return;
+    }
+    if (!newPlanText.trim()) {
+      toast.error("Please enter new plan text");
+      return;
+    }
+    setArchiveLoading(true);
+    try {
+      addResult("Archiving PDP and observations via modal...");
+      const supabase = createClient();
+      const now = new Date().toISOString();
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        addResult("❌ User not authenticated");
+        toast.error("User not authenticated");
+        setArchiveLoading(false);
+        return;
+      }
+      // 1. Archive the current PDP
+      const { error: pdpError } = await supabase
+        .from('pdp')
+        .update({ archived_at: now, updated_at: now })
+        .eq('id', currentPDP.id);
+      if (pdpError) {
+        addResult(`❌ PDP archive error: ${pdpError.message}`);
+        throw pdpError;
+      }
+      addResult("✅ PDP archived successfully");
+      // 2. Archive all observations for this player
+      const { error: obsError } = await supabase
+        .from('observations')
+        .update({ archived: true, updated_at: now })
+        .eq('player_id', selectedPlayer.id)
+        .eq('archived', false);
+      if (obsError) {
+        addResult(`❌ Observations archive error: ${obsError.message}`);
+        throw obsError;
+      }
+      addResult("✅ Observations archived successfully");
+      // 3. Create a new PDP with user text
+      const { data: newPDP, error: createError } = await supabase
+        .from('pdp')
+        .insert({
+          player_id: selectedPlayer.id,
+          org_id: selectedPlayer.org_id,
+          content: newPlanText,
+          start_date: now,
+          created_at: now,
+          updated_at: now
+        })
+        .select()
+        .single();
+      if (createError) {
+        addResult(`❌ New PDP creation error: ${createError.message}`);
+        throw createError;
+      }
+      addResult("✅ New PDP created successfully");
+      toast.success("Archive and create process completed successfully");
+      setArchiveModalOpen(false);
+      setNewPlanText("");
+      fetchPlayerData(selectedPlayer.id);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      addResult(`❌ Archive process error: ${errorMsg}`);
+      toast.error(`Archive process error: ${errorMsg}`);
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-[#C2B56B]">Simple PDP Archiving Test</h1>
@@ -346,6 +425,13 @@ export default function SimplePDPArchivingTest() {
         >
           Test Simple Archive
         </button>
+        <button
+          onClick={() => setArchiveModalOpen(true)}
+          disabled={loading || !selectedPlayer || !currentPDP}
+          className="p-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50"
+        >
+          Archive Plan & Observations (Modal)
+        </button>
       </div>
 
       {/* Results Log */}
@@ -363,6 +449,24 @@ export default function SimplePDPArchivingTest() {
           )}
         </div>
       </div>
+      <Modal.Edit
+        open={archiveModalOpen}
+        onOpenChange={setArchiveModalOpen}
+        title="Archive Current Development Plan"
+        description="This will archive the current development plan and all of its associated observations. Enter the new plan text below. This action cannot be undone."
+        onSubmit={handleArchiveWithModal}
+        submitText={archiveLoading ? "Archiving..." : "Archive & Create New"}
+        loading={archiveLoading}
+        disabled={archiveLoading}
+      >
+        <textarea
+          className="w-full min-h-[100px] p-2 rounded border border-zinc-700 bg-zinc-900 text-zinc-100"
+          placeholder="Enter new development plan text..."
+          value={newPlanText}
+          onChange={e => setNewPlanText(e.target.value)}
+          disabled={archiveLoading}
+        />
+      </Modal.Edit>
     </div>
   );
 } 

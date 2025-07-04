@@ -113,6 +113,9 @@ export default function TestPlayersPage() {
   const [editPDPModalOpen, setEditPDPModalOpen] = useState(false);
   const [archivePDPModalOpen, setArchivePDPModalOpen] = useState(false);
   const [addPlayerModalOpen, setAddPlayerModalOpen] = useState(false);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [newPlanText, setNewPlanText] = useState("");
+  const [archiveLoading, setArchiveLoading] = useState(false);
   
   const selectedPlayer = players.find((p) => p.id === playerId);
   const searchParams = useSearchParams();
@@ -389,6 +392,76 @@ export default function TestPlayersPage() {
     }
   }
 
+  // Handler for archiving PDP and observations with new plan text
+  const handleArchiveWithModal = async () => {
+    if (!selectedPlayer || !currentPdp) {
+      toast.error("Please select a player with an active PDP first");
+      return;
+    }
+    if (!newPlanText.trim()) {
+      toast.error("Please enter new plan text");
+      return;
+    }
+    setArchiveLoading(true);
+    try {
+      const supabase = createClient();
+      const now = new Date().toISOString();
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("User not authenticated");
+        setArchiveLoading(false);
+        return;
+      }
+      // 1. Archive the current PDP
+      const { error: pdpError } = await supabase
+        .from('pdp')
+        .update({ archived_at: now, updated_at: now })
+        .eq('id', currentPdp.id);
+      if (pdpError) {
+        toast.error(`PDP archive error: ${pdpError.message}`);
+        throw pdpError;
+      }
+      // 2. Archive all observations for this player
+      const { error: obsError } = await supabase
+        .from('observations')
+        .update({ archived: true, updated_at: now })
+        .eq('player_id', selectedPlayer.id)
+        .eq('archived', false);
+      if (obsError) {
+        toast.error(`Observations archive error: ${obsError.message}`);
+        throw obsError;
+      }
+      // 3. Create a new PDP with user text
+      const { data: newPDP, error: createError } = await supabase
+        .from('pdp')
+        .insert({
+          player_id: selectedPlayer.id,
+          org_id: selectedPlayer.org_id,
+          content: newPlanText,
+          start_date: now,
+          created_at: now,
+          updated_at: now
+        })
+        .select()
+        .single();
+      if (createError) {
+        toast.error(`New PDP creation error: ${createError.message}`);
+        throw createError;
+      }
+      toast.success("Archive and create process completed successfully");
+      setArchiveModalOpen(false);
+      setNewPlanText("");
+      fetchPlayerData();
+      fetchAllData();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Archive process error: ${errorMsg}`);
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-zinc-950 flex items-center justify-center">
@@ -519,13 +592,21 @@ export default function TestPlayersPage() {
                       </div>
                       <div className="text-base text-zinc-300 mb-2">{currentPdp.content || "No active plan."}</div>
                     </div>
-                    {!currentPdp.archived_at && selectedPlayer.team_coach_id === currentCoachId && (
-                      <button
-                        onClick={handleEditPDP}
-                        className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm absolute bottom-4 right-6"
-                      >
-                        Edit Plan
-                      </button>
+                    {!currentPdp.archived_at && (
+                      <div className="flex gap-4 justify-end absolute bottom-4 right-6">
+                        <button
+                          onClick={handleEditPDP}
+                          className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                        >
+                          Edit Plan
+                        </button>
+                        <button
+                          onClick={() => setArchiveModalOpen(true)}
+                          className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                        >
+                          Archive Plan
+                        </button>
+                      </div>
                     )}
                   </>
                 ) : (
@@ -678,6 +759,24 @@ export default function TestPlayersPage() {
               fetchAllData();
             }}
           />
+          <Modal.Edit
+            open={archiveModalOpen}
+            onOpenChange={setArchiveModalOpen}
+            title="Archive Current Development Plan"
+            description="This will archive the current development plan and all of its associated observations. Enter the new plan text below. This action cannot be undone."
+            onSubmit={handleArchiveWithModal}
+            submitText={archiveLoading ? "Archiving..." : "Archive & Create New"}
+            loading={archiveLoading}
+            disabled={archiveLoading}
+          >
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded border border-zinc-700 bg-zinc-900 text-zinc-100"
+              placeholder="Enter new development plan text..."
+              value={newPlanText}
+              onChange={e => setNewPlanText(e.target.value)}
+              disabled={archiveLoading}
+            />
+          </Modal.Edit>
         </>
       )}
     </div>
