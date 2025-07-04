@@ -28,9 +28,6 @@ export default function PlayerListCard({ players, selectedPlayerId, onSelect }: 
                 onClick={() => onSelect(player.id)}
               >
                 <div className="font-medium text-gray-900">{player.name}</div>
-                {player.position && (
-                  <div className="text-sm text-gray-500">{player.position}</div>
-                )}
               </div>
             ))}
           </div>
