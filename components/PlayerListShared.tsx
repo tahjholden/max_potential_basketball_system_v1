@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { NoTeamsEmptyState } from "@/components/ui/EmptyState";
-import EmptyStateCard from "@/components/ui/EmptyStateCard";
 
 interface Player {
   id: string;
