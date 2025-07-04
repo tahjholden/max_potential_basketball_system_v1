@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const [allPdps, setAllPdps] = useState<Pdp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdminOrSuperadmin, setIsAdminOrSuperadmin] = useState(false);
 
   const selectedPlayer = players.find((p: Player) => p.id === playerId);
 
@@ -124,6 +125,23 @@ export default function DashboardPage() {
     fetchPdp();
   }, [playerId]);
 
+  useEffect(() => {
+    async function fetchRole() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: coachData } = await supabase
+        .from('coaches')
+        .select('is_admin, is_superadmin')
+        .eq('auth_uid', user.id)
+        .single();
+      if (coachData) {
+        setIsAdminOrSuperadmin(!!coachData.is_admin || !!coachData.is_superadmin);
+      }
+    }
+    fetchRole();
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen p-4 bg-zinc-950 flex items-center justify-center">
@@ -163,6 +181,7 @@ export default function DashboardPage() {
                   player={{ name: selectedPlayer.name, joined: selectedPlayer.joined }} 
                   playerId={selectedPlayer.id}
                   showDeleteButton={false}
+                  isAdminOrSuperadmin={isAdminOrSuperadmin}
                 />
               </div>
             ) : (
