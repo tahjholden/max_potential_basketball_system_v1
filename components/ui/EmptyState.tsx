@@ -220,7 +220,7 @@ export function NoPDPsEmptyState({ onCreatePDP }: { onCreatePDP: () => void }) {
       description="Get started by adding a new development plan for this player."
       showIcon={false}
       action={{
-        label: "Add PDP",
+        label: "Create New",
         onClick: onCreatePDP,
         color: "gold"
       }}

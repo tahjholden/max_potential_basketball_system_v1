@@ -1,4 +1,5 @@
 import React from "react";
+import EntityButton from "@/components/EntityButton";
 
 export default function PlayerDetailLayout({
   player,
@@ -39,12 +40,20 @@ export default function PlayerDetailLayout({
                 <p className="text-slate-300 italic mb-2">{pdp.content}</p>
                 <p className="text-xs text-slate-500">Started: {formattedStartDate}</p>
                 <div className="mt-4 space-y-2">
-                  <button onClick={onEditPDP} className="w-full border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition">
+                  <EntityButton
+                    color="gold"
+                    onClick={onEditPDP}
+                    className="w-full"
+                  >
                     Edit PDP
-                  </button>
-                  <button onClick={onArchivePDP} className="w-full border border-[#C2B56B] text-sm px-4 py-2 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition">
+                  </EntityButton>
+                  <EntityButton
+                    color="gold"
+                    onClick={onArchivePDP}
+                    className="w-full"
+                  >
                     Archive & Replace
-                  </button>
+                  </EntityButton>
                 </div>
               </>
             ) : (
@@ -57,12 +66,13 @@ export default function PlayerDetailLayout({
         <div className="lg:col-span-2 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-sm text-slate-300 font-semibold">Recent Observations ({observations.length})</h2>
-            <button
+            <EntityButton
+              color="gold"
               onClick={onAddObservation}
-              className="border border-[#C2B56B] text-xs px-3 py-1.5 rounded font-semibold text-[#C2B56B] hover:bg-[#C2B56B]/10 transition"
+              className="text-xs px-3 py-1.5"
             >
               + Add Observation
-            </button>
+            </EntityButton>
           </div>
 
           {observations.length === 0 ? (

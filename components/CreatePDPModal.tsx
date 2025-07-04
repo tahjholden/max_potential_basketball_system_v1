@@ -20,12 +20,21 @@ export default function CreatePDPModal({
   onCreated: () => void;
 }) {
   const [content, setContent] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [loadingOrgs, setLoadingOrgs] = useState(false);
 
   const { coach, isSuperadmin } = useCoach();
+
+  // Initialize start date to today when modal opens
+  useEffect(() => {
+    if (open) {
+      const today = new Date().toISOString().split('T')[0];
+      setStartDate(today);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open && isSuperadmin) {
@@ -58,12 +67,17 @@ export default function CreatePDPModal({
   useEffect(() => {
     if (!open) {
       setContent("");
+      setStartDate("");
     }
   }, [open]);
 
   const handleCreate = async () => {
     if (!content.trim() || !player) {
       toast.error("Please enter PDP content");
+      return;
+    }
+    if (!startDate) {
+      toast.error("Please select a start date");
       return;
     }
     if (isSuperadmin && !selectedOrgId) {
@@ -123,11 +137,11 @@ export default function CreatePDPModal({
         setLoading(false);
         return;
       }
-      // Create the new PDP
+      // Create the new PDP with the selected start date
       const { error: insertError } = await supabase.from("pdp").insert({
         player_id: player.id,
         content: content.trim(),
-        start_date: now,
+        start_date: startDate,
         created_at: now,
         updated_at: now,
         org_id: pdpOrgId,
@@ -152,7 +166,7 @@ export default function CreatePDPModal({
     }
   };
 
-  const isFormValid = content.trim() && (!isSuperadmin || selectedOrgId);
+  const isFormValid = content.trim() && startDate && (!isSuperadmin || selectedOrgId);
 
   if (!player) {
     return (
@@ -181,20 +195,40 @@ export default function CreatePDPModal({
       open={open}
       onOpenChange={(open) => !open && onClose()}
       title={`Create New PDP for ${player.name}`}
-      description="Enter the development plan content below."
+      description="Enter the development plan content and start date below."
       onSubmit={handleCreate}
       submitText={loading ? "Creating..." : "Create PDP"}
       loading={loading}
       disabled={!isFormValid}
     >
       <div className="space-y-4">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={6}
-          placeholder="New development goals..."
-          className="w-full px-3 py-2 rounded bg-[#2a2a2a] border border-slate-600 text-white focus:outline-none focus:ring focus:border-gold"
-        />
+        <div>
+          <label htmlFor="start_date" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+            Start Date
+          </label>
+          <input
+            type="date"
+            id="start_date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-gold focus:ring-1 focus:ring-gold"
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label htmlFor="pdp_content" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">
+            Development Plan Content
+          </label>
+          <textarea
+            id="pdp_content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={6}
+            placeholder="New development goals..."
+            className="w-full px-3 py-2 rounded bg-[#2a2a2a] border border-slate-600 text-white focus:outline-none focus:ring focus:border-gold"
+            disabled={loading}
+          />
+        </div>
         {isSuperadmin && (
           <div>
             <label htmlFor="org_select" className="block text-xs text-[#C2B56B] uppercase tracking-wider mb-1 font-semibold">

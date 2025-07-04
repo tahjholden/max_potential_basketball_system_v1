@@ -31,6 +31,7 @@ import { Modal } from "@/components/ui/UniversalModal";
 import { toast } from "sonner";
 import { UniversalModal } from "@/components/ui/UniversalModal";
 import ArchivedPDPsList from "@/components/ArchivedPDPsList";
+import EntityButton from "@/components/EntityButton";
 
 // Type Definitions
 interface Player {
@@ -610,12 +611,22 @@ export default function TestPlayersPage() {
                     )}
                   </>
                 ) : (
-                  <EmptyState
-                    icon={Target}
-                    title="Select a Player to View Development Plan"
-                    description="Pick a player from the list to see their development plan."
-                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
-                  />
+                  <div className="flex flex-col items-center justify-center h-full gap-4">
+                    <EmptyState
+                      icon={Target}
+                      title={selectedPlayer ? "No Development Plan" : "Select a Player to View Development Plan"}
+                      description={selectedPlayer ? "This player does not have a development plan yet." : "Pick a player from the list to see their development plan."}
+                      className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                    />
+                    {selectedPlayer && (
+                      <EntityButton
+                        color="gold"
+                        onClick={() => setCreatePDPModalOpen(true)}
+                      >
+                        Create New
+                      </EntityButton>
+                    )}
+                  </div>
                 )}
               </Card>
               <SectionLabel>Observations</SectionLabel>
