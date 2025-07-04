@@ -610,7 +610,12 @@ export default function TestPlayersPage() {
                     )}
                   </>
                 ) : (
-                  <div className="text-base text-zinc-300 mb-2">No active plan.</div>
+                  <EmptyState
+                    icon={Target}
+                    title="Select a Player to View Development Plan"
+                    description="Pick a player from the list to see their development plan."
+                    className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                  />
                 )}
               </Card>
               <SectionLabel>Observations</SectionLabel>
@@ -689,7 +694,12 @@ export default function TestPlayersPage() {
               {selectedPlayer && selectedPlayer.id && selectedPlayer.org_id ? (
                 <ArchivedPDPsList playerId={selectedPlayer.id} orgId={selectedPlayer.org_id} />
               ) : (
-                <span className="text-zinc-300 text-base font-medium">Select a player to view archived plans.</span>
+                <EmptyState
+                  icon={Archive}
+                  title="Select a Player to View Archived Plans"
+                  description="Pick a player from the list to see their archived development plans."
+                  className="[&_.text-lg]:text-[#C2B56B] [&_.text-lg]:font-bold [&_.text-zinc-400]:font-medium"
+                />
               )}
             </Card>
           </div>

@@ -8,6 +8,7 @@ import SectionLabel from "@/components/SectionLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Users, UserCheck, FileText } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // Type Definitions
 interface Coach {
@@ -76,6 +77,8 @@ export default function CoachesPage() {
   const [loading, setLoading] = useState(true);
   const [isAdminOrSuperadmin, setIsAdminOrSuperadmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Handle hydration
   useEffect(() => {
@@ -106,6 +109,35 @@ export default function CoachesPage() {
 
     return coachData.id;
   }, []);
+
+  // On mount, set default coach selection from query param, sessionStorage, or current user
+  useEffect(() => {
+    async function setDefaultCoach() {
+      // 1. Check for coachId in query params
+      const urlCoachId = searchParams.get("coachId");
+      if (urlCoachId) {
+        setSelectedCoachId(urlCoachId);
+        sessionStorage.setItem("selectedCoachId", urlCoachId);
+        return;
+      }
+      // 2. Check for coachId in sessionStorage
+      const storedCoachId = sessionStorage.getItem("selectedCoachId");
+      if (storedCoachId) {
+        setSelectedCoachId(storedCoachId);
+        return;
+      }
+      // 3. Default to current user's coachId
+      const currentUserCoachId = await getCurrentUserCoachId();
+      if (currentUserCoachId) {
+        setSelectedCoachId(currentUserCoachId);
+        sessionStorage.setItem("selectedCoachId", currentUserCoachId);
+      }
+    }
+    if (!selectedCoachId && !hasSetDefaultCoach.current) {
+      setDefaultCoach();
+      hasSetDefaultCoach.current = true;
+    }
+  }, [selectedCoachId, getCurrentUserCoachId, searchParams]);
 
   // --- Top-level org-wide data fetch ---
   useEffect(() => {
@@ -271,6 +303,7 @@ export default function CoachesPage() {
 
   const handleCoachSelect = (coachId: string) => {
     setSelectedCoachId(coachId);
+    sessionStorage.setItem("selectedCoachId", coachId);
   };
 
   const openCreateModal = () => {

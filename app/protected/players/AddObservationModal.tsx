@@ -105,6 +105,7 @@ export default function AddObservationModal({
         observation_date: date,
         archived: false,
         org_id: isSuperadmin ? selectedOrgId : coach?.org_id,
+        created_by: coach?.id,
       });
       toast.success("Observation added successfully!");
       setContent("");

@@ -6,6 +6,7 @@ import { useSelectedPlayer } from "@/stores/useSelectedPlayer";
 import { format } from "date-fns";
 import Image from "next/image";
 import { Users, FileText, Target, BarChart3 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 import ThreePaneLayout from "@/components/ThreePaneLayout";
 import EntityListPane from "@/components/EntityListPane";
@@ -28,6 +29,9 @@ import DeletePlayerModal from "@/app/protected/players/DeletePlayerModal";
 import EditPDPModal from "@/components/EditPDPModal";
 import ArchivePDPModal from "@/components/ArchivePDPModal";
 
+// Import UniversalModal
+import { Modal } from "@/components/ui/UniversalModal";
+
 // Type definitions - matching dashboard exactly
 interface Player {
   id: string;
@@ -46,6 +50,8 @@ interface Observation {
   observation_date: string;
   created_at: string;
   player_id: string;
+  coach_id?: string;
+  created_by?: string;
   archived: boolean;
 }
 
@@ -86,6 +92,10 @@ export default function ObservationsPage() {
   const [deletePlayerModalOpen, setDeletePlayerModalOpen] = useState(false);
   const [editPDPModalOpen, setEditPDPModalOpen] = useState(false);
   const [archivePDPModalOpen, setArchivePDPModalOpen] = useState(false);
+  
+  // Add state for delete confirmation modal
+  const [deleteObservation, setDeleteObservation] = useState<Observation | null>(null);
+  const [deleting, setDeleting] = useState(false);
   
   const MAX_OBSERVATIONS = 5;
 
@@ -132,8 +142,15 @@ export default function ObservationsPage() {
   const weekAgo = new Date(now);
   weekAgo.setDate(now.getDate() - 7);
   const totalThisWeek = allObservations.filter(o => new Date(o.observation_date) >= weekAgo).length;
-  // TODO: If coach_id is not available on Observation, this metric cannot be calculated. Placeholder:
-  const yourThisWeek = 0; // Not available unless coach_id is present on Observation
+  // Calculate your observations this week
+  const yourThisWeek = allObservations.filter(o => {
+    const obsDate = new Date(o.observation_date);
+    const isRecent = obsDate >= weekAgo;
+    // Check for created_by match
+    const isYours = (o.created_by && coach?.id && o.created_by === coach.id) ||
+                    (o.created_by && coach?.auth_uid && o.created_by === coach.auth_uid);
+    return isRecent && isYours;
+  }).length;
   const lastAdded = allObservations.length > 0 ? allObservations.reduce((latest, obs) => new Date(obs.observation_date) > new Date(latest.observation_date) ? obs : latest, allObservations[0]) : null;
 
   const fetchPdp = async () => {
@@ -209,7 +226,7 @@ export default function ObservationsPage() {
         // Fetch observations only for these players
         const { data: observationsData, error: observationsError } = await supabase
           .from("observations")
-          .select("id, content, observation_date, created_at, player_id")
+          .select("id, content, observation_date, created_at, player_id, created_by")
           .in("player_id", playerIds)
           .eq("archived", false)
           .order("created_at", { ascending: false })
@@ -252,7 +269,7 @@ export default function ObservationsPage() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("observations")
-        .select("id, content, observation_date, created_at, player_id")
+        .select("id, content, observation_date, created_at, player_id, created_by")
         .eq("player_id", playerId)
         .eq("pdp_id", currentPdp.id)
         .eq("archived", false)
@@ -380,20 +397,25 @@ export default function ObservationsPage() {
   const handleAddObservation = async (content: string, observationDate: string) => {
     if (!selectedPlayer || !currentPdp) return;
     const supabase = createClient();
+
     // Try to get org_id from currentPdp, fallback to coach lookup if needed
     let orgId = (currentPdp as any)?.org_id;
-    if (!orgId) {
-      // Fallback: fetch coach org_id
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: coachData } = await supabase
-          .from('coaches')
-          .select('org_id')
-          .eq('auth_uid', user.id)
-          .single();
-        orgId = coachData?.org_id;
+    let createdBy = null;
+
+    // Always fetch the current user and coach record for created_by
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: coachData } = await supabase
+        .from('coaches')
+        .select('id, auth_uid, org_id')
+        .eq('auth_uid', user.id)
+        .single();
+      if (coachData) {
+        orgId = orgId || coachData.org_id;
+        createdBy = coachData.id || coachData.auth_uid;
       }
     }
+
     await supabase.from("observations").insert([
       {
         player_id: selectedPlayer.id,
@@ -402,13 +424,14 @@ export default function ObservationsPage() {
         observation_date: observationDate,
         archived: false,
         org_id: orgId || null,
+        created_by: createdBy,
       },
     ]);
     setAddObservationOpen(false);
     // Refetch observations
     const { data } = await supabase
       .from("observations")
-      .select("id, content, observation_date, created_at, player_id")
+      .select("id, content, observation_date, created_at, player_id, created_by")
       .eq("player_id", selectedPlayer.id)
       .eq("pdp_id", currentPdp.id)
       .eq("archived", false)
@@ -568,16 +591,21 @@ export default function ObservationsPage() {
                           </div>
                         </div>
                         <div className="text-base text-zinc-100 mb-3">{obs.content}</div>
-                        {/* Optional Edit button for coach/admin */}
                         {(coach?.is_admin || coach?.is_superadmin) && (
-                          <button
-                            className="text-xs text-[#C2B56B] font-semibold hover:underline self-end"
-                            onClick={() => {
-                              setObservationBeingEdited(obs);
-                              setEditObservationContent(obs.content);
-                              setEditObservationModalOpen(true);
-                            }}
-                          >Edit</button>
+                          <div className="flex gap-2 self-end">
+                            <button
+                              className="text-xs text-[#C2B56B] font-semibold hover:underline"
+                              onClick={() => {
+                                setObservationBeingEdited(obs);
+                                setEditObservationContent(obs.content);
+                                setEditObservationModalOpen(true);
+                              }}
+                            >Edit</button>
+                            <button
+                              className="text-xs text-red-400 font-semibold hover:underline"
+                              onClick={() => setDeleteObservation(obs)}
+                            >Delete</button>
+                          </div>
                         )}
                       </div>
                     );
@@ -665,6 +693,33 @@ export default function ObservationsPage() {
             </div>
           </div>
         </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteObservation && (
+        <Modal.Delete
+          open={!!deleteObservation}
+          onOpenChange={(open) => {
+            if (!open) setDeleteObservation(null);
+          }}
+          title="Delete Observation"
+          description="Are you sure you want to delete this observation? This action cannot be undone."
+          confirmText="Delete"
+          loading={deleting}
+          onConfirm={async () => {
+            setDeleting(true);
+            const supabase = createClient();
+            const { error } = await supabase.from('observations').delete().eq('id', deleteObservation.id);
+            setDeleting(false);
+            if (error) {
+              toast.error("Failed to delete observation");
+            } else {
+              setAllObservations(prev => prev.filter(o => o.id !== deleteObservation.id));
+              toast.success("Observation deleted");
+            }
+            setDeleteObservation(null);
+          }}
+          onCancel={() => setDeleteObservation(null)}
+        />
       )}
     </div>
   );
