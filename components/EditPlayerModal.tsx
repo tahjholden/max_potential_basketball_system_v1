@@ -18,7 +18,6 @@ export default function EditPlayerModal({
 }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [position, setPosition] = useState("");
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -27,7 +26,6 @@ export default function EditPlayerModal({
     if (open && player) {
       setFirstName(player.first_name || "");
       setLastName(player.last_name || "");
-      setPosition(player.position || "");
       setSelectedTeamId(player.team_id || "");
       
       // Fetch teams for the dropdown
@@ -58,7 +56,6 @@ export default function EditPlayerModal({
         .update({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          position: position.trim() || null,
           team_id: selectedTeamId || null,
         })
         .eq("id", player.id);
@@ -155,18 +152,6 @@ export default function EditPlayerModal({
               <option key={team.id} value={team.id}>{team.name}</option>
             ))}
           </select>
-        </div>
-        <div>
-          <label htmlFor="edit_position" className="block text-xs text-[#d8cc97] uppercase tracking-wider mb-1 font-semibold">
-            Position
-          </label>
-          <Input
-            id="edit_position"
-            placeholder="e.g., Forward"
-            value={position}
-            onChange={e => setPosition(e.target.value)}
-            className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#d8cc97] placeholder-[#d8cc97]/60 focus:border-[#d8cc97] focus:ring-1 focus:ring-[#d8cc97] transition-all duration-200"
-          />
         </div>
       </div>
     </Modal.Edit>

@@ -553,25 +553,21 @@ export default function TestPlayersPage() {
                       </div>
                     )}
                     <div className="flex gap-2 justify-end mt-4">
-                      {selectedPlayer && currentCoachId && selectedPlayer.team_coach_id === currentCoachId && (
-                        <>
-                          <button
-                            className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
-                            onClick={handleEditPlayer}
-                          >
-                            Edit Player
-                          </button>
-                          <DeletePlayerButton
-                            playerId={selectedPlayer.id}
-                            playerName={selectedPlayer.name}
-                            triggerClassName="text-red-500 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
-                            onDeleted={() => {
-                              setPlayerId("");
-                              fetchAllData();
-                            }}
-                          />
-                        </>
-                      )}
+                      <button
+                        className="text-[#C2B56B] font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                        onClick={handleEditPlayer}
+                      >
+                        Edit Player
+                      </button>
+                      <DeletePlayerButton
+                        playerId={selectedPlayer.id}
+                        playerName={selectedPlayer.name}
+                        triggerClassName="text-red-500 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                        onDeleted={() => {
+                          setPlayerId("");
+                          fetchAllData();
+                        }}
+                      />
                     </div>
                   </div>
                 ) : (

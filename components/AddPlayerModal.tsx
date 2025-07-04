@@ -13,7 +13,6 @@ import type { Organization } from "@/types/entities";
 export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open: boolean; onClose: () => void; onPlayerAdded?: () => void }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [position, setPosition] = useState("");
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -129,7 +128,6 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
       const playerData = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        position: position.trim() || null,
         team_id: selectedTeamId,
         org_id: orgId,
       };
@@ -143,7 +141,6 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
       toast.success("Player added successfully!");
       setFirstName("");
       setLastName("");
-      setPosition("");
       setSelectedTeamId("");
       onClose();
       onPlayerAdded?.();
@@ -283,18 +280,6 @@ export default function AddPlayerModal({ open, onClose, onPlayerAdded }: { open:
               ))}
             </select>
           </div>
-        </div>
-        <div>
-          <label htmlFor="player_position" className="block text-xs text-[#d8cc97] uppercase tracking-wider mb-1 font-semibold">
-            Position
-          </label>
-          <Input
-            id="player_position"
-            placeholder="e.g., Forward"
-            value={position}
-            onChange={e => setPosition(e.target.value)}
-            className="bg-zinc-900 border border-zinc-700 rounded-lg text-[#d8cc97] placeholder-[#d8cc97]/60 focus:border-[#d8cc97] focus:ring-1 focus:ring-[#d8cc97] transition-all duration-200"
-          />
         </div>
       </div>
     </Modal.Add>

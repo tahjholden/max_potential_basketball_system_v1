@@ -9,6 +9,9 @@ import EmptyState from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Users, UserCheck, FileText } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import AddCoachModal from "@/components/AddCoachModal";
+import DeleteButton from "@/components/DeleteButton";
+import EditCoachModal from "../../../components/EditCoachModal";
 
 // Type Definitions
 interface Coach {
@@ -79,6 +82,8 @@ export default function CoachesPage() {
   const [currentUserId, setCurrentUserId] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [editCoachOpen, setEditCoachOpen] = useState(false);
+  const [deleteCoachOpen, setDeleteCoachOpen] = useState(false);
 
   // Handle hydration
   useEffect(() => {
@@ -161,6 +166,7 @@ export default function CoachesPage() {
           isSuperadmin = coachData?.is_superadmin || false;
           orgId = coachData?.org_id;
         }
+        setIsAdminOrSuperadmin(isAdmin || isSuperadmin);
         // Fetch coaches
         let coachesQuery = supabase
           .from("coaches")
@@ -310,13 +316,8 @@ export default function CoachesPage() {
     // Implementation of openCreateModal function
   };
 
-  const handleEdit = () => {
-    // Implementation of handleEdit function
-  };
-
-  const handleDelete = () => {
-    // Implementation of handleDelete function
-  };
+  const handleEdit = () => setEditCoachOpen(true);
+  const handleDelete = () => setDeleteCoachOpen(true);
 
   // Get playerIdsWithPDP for styling (all active PDPs, not filtered by team/coach)
   const playerIdsWithPDP = new Set(
@@ -509,10 +510,22 @@ export default function CoachesPage() {
                         </div>
                         <div className="flex gap-2 justify-end mt-4">
                           {(isAdminOrSuperadmin || selectedCoach.id === currentUserId) && (
-                            <EntityButton color="gold" onClick={handleEdit}>Edit Coach</EntityButton>
+                            <EntityButton
+                              color="gold"
+                              onClick={handleEdit}
+                              className="border-none bg-transparent px-0 py-0 shadow-none text-[#C2B56B] hover:underline"
+                            >
+                              Edit Coach
+                            </EntityButton>
                           )}
                           {isAdminOrSuperadmin && selectedCoach.id !== currentUserId && (
-                            <EntityButton color="danger" onClick={handleDelete}>Delete Coach</EntityButton>
+                            <DeleteButton
+                              onConfirm={() => {/* implement delete logic here */}}
+                              entity="Coach"
+                              label="Delete Coach"
+                              iconOnly={false}
+                              triggerClassName="text-red-500 font-semibold hover:underline bg-transparent border-none p-0 m-0 text-sm"
+                            />
                           )}
                         </div>
                       </div>
@@ -667,6 +680,12 @@ export default function CoachesPage() {
           </div>
         )}
       </div>
+      <EditCoachModal
+        open={editCoachOpen}
+        onClose={() => setEditCoachOpen(false)}
+        onCoachEdited={() => {/* implement refresh logic here */}}
+        coach={selectedCoach}
+      />
     </div>
   );
 } 

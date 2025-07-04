@@ -263,7 +263,7 @@ export default function Navigation() {
           onPlayerAdded={() => {
             setAddPlayerOpen(false);
             toast.success("Player added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
-            setTimeout(() => { router.refresh(); }, 1200);
+            router.refresh();
           }}
         />
       )}
@@ -276,7 +276,7 @@ export default function Navigation() {
           onCoachAdded={() => {
             setAddCoachOpen(false);
             toast.success("Coach added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
-            setTimeout(() => { router.refresh(); }, 1200);
+            router.refresh();
           }}
         />
       )}
@@ -310,7 +310,7 @@ export default function Navigation() {
           onTeamAdded={() => {
             setAddTeamOpen(false);
             toast.success("Team added successfully!", { style: { background: '#d8cc97', color: '#181818', fontWeight: 'bold' } });
-            setTimeout(() => { router.refresh(); }, 1200);
+            router.refresh();
           }}
         />
       )}
