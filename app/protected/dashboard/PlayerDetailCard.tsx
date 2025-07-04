@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { formatDate } from "@/lib/ui-utils";
 
 interface PlayerDetailCardProps {
   player: any;
@@ -34,7 +35,7 @@ export default function PlayerDetailCard({ player, playerPDP, playerObservations
           {playerObservations.map((obs, index) => (
             <div key={obs.id || index} className="bg-[#232323] p-4 rounded-md border border-[#323232]">
               <div className="text-xs text-[#b0b0b0] mb-1">
-                {obs.observation_date ? new Date(obs.observation_date).toLocaleDateString() : 'No date'}
+                {obs.observation_date ? formatDate(obs.observation_date) : 'No date'}
               </div>
               <div className="text-sm text-[#f5f5f7]">{obs.content}</div>
             </div>

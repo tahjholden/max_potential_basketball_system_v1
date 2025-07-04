@@ -20,6 +20,7 @@ import { GoldButton } from "@/components/ui/gold-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Users } from "lucide-react";
+import { formatDate } from "@/lib/ui-utils";
 
 interface Player {
   id: string;
@@ -582,7 +583,7 @@ export default function DashboardPage() {
                       : sortedObservations.slice(0, 5)
                     ).map(obs => (
                       <div key={obs.id} className="rounded-lg px-4 py-2 bg-zinc-800 border border-zinc-700">
-                        <div className="text-xs text-zinc-400 mb-1">{format(new Date(obs.observation_date), "MMMM do, yyyy")}</div>
+                        <div className="text-xs text-zinc-400 mb-1">{formatDate(obs.observation_date, "MMMM do, yyyy")}</div>
                         <div className="text-base text-zinc-100">{obs.content}</div>
                       </div>
                     ))}

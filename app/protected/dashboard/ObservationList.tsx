@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { formatDate } from "@/lib/ui-utils";
 
 interface ObservationListProps {
   observations: any[];
@@ -40,7 +41,7 @@ export default function ObservationList({ observations, players, searchTerm }: O
           <div key={i} className="bg-[#232323] border border-[#323232] rounded-lg p-4 shadow-md text-sm text-[#f5f5f7] space-y-2">
             <div className="flex justify-between items-center text-[#d8cc97] font-semibold text-sm">
               <span>{getPlayerName(obs.player_id)}</span>
-              <span className="text-xs text-[#b0b0b0]">{obs.observation_date ? new Date(obs.observation_date).toLocaleDateString() : 'No date'}</span>
+              <span className="text-xs text-[#b0b0b0]">{obs.observation_date ? formatDate(obs.observation_date) : 'No date'}</span>
             </div>
             <p className="text-[#f5f5f7]">{obs.content}</p>
           </div>
