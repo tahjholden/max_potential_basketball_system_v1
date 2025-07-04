@@ -200,16 +200,18 @@ export default async function PlayerDetailPage({ params }: PlayerDetailPageProps
             </div>
           )}
         </Card>
-      </div>
 
-      {/* Archived Development Plans */}
-      <Card className="bg-zinc-800 border border-zinc-700 p-6">
-        <ArchivedPDPsList
-          playerId={player.id}
-          orgId={orgId}
-          className="w-full"
-        />
-      </Card>
+        {/* Archived Development Plan Archive */}
+        <div className="lg:col-span-2">
+          {player.id && orgId ? (
+            <ArchivedPDPsList playerId={player.id} orgId={orgId} />
+          ) : (
+            <div className="p-4 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-400 text-center">
+              Select a player to view archived plans.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 } 

@@ -136,13 +136,7 @@ export async function getArchivedPDPsWithObservations(playerId: string, orgId: s
       start_date,
       end_date,
       created_at,
-      archived_at,
-      archived_by,
-      created_by,
-      coaches!pdp_created_by_fkey (
-        first_name,
-        last_name
-      )
+      archived_at
     `)
     .eq('player_id', playerId)
     .eq('org_id', orgId)
@@ -163,13 +157,7 @@ export async function getArchivedPDPsWithObservations(playerId: string, orgId: s
           content,
           observation_date,
           created_at,
-          archived_at,
-          archived_by,
-          created_by,
-          coaches!observations_created_by_fkey (
-            first_name,
-            last_name
-          )
+          archived_at
         `)
         .eq('pdp_id', pdp.id)
         .eq('org_id', orgId)

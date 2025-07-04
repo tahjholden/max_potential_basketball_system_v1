@@ -30,6 +30,7 @@ import AddPlayerModal from "@/components/AddPlayerModal";
 import { Modal } from "@/components/ui/UniversalModal";
 import { toast } from "sonner";
 import { UniversalModal } from "@/components/ui/UniversalModal";
+import ArchivedPDPsList from "@/components/ArchivedPDPsList";
 
 // Type Definitions
 interface Player {
@@ -43,6 +44,7 @@ interface Player {
   team_id?: string;
   team_name?: string;
   team_coach_id?: string;
+  org_id?: string;
 }
 
 interface Pdp {
@@ -248,30 +250,14 @@ export default function TestPlayersPage() {
       const supabase = createClient();
 
       // Get players - follow coaches page logic
-      let playersQuery = supabase
+      const { data: playersData } = await supabase
         .from("players")
-        .select(`
-          id, 
-          name, 
-          first_name, 
-          last_name, 
-          created_at, 
-          team_id,
-          teams!inner(name)
-        `)
+        .select("id, name, first_name, last_name, created_at, team_id, org_id, teams(name)")
         .order("last_name", { ascending: true });
-
-      if (isAdmin) {
-        // Admin: fetch all players (no team filter)
-        // The team filtering will be done in the UI based on selectedTeamId
-      } else {
-        // Regular coach: fetch only players from their selected team
-        playersQuery = playersQuery.eq("team_id", selectedTeamId);
-      }
-
-      const { data: playersData, error: playersError } = await playersQuery;
       
-      if (playersError) throw new Error(`Error fetching players: ${playersError.message}`);
+      const safePlayersData = playersData || [];
+      
+      if (safePlayersData.length === 0) throw new Error("No players found");
 
       // Get current user's role and org for filtering
       const { data: { user } } = await supabase.auth.getUser();
@@ -309,7 +295,7 @@ export default function TestPlayersPage() {
       });
       
       const teamsById = new Map(teams.map((t) => [t.id, t]));
-      const transformedPlayers = (playersData || []).map((player: any) => {
+      const transformedPlayers = (safePlayersData).map((player: any) => {
         const team = player.team_id ? teamsById.get(player.team_id) : undefined;
         return {
           ...player,
@@ -619,7 +605,11 @@ export default function TestPlayersPage() {
           <div className="flex-1 min-w-0 flex flex-col gap-4 min-h-0">
             <SectionLabel>Development Plan Archive</SectionLabel>
             <Card className="bg-zinc-900 border border-zinc-700 rounded-lg px-6 py-5 shadow-lg flex flex-col justify-between min-h-[180px] relative">
-              <span className="text-zinc-300 text-base font-medium">Archive plan ability coming soon.</span>
+              {selectedPlayer && selectedPlayer.id && selectedPlayer.org_id ? (
+                <ArchivedPDPsList playerId={selectedPlayer.id} orgId={selectedPlayer.org_id} />
+              ) : (
+                <span className="text-zinc-300 text-base font-medium">Select a player to view archived plans.</span>
+              )}
             </Card>
           </div>
         </div>

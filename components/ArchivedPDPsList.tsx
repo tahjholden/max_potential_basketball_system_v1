@@ -50,14 +50,39 @@ export default function ArchivedPDPsList({ playerId, orgId, className = "" }: Ar
   const [expandedPDPs, setExpandedPDPs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (!playerId || !orgId) {
+      setError("Missing player or organization ID.");
+      setArchivedPDPs([]);
+      setLoading(false);
+      return;
+    }
     fetchArchivedPDPs();
   }, [playerId, orgId]);
 
   const fetchArchivedPDPs = async () => {
+    if (!playerId || !orgId) {
+      setError("Missing player or organization ID.");
+      setArchivedPDPs([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await getArchivedPDPsWithObservations(playerId, orgId);
-      setArchivedPDPs(data);
+      setArchivedPDPs(
+        (data || []).map((pdp: any) => ({
+          id: pdp.id,
+          content: pdp.content,
+          start_date: pdp.start_date,
+          end_date: pdp.end_date || "",
+          created_at: pdp.created_at,
+          archived_at: pdp.archived_at,
+          archived_by: pdp.archived_by || "",
+          created_by: pdp.created_by || "",
+          coaches: pdp.coaches || [],
+          observations: pdp.observations || [],
+        }))
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch archived PDPs");
@@ -120,12 +145,6 @@ export default function ArchivedPDPsList({ playerId, orgId, className = "" }: Ar
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#C2B56B]">
-          Archived Development Plans ({archivedPDPs.length})
-        </h3>
-      </div>
-
       {archivedPDPs.map((pdp) => (
         <Card key={pdp.id} className="bg-zinc-800 border border-zinc-700 overflow-hidden">
           {/* PDP Header */}
@@ -139,12 +158,6 @@ export default function ArchivedPDPsList({ playerId, orgId, className = "" }: Ar
                   <Calendar className="w-4 h-4 text-zinc-400" />
                   <span className="text-sm text-zinc-300">
                     {formatDate(pdp.start_date)} - {pdp.end_date ? formatDate(pdp.end_date) : "Ongoing"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="w-4 h-4 text-zinc-400" />
-                  <span className="text-xs text-zinc-400">
-                    Created by {getCoachName(pdp.coaches)}
                   </span>
                 </div>
                 <p className="text-sm text-zinc-300 line-clamp-2">
